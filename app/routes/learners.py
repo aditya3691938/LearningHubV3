@@ -232,6 +232,7 @@ def assign_learners():
             filtered_learners = query.all()
             parsed_global_ids = [learner.global_id for learner in filtered_learners]
         else:
+            global_ids_text = request.form.get('global_ids', '').strip()
             csv_file = request.files.get('learner_csv')
             if csv_file and csv_file.filename:
                 try:
@@ -240,6 +241,7 @@ def assign_learners():
                 except Exception:
                     pass
             parsed_global_ids = parse_global_ids_from_input(global_ids_text, csv_file)
+
 
 
         if not parsed_global_ids:
@@ -312,15 +314,20 @@ def assign_learners():
         return redirect(url_for('courses.view_course', course_id=course.id))
 
     # Fetch unique list values for parameter selectors
-    departments = [r[0] for r in db.session.query(Learner.department).distinct() if r[0]]
-    designations = [r[0] for r in db.session.query(Learner.designation).distinct() if r[0]]
-    locations = [r[0] for r in db.session.query(Learner.location).distinct() if r[0]]
-    branches = [r[0] for r in db.session.query(Learner.branch).distinct() if r[0]]
+    try:
+        departments = [r[0] for r in db.session.query(Learner.department).distinct() if r[0]]
+        designations = [r[0] for r in db.session.query(Learner.designation).distinct() if r[0]]
+        locations = [r[0] for r in db.session.query(Learner.location).distinct() if r[0]]
+        branches = [r[0] for r in db.session.query(Learner.branch).distinct() if r[0]]
+    except Exception:
+        db.session.rollback()
+        departments, designations, locations, branches = [], [], [], []
 
     return render_template(
         'learners/assign.html',
         courses=courses,
         departments=sorted(departments),
+
         designations=sorted(designations),
         locations=sorted(locations),
         branches=sorted(branches)
