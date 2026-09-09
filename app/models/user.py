@@ -9,6 +9,8 @@ class AdminUser(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False, default='admin')
     password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(120), default='L&D Administrator')
+    profile_picture = db.Column(db.String(255), nullable=True)
+    date_of_birth = db.Column(db.Date, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def set_password(self, password):

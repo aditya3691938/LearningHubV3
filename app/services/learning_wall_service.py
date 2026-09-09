@@ -43,16 +43,17 @@ def create_completion_post(learner_id, course_id, final_score=None):
 
 def check_and_generate_birthday_posts():
     """
-    Automated trigger: Checks for learners with birthdays today and generates system birthday bulletin posts.
+    Automated trigger: Checks for learners and admins with birthdays today and generates system birthday bulletin posts.
     """
+    from app.models.user import AdminUser
     today = datetime.date.today()
     learners = Learner.query.filter(Learner.date_of_birth.isnot(None)).all()
+    admins = AdminUser.query.filter(AdminUser.date_of_birth.isnot(None)).all()
     created_posts = []
+    start_of_day = datetime.datetime.combine(today, datetime.time.min)
 
     for l in learners:
         if l.date_of_birth and l.date_of_birth.month == today.month and l.date_of_birth.day == today.day:
-            # Check if birthday post for this learner was already created today
-            start_of_day = datetime.datetime.combine(today, datetime.time.min)
             existing = LearningWallPost.query.filter(
                 LearningWallPost.post_type == 'BIRTHDAY',
                 LearningWallPost.learner_id == l.id,
@@ -67,6 +68,28 @@ def check_and_generate_birthday_posts():
                     title=title,
                     content=content,
                     learner_id=l.id,
+                    icon='fa-cake-candles',
+                    badge_color='bg-warning-subtle text-warning border-warning-subtle'
+                )
+                db.session.add(post)
+                created_posts.append(post)
+
+    for a in admins:
+        if a.date_of_birth and a.date_of_birth.month == today.month and a.date_of_birth.day == today.day:
+            existing = LearningWallPost.query.filter(
+                LearningWallPost.post_type == 'BIRTHDAY',
+                LearningWallPost.title == f"🎂 Happy Birthday, {a.name}!",
+                LearningWallPost.created_at >= start_of_day
+            ).first()
+
+            if not existing:
+                title = f"🎂 Happy Birthday, {a.name}!"
+                content = f"🎈 Wishing **{a.name}** (L&D Administrator) a very Happy Birthday! May your day be filled with joy and your year with continuous learning and success!"
+                post = LearningWallPost(
+                    post_type='BIRTHDAY',
+                    title=title,
+                    content=content,
+                    learner_id=None,
                     icon='fa-cake-candles',
                     badge_color='bg-warning-subtle text-warning border-warning-subtle'
                 )

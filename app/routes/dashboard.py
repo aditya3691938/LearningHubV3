@@ -71,13 +71,17 @@ def index():
     )
 
 
-@dashboard_bp.route('/admin-profile')
+@dashboard_bp.route('/admin-profile', methods=['GET', 'POST'])
 @admin_required
 def admin_profile():
     from app.models.course import Course
     from app.models.user import Learner, AdminUser
     from app.models.issue import LmsIssue
-    from flask import session
+    from flask import session, request, flash, current_app, redirect, url_for
+    from app.models import db
+    from datetime import datetime
+    import os, uuid
+    from werkzeug.utils import secure_filename
 
     total_courses = Course.query.count()
     total_learners = Learner.query.count()
@@ -85,8 +89,38 @@ def admin_profile():
 
     admin = AdminUser.query.filter_by(username=session.get('admin_username')).first()
 
+    if request.method == 'POST' and admin:
+        dob_str = request.form.get('date_of_birth')
+        profile_pic = request.files.get('profile_picture')
+        
+        updated = False
+        if dob_str:
+            try:
+                admin.date_of_birth = datetime.strptime(dob_str, '%Y-%m-%d').date()
+                updated = True
+                # Check for birthdays
+                from app.services.learning_wall_service import check_and_generate_birthday_posts
+                check_and_generate_birthday_posts()
+            except ValueError:
+                flash("Invalid Date Format. Please try again.", "danger")
+                
+        if profile_pic and profile_pic.filename:
+            ext = os.path.splitext(profile_pic.filename)[1]
+            pic_filename = f"admin_{admin.id}_{uuid.uuid4().hex[:8]}{ext}"
+            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
+            os.makedirs(upload_dir, exist_ok=True)
+            profile_pic.save(os.path.join(upload_dir, pic_filename))
+            admin.profile_picture = pic_filename
+            updated = True
+            
+        if updated:
+            db.session.commit()
+            flash("Profile updated successfully!", "success")
+            return redirect(url_for('dashboard.admin_profile'))
+
+
     return render_template(
-        'super_admin/profile.html',
+        'dashboard/admin_profile.html',
         total_courses=total_courses,
         total_learners=total_learners,
         open_tickets=open_tickets,
