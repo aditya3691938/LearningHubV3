@@ -80,8 +80,30 @@ def learner_login():
                     (Learner.global_id.ilike(target_gid)) | (Learner.global_id.ilike(global_id))
                 ).first()
 
+            # Auto-create Rajesh Kumar (Global ID: 10001) for instant testing if missing
+            if not learner and target_gid in ['10001', 'learner01']:
+                try:
+                    learner = Learner(
+                        global_id='10001',
+                        name='Rajesh Kumar',
+                        department='L&D Academics',
+                        designation='Academic Director',
+                        location='Hyderabad',
+                        branch='Madhapur',
+                        points=150,
+                        current_streak=5,
+                        last_active_date=datetime.date.today(),
+                        theme='navy'
+                    )
+                    db.session.add(learner)
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
+                    learner = Learner.query.filter_by(global_id='10001').first()
+
             if not learner:
                 error = f"Learner with Global ID '{global_id}' not found. Please use a valid learner login (e.g., 10001)."
+
             else:
                 session['learner_id'] = learner.id
                 session['learner_global_id'] = learner.global_id

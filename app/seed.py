@@ -63,11 +63,31 @@ def init_db_and_seed(app):
         try:
             admin = AdminUser.query.filter_by(username='admin').first()
             learner_count = Learner.query.count()
+            
+            # Ensure Rajesh Kumar (Global ID: 10001) always exists for quick testing
+            rajesh_check = Learner.query.filter_by(global_id='10001').first()
+            if not rajesh_check:
+                rajesh = Learner(
+                    global_id='10001',
+                    name='Rajesh Kumar',
+                    department='L&D Academics',
+                    designation='Academic Director',
+                    location='Hyderabad',
+                    branch='Madhapur',
+                    points=150,
+                    current_streak=5,
+                    last_active_date=datetime.date.today(),
+                    theme='navy'
+                )
+                db.session.add(rajesh)
+                db.session.commit()
+                print("Guaranteed Learner 10001 (Rajesh Kumar) profile created.")
         except Exception as query_err:
             db.session.rollback()
             admin = None
             learner_count = 0
             print(f"Seed query notice: {query_err}")
+
         
         # Clear existing data if requested or if seeding brand new
         if not admin or learner_count < 10:
