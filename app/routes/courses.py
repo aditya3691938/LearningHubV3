@@ -1843,7 +1843,7 @@ def download_sample_csv(csv_type):
 
     if csv_type == 'assessment':
         writer.writerow(['Serial Number', 'Question', 'Option1', 'Option2', 'Option3', 'Option4', 'Option5', 'Correct Option'])
-        writer.writerow(['1', 'What is the primary function of Aditya LMS?', 'Deliver learning content & track progress', 'Manage server hardware', 'Design vector graphics', 'Calculate payroll', '', 'Option1'])
+        writer.writerow(['1', 'What is the primary function of Learning Hub?', 'Deliver learning content & track progress', 'Manage server hardware', 'Design vector graphics', 'Calculate payroll', '', 'Option1'])
         writer.writerow(['2', 'Which file format is supported for interactive presentation viewing?', '.pptx', '.pdf', '.docx', '.xlsx', '.mp4', 'Option1'])
         writer.writerow(['3', 'What is the passing criteria for Course End Assessment?', '80%', '50%', '10%', '100%', '', 'Option1'])
     elif csv_type in ['learners', 'enrollment']:
