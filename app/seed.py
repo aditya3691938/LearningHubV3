@@ -60,10 +60,18 @@ def init_db_and_seed(app):
 
         os.makedirs(os.path.join(app.root_path, '..', 'uploads', 'thumbnails'), exist_ok=True)
 
-        admin = AdminUser.query.filter_by(username='admin').first()
+        try:
+            admin = AdminUser.query.filter_by(username='admin').first()
+            learner_count = Learner.query.count()
+        except Exception as query_err:
+            db.session.rollback()
+            admin = None
+            learner_count = 0
+            print(f"Seed query notice: {query_err}")
         
         # Clear existing data if requested or if seeding brand new
-        if not admin or Learner.query.count() < 10:
+        if not admin or learner_count < 10:
+
             print("Database missing initial seed. Seeding initial data...")
             
             # Reset tables cleanly
