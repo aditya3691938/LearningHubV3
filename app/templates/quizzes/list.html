@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0 text-navy fw-bold"><i class="fas fa-question-circle text-teal me-2"></i> Quiz Bank</h3>
+    <a href="{{ url_for('quizzes.create_quiz') }}" class="btn btn-teal rounded-pill px-4 shadow-sm">
+        <i class="fas fa-plus me-2"></i> Create New Quiz
+    </a>
+</div>
+
+<div class="card shadow-sm border-0 rounded-4">
+    <div class="card-body p-4">
+        {% if quizzes %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light text-muted">
+                    <tr>
+                        <th class="rounded-start">Quiz Title</th>
+                        <th>Pass Percentage</th>
+                        <th>Questions</th>
+                        <th>Created At</th>
+                        <th class="text-end rounded-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="border-top-0">
+                    {% for quiz in quizzes %}
+                    <tr>
+                        <td class="fw-semibold text-navy">{{ quiz.title }}</td>
+                        <td>{{ quiz.pass_percentage }}%</td>
+                        <td><span class="badge bg-light text-dark border">{{ quiz.questions|length }}</span></td>
+                        <td>{{ quiz.created_at.strftime('%d %b %Y') }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('quizzes.detail_quiz', quiz_id=quiz.id) }}" class="btn btn-sm btn-light rounded-pill px-3 shadow-sm text-navy">
+                                <i class="fas fa-eye me-1"></i> View / Edit
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="fas fa-box-open fa-3x mb-3 text-light"></i>
+            <h5>No Quizzes Found</h5>
+            <p>You haven't created any quizzes yet. Create one to assign to your courses.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

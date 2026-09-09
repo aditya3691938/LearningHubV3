@@ -59,7 +59,10 @@ def create_course():
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
         mode = request.form.get('mode', 'Live').strip()
-        pass_percentage = float(request.form.get('pass_percentage', 80.0))
+        try:
+            pass_percentage = float(request.form.get('pass_percentage', 80.0))
+        except ValueError:
+            pass_percentage = 80.0
         fb_id = request.form.get('feedback_repo_id')
         feedback_repo_id = int(fb_id) if fb_id else None
         has_certificate = (request.form.get('has_certificate', '1') == '1')
@@ -85,6 +88,8 @@ def create_course():
             mode=mode,
             pass_percentage=pass_percentage,
             feedback_repo_id=feedback_repo_id,
+            pre_quiz_id=int(request.form.get('pre_quiz_id')) if request.form.get('pre_quiz_id') else None,
+            post_quiz_id=int(request.form.get('post_quiz_id')) if request.form.get('post_quiz_id') else None,
             has_certificate=has_certificate,
             is_sequential=is_sequential,
             completion_date=completion_date
@@ -188,9 +193,11 @@ def create_course():
         return redirect(url_for('courses.view_course', course_id=new_course.id))
 
     from app.models.feedback import FeedbackRepository
+    from app.models.quiz import Quiz
     feedback_repos = FeedbackRepository.query.all()
+    quizzes = Quiz.query.all()
     auto_id = Course.generate_course_id('Self Paced')
-    return render_template('courses/create_edit.html', auto_id=auto_id, course=None, feedback_repos=feedback_repos)
+    return render_template('courses/create_edit.html', auto_id=auto_id, course=None, feedback_repos=feedback_repos, quizzes=quizzes)
 
 
 @courses_bp.route('/generate_id')
@@ -840,6 +847,13 @@ def edit_course(course_id):
         course.pass_percentage = float(request.form.get('pass_percentage', 80.0))
         fb_id = request.form.get('feedback_repo_id')
         course.feedback_repo_id = int(fb_id) if fb_id else None
+        
+        pre_q_id = request.form.get('pre_quiz_id')
+        course.pre_quiz_id = int(pre_q_id) if pre_q_id else None
+        
+        post_q_id = request.form.get('post_quiz_id')
+        course.post_quiz_id = int(post_q_id) if post_q_id else None
+        
         course.has_certificate = (request.form.get('has_certificate', '1') == '1')
         course.is_sequential = (request.form.get('is_sequential', '1') == '1')
         comp_date_str = request.form.get('completion_date', '').strip()
@@ -958,8 +972,10 @@ def edit_course(course_id):
         return redirect(url_for('courses.view_course', course_id=course.id))
 
     from app.models.feedback import FeedbackRepository
+    from app.models.quiz import Quiz
     feedback_repos = FeedbackRepository.query.all()
-    return render_template('courses/create_edit.html', course=course, auto_id=course.course_id, feedback_repos=feedback_repos)
+    quizzes = Quiz.query.all()
+    return render_template('courses/create_edit.html', course=course, auto_id=course.course_id, feedback_repos=feedback_repos, quizzes=quizzes)
 
 
 @courses_bp.route('/<int:course_id>/archive', methods=['POST'])

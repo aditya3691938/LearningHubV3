@@ -373,9 +373,17 @@
                             Home
                         </a>
                         
-                        <a href="{{ url_for('courses.list_courses') }}" class="ls-nav-tab {% if 'courses' in safe_endpoint or 'classes' in safe_endpoint %}active{% endif %}">
-                            Course & Classes
-                        </a>
+                        <!-- Courses Hover Dropdown -->
+                        <div class="dropdown d-inline-block">
+                            <a href="#" class="ls-nav-tab dropdown-toggle {% if 'courses' in safe_endpoint or 'classes' in safe_endpoint or 'quizzes' in safe_endpoint or 'feedback' in safe_endpoint %}active{% endif %}" data-bs-toggle="dropdown" aria-expanded="false">
+                                Courses & Quizzes
+                            </a>
+                            <ul class="dropdown-menu shadow-lg border-0 mt-2 p-1.5" style="font-size: 0.8rem;">
+                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold" href="{{ url_for('courses.list_courses') }}"><i class="fa-solid fa-book-open me-2 text-teal"></i> All Courses</a></li>
+                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold" href="{{ url_for('quizzes.list_quizzes') }}"><i class="fa-solid fa-question-circle me-2 text-teal"></i> Quizzes Bank</a></li>
+                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold" href="{{ url_for('feedback.list_repositories') }}"><i class="fa-solid fa-clipboard-list me-2 text-teal"></i> Forms</a></li>
+                            </ul>
+                        </div>
                         
                         <!-- Learners Hover Dropdown -->
                         <div class="dropdown d-inline-block">
@@ -595,7 +603,13 @@
                     <i class="fa-solid fa-house me-3 text-teal"></i> Home Dashboard
                 </a>
                 <a href="{{ url_for('courses.list_courses') }}" class="mobile-nav-item {% if 'courses' in safe_endpoint or 'classes' in safe_endpoint %}active{% endif %}">
-                    <i class="fa-solid fa-book-open me-3 text-teal"></i> Course & Classes
+                    <i class="fa-solid fa-book-open me-3 text-teal"></i> All Courses
+                </a>
+                <a href="{{ url_for('quizzes.list_quizzes') }}" class="mobile-nav-item {% if 'quizzes' in safe_endpoint %}active{% endif %}">
+                    <i class="fa-solid fa-question-circle me-3 text-teal"></i> Quizzes Bank
+                </a>
+                <a href="{{ url_for('feedback.list_repositories') }}" class="mobile-nav-item {% if 'feedback' in safe_endpoint %}active{% endif %}">
+                    <i class="fa-solid fa-clipboard-list me-3 text-teal"></i> Forms
                 </a>
                 <a href="{{ url_for('learners.list_learners') }}" class="mobile-nav-item {% if 'learners' in safe_endpoint and safe_endpoint != 'learners.my_portal' %}active{% endif %}">
                     <i class="fa-solid fa-users me-3 text-teal"></i> Learners Directory

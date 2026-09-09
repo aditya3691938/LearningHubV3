@@ -72,6 +72,26 @@
                 </div>
 
                 <div class="col-md-6">
+                    <label for="pre_quiz_id" class="form-label fw-bold"><i class="fa-solid fa-question-circle text-primary me-1"></i> Pre-Course Quiz</label>
+                    <select class="form-select" id="pre_quiz_id" name="pre_quiz_id">
+                        <option value="">-- Select Pre-Course Quiz --</option>
+                        {% for quiz in quizzes %}
+                        <option value="{{ quiz.id }}" {% if course and course.pre_quiz_id == quiz.id %}selected{% endif %}>{{ quiz.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="col-md-6">
+                    <label for="post_quiz_id" class="form-label fw-bold"><i class="fa-solid fa-question-circle text-primary me-1"></i> Post-Course Quiz (Course End)</label>
+                    <select class="form-select" id="post_quiz_id" name="post_quiz_id">
+                        <option value="">-- Select Post-Course Quiz --</option>
+                        {% for quiz in quizzes %}
+                        <option value="{{ quiz.id }}" {% if course and course.post_quiz_id == quiz.id %}selected{% endif %}>{{ quiz.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
                     <label for="thumbnail_file" class="form-label fw-bold"><i class="fa-solid fa-image text-info me-1"></i> Course Thumbnail Image <span class="badge bg-outline-secondary border text-muted">Optional</span></label>
                     <input type="file" class="form-control" id="thumbnail_file" name="thumbnail_file" accept="image/*">
                     <small class="text-muted">Upload JPG, PNG, GIF, or WebP thumbnail image for course cards</small>

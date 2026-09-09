@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('quizzes.list_quizzes') }}" class="btn btn-light rounded-pill shadow-sm mb-3 text-muted">
+        <i class="fas fa-arrow-left me-2"></i> Back to Quizzes
+    </a>
+    <h3 class="fw-bold text-navy"><i class="fas fa-edit text-teal me-2"></i> Create New Quiz</h3>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4">
+                <form action="{{ url_for('quizzes.create_quiz') }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Quiz Title</label>
+                        <input type="text" name="title" class="form-control rounded-3" required placeholder="e.g. End of Course Assessment">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Description</label>
+                        <textarea name="description" class="form-control rounded-3" rows="3" placeholder="Optional details about this quiz..."></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Pass Percentage (%)</label>
+                        <input type="number" name="pass_percentage" class="form-control rounded-3" value="80.0" step="0.1" min="0" max="100" required>
+                        <small class="text-muted">Learners must score this or higher to pass.</small>
+                    </div>
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-teal rounded-pill px-4 shadow-sm">Save & Continue <i class="fas fa-arrow-right ms-2"></i></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

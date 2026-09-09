@@ -44,6 +44,7 @@ def create_app(config_class=Config):
     from app.routes.reports import reports_bp
     from app.routes.learning_wall import learning_wall_bp
     from app.routes.super_admin import super_admin_bp
+    from app.routes.quizzes import quizzes_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -56,6 +57,7 @@ def create_app(config_class=Config):
     app.register_blueprint(reports_bp, url_prefix='/reports')
     app.register_blueprint(learning_wall_bp, url_prefix='/learning_wall')
     app.register_blueprint(super_admin_bp)
+    app.register_blueprint(quizzes_bp, url_prefix='/quizzes')
 
     # Custom Jinja template filters
     @app.template_filter('format_duration')

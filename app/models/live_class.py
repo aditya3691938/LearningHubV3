@@ -31,6 +31,8 @@ class LiveClass(db.Model):
     duration_hours = db.Column(db.Float, nullable=False, default=1.0)
     expected_attendance = db.Column(db.Integer, nullable=False, default=30)
     feedback_repo_id = db.Column(db.Integer, db.ForeignKey('feedback_repositories.id'), nullable=True)
+    quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=True)
+    quiz = db.relationship('Quiz', backref='classes', lazy=True)
 
     # Class closure state
     is_locked = db.Column(db.Boolean, default=False)

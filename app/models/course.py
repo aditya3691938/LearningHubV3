@@ -19,12 +19,17 @@ class Course(db.Model):
     is_archived = db.Column(db.Boolean, default=False, nullable=False) # Archived status flag
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    pre_quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=True)
+    post_quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=True)
+
     assessments = db.relationship('CourseAssessment', backref='course', lazy=True, cascade='all, delete-orphan')
     materials = db.relationship('CourseMaterial', backref='course', lazy=True, cascade='all, delete-orphan')
     lessons = db.relationship('CourseLesson', backref='course', lazy=True, cascade='all, delete-orphan')
     classes = db.relationship('LiveClass', backref='course', lazy=True, cascade='all, delete-orphan')
     enrollments = db.relationship('LearnerEnrollment', backref='course', lazy=True, cascade='all, delete-orphan')
     feedback_repository = db.relationship('FeedbackRepository', backref='courses', lazy=True)
+    pre_quiz = db.relationship('Quiz', foreign_keys=[pre_quiz_id], backref='pre_courses')
+    post_quiz = db.relationship('Quiz', foreign_keys=[post_quiz_id], backref='post_courses')
 
     @staticmethod
     def generate_course_id(mode='Self Paced'):
@@ -101,6 +106,11 @@ class CourseLesson(db.Model):
 
     courseware = db.relationship('LessonCourseware', backref='lesson', lazy=True, cascade='all, delete-orphan')
     assessments = db.relationship('CourseAssessment', backref='lesson', lazy=True, cascade='all, delete-orphan')
+
+    pre_quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=True)
+    post_quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=True)
+    pre_quiz = db.relationship('Quiz', foreign_keys=[pre_quiz_id], backref='pre_lessons')
+    post_quiz = db.relationship('Quiz', foreign_keys=[post_quiz_id], backref='post_lessons')
 
     def __repr__(self):
         return f'<CourseLesson {self.lesson_number}: {self.title}>'
