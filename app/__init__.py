@@ -95,6 +95,7 @@ def create_app(config_class=Config):
         user_notifications = []
         unread_notif_count = 0
         learner_points = 0
+        global_profile_picture = None
         if learner_id:
             try:
                 from app.models.notification import LearnerNotification
@@ -105,6 +106,8 @@ def create_app(config_class=Config):
                 learner = Learner.query.get(learner_id)
                 if learner:
                     learner_points = learner.points or 0
+                    if learner.profile_picture:
+                        global_profile_picture = learner.profile_picture
             except Exception:
                 pass
 
@@ -113,6 +116,11 @@ def create_app(config_class=Config):
             try:
                 from app.models.issue import LmsIssue
                 open_tickets_count = LmsIssue.query.filter_by(status='Open').count()
+                
+                from app.models.user import AdminUser
+                admin = AdminUser.query.filter_by(username=session.get('admin_username')).first()
+                if admin and admin.profile_picture:
+                    global_profile_picture = admin.profile_picture
             except Exception:
                 pass
 
@@ -139,7 +147,8 @@ def create_app(config_class=Config):
             'safe_endpoint': request.endpoint or '',
             'enable_content_authoring': current_app.config.get('ENABLE_CONTENT_AUTHORING', False),
             'learner_theme': learner_theme,
-            'open_tickets_count': open_tickets_count
+            'open_tickets_count': open_tickets_count,
+            'global_profile_picture': global_profile_picture,
         }
 
     # Custom error handlers
