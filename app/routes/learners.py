@@ -232,9 +232,15 @@ def assign_learners():
             filtered_learners = query.all()
             parsed_global_ids = [learner.global_id for learner in filtered_learners]
         else:
-            global_ids_text = request.form.get('global_ids', '').strip()
             csv_file = request.files.get('learner_csv')
+            if csv_file and csv_file.filename:
+                try:
+                    from app.services.b2_service import upload_file_to_b2
+                    upload_file_to_b2(csv_file, f"learners_{csv_file.filename}", folder='imports')
+                except Exception:
+                    pass
             parsed_global_ids = parse_global_ids_from_input(global_ids_text, csv_file)
+
 
         if not parsed_global_ids:
             msg = "No matching learners found or no valid Global IDs provided."

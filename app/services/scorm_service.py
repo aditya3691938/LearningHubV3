@@ -12,11 +12,20 @@ def process_scorm_package(zip_file, scorm_id_str, upload_base_folder):
     os.makedirs(scorm_folder, exist_ok=True)
 
     zip_path = os.path.join(scorm_folder, 'package.zip')
+    if hasattr(zip_file, 'seek'):
+        zip_file.seek(0)
     zip_file.save(zip_path)
+
+    try:
+        from app.services.b2_service import upload_file_to_b2
+        upload_file_to_b2(zip_file, f"{scorm_id_str}.zip", folder='scorm', content_type='application/zip')
+    except Exception as b2_err:
+        print(f"SCORM B2 upload notice: {b2_err}")
 
     try:
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             zip_ref.extractall(scorm_folder)
+
     except Exception as e:
         return None, f"Failed to extract SCORM zip package: {e}"
 

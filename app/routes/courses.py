@@ -263,161 +263,206 @@ def download_thumbnail(filename):
     file_path = os.path.join(thumb_dir, filename)
     if os.path.exists(file_path):
         return send_file(file_path)
+    from app.services.b2_service import get_b2_url
+    b2_url = get_b2_url(filename, folder='thumbnails')
+    if b2_url:
+        return redirect(b2_url)
     return redirect(url_for('static', filename='images/default_course_thumb.png'))
 
 
-@courses_bp.route('/<int:course_id>/add_lesson', methods=['POST'])
+
+@courses_bp.route('/<int:course_id>/add_lesson', methods=['GET', 'POST'])
 @admin_required
 def add_lesson(course_id):
     """
     Add a new Lesson / Module directly inside a Course in a single step,
     including optional Lesson Pre-Assessment CSV, Non-Downloadable Courseware, and Post-Assessment CSV.
     """
-
     course = Course.query.get_or_404(course_id)
-    title = request.form.get('title', '').strip()
-    summary = request.form.get('summary', '').strip()
-    content = request.form.get('content', '').strip()
-    video_url = request.form.get('video_url', '').strip()
-    lesson_number = int(request.form.get('lesson_number', len(course.lessons) + 1))
-    duration_hours = float(request.form.get('duration_hours', 1.0))
-    min_time_minutes = float(request.form.get('min_time_minutes', 1.0))
-    deadline_str = request.form.get('deadline', '').strip()
-    deadline = None
-    if deadline_str:
-        try:
-            deadline = datetime.strptime(deadline_str, '%Y-%m-%d')
-        except Exception:
-            deadline = None
-
-    if not title:
-        flash("Lesson title is required.", "danger")
+    if request.method == 'GET':
         return redirect(url_for('courses.view_course', course_id=course.id))
 
-    cw_type = request.form.get('courseware_type', 'Video URL').strip()
-    external_url = request.form.get('external_url', '').strip() or request.form.get('video_url', '').strip()
-    if external_url:
-        from app.services.gdrive_service import parse_gdrive_url
-        is_gd, emb_url, g_type, file_id = parse_gdrive_url(external_url)
-        if is_gd:
-            external_url = emb_url
-            if cw_type in ['Auto', 'Video URL', 'Google Drive', '']:
-                cw_type = f"Google Drive ({g_type})"
-        else:
-            external_url = format_youtube_embed(external_url)
+    try:
+        title = request.form.get('title', '').strip()
+        summary = request.form.get('summary', '').strip()
+        content = request.form.get('content', '').strip()
+        video_url = request.form.get('video_url', '').strip()
 
-    lesson = CourseLesson(
-        course_id=course.id,
-        lesson_number=lesson_number,
-        title=title,
-        summary=summary,
-        content=content,
-        video_url=None,
-        duration_hours=duration_hours,
-        min_time_minutes=min_time_minutes,
-        deadline=deadline
-    )
-    db.session.add(lesson)
-    db.session.flush() # Generate lesson.id
+        # Safe parsing for numerical fields
+        try:
+            lesson_num_val = request.form.get('lesson_number')
+            lesson_number = int(lesson_num_val) if lesson_num_val and str(lesson_num_val).strip() else (len(course.lessons) + 1)
+        except Exception:
+            lesson_number = len(course.lessons) + 1
 
-    # 1. Handle Lesson Pre-Assessment CSV
-    pre_csv = request.files.get('pre_assessment_csv')
-    if pre_csv and pre_csv.filename:
-        q_list, errs = parse_assessment_csv(pre_csv.stream, filename=pre_csv.filename)
-        if not errs:
-            for q in q_list:
-                ass = CourseAssessment(
-                    course_id=course.id,
-                    lesson_id=lesson.id,
-                    assessment_type='LESSON_PRE',
-                    serial_number=q['serial_number'],
-                    question=q['question'],
-                    option1=q['option1'],
-                    option2=q['option2'],
-                    option3=q['option3'],
-                    option4=q['option4'],
-                    correct_option=q['correct_option'],
-                    lesson_number=lesson_number
-                )
-                db.session.add(ass)
+        try:
+            dur_val = request.form.get('duration_hours')
+            duration_hours = float(dur_val) if dur_val and str(dur_val).strip() else 1.0
+        except Exception:
+            duration_hours = 1.0
 
-    # 2. Handle Non-Downloadable Lesson Courseware File / Text / Video URL
-    cw_file = request.files.get('courseware_file')
-    cw_title = request.form.get('courseware_title', '').strip() or f"{title} Courseware"
-    cw_text = request.form.get('courseware_text', '').strip()
+        try:
+            min_val = request.form.get('min_time_minutes')
+            min_time_minutes = float(min_val) if min_val and str(min_val).strip() else 1.0
+        except Exception:
+            min_time_minutes = 1.0
 
-    filename = None
-    if cw_file and cw_file.filename:
-        ext = os.path.splitext(cw_file.filename)[1].lower()
-        short_id = uuid.uuid4().hex[:8]
-        filename = f"cw_{lesson.id}_{short_id}{ext}"
-        from app.services.b2_service import upload_file_to_b2
-        uploaded_name = upload_file_to_b2(cw_file, filename, folder='materials', content_type=cw_file.content_type)
-        if uploaded_name:
-            filename = uploaded_name
-        else:
-            flash("Failed to upload courseware file.", "danger")
+        deadline_str = request.form.get('deadline', '').strip()
+        deadline = None
+        if deadline_str:
+            try:
+                deadline = datetime.strptime(deadline_str, '%Y-%m-%d')
+            except Exception:
+                deadline = None
+
+        if not title:
+            flash("Lesson title is required.", "danger")
             return redirect(url_for('courses.view_course', course_id=course.id))
 
-        mat = CourseMaterial(
+        cw_type = request.form.get('courseware_type', 'Video URL').strip()
+        external_url = request.form.get('external_url', '').strip() or request.form.get('video_url', '').strip()
+        if external_url:
+            from app.services.gdrive_service import parse_gdrive_url
+            is_gd, emb_url, g_type, file_id = parse_gdrive_url(external_url)
+            if is_gd:
+                external_url = emb_url
+                if cw_type in ['Auto', 'Video URL', 'Google Drive', '']:
+                    cw_type = f"Google Drive ({g_type})"
+            else:
+                external_url = format_youtube_embed(external_url)
+
+        lesson = CourseLesson(
             course_id=course.id,
-            title=f"[Lesson {lesson_number}] {cw_title}",
-            material_type='Video' if ext in ['.mp4', '.webm'] else ('PDF' if ext == '.pdf' else 'PPT'),
-            filename=filename,
-            allow_download=False # Non-downloadable
+            lesson_number=lesson_number,
+            title=title,
+            summary=summary,
+            content=content,
+            video_url=None,
+            duration_hours=duration_hours,
+            min_time_minutes=min_time_minutes,
+            deadline=deadline
         )
-        db.session.add(mat)
+        db.session.add(lesson)
+        db.session.flush() # Generate lesson.id
 
-    if filename or cw_text or external_url:
-        cw = LessonCourseware(
-            lesson_id=lesson.id,
-            title=cw_title,
-            courseware_type=cw_type,
-            filename=filename,
-            external_url=external_url if external_url else None,
-            content_text=cw_text if cw_text else None
-        )
-        db.session.add(cw)
+        # 1. Handle Lesson Pre-Assessment CSV
+        pre_csv = request.files.get('pre_assessment_csv')
+        if pre_csv and pre_csv.filename:
+            try:
+                q_list, errs = parse_assessment_csv(pre_csv.stream, filename=pre_csv.filename)
+                if not errs:
+                    for q in q_list:
+                        ass = CourseAssessment(
+                            course_id=course.id,
+                            lesson_id=lesson.id,
+                            assessment_type='LESSON_PRE',
+                            serial_number=q['serial_number'],
+                            question=q['question'],
+                            option1=q['option1'],
+                            option2=q['option2'],
+                            option3=q['option3'],
+                            option4=q['option4'],
+                            correct_option=q['correct_option'],
+                            lesson_number=lesson_number
+                        )
+                        db.session.add(ass)
+            except Exception as e:
+                flash(f"Pre-assessment CSV parsing warning: {str(e)}", "warning")
 
-    # 3. Handle Lesson Post-Assessment CSV
-    post_csv = request.files.get('post_assessment_csv')
-    if post_csv and post_csv.filename:
-        q_list, errs = parse_assessment_csv(post_csv.stream, filename=post_csv.filename)
-        if not errs:
-            for q in q_list:
-                ass = CourseAssessment(
+        # 2. Handle Non-Downloadable Lesson Courseware File / Text / Video URL
+        cw_file = request.files.get('courseware_file')
+        cw_title = request.form.get('courseware_title', '').strip() or f"{title} Courseware"
+        cw_text = request.form.get('courseware_text', '').strip()
+
+        filename = None
+        if cw_file and cw_file.filename:
+            ext = os.path.splitext(cw_file.filename)[1].lower()
+            short_id = uuid.uuid4().hex[:8]
+            filename = f"cw_{lesson.id}_{short_id}{ext}"
+            try:
+                from app.services.b2_service import upload_file_to_b2
+                uploaded_name = upload_file_to_b2(cw_file, filename, folder='materials', content_type=cw_file.content_type)
+                if uploaded_name:
+                    filename = uploaded_name
+                else:
+                    flash("Cloud storage upload returned empty result. Courseware saved without cloud file.", "warning")
+                    filename = None
+            except Exception as b2_err:
+                flash(f"Failed to upload file to cloud storage: {str(b2_err)}", "warning")
+                filename = None
+
+            if filename:
+                mat = CourseMaterial(
+                    course_id=course.id,
+                    title=f"[Lesson {lesson_number}] {cw_title}",
+                    material_type='Video' if ext in ['.mp4', '.webm'] else ('PDF' if ext == '.pdf' else 'PPT'),
+                    filename=filename,
+                    allow_download=False # Non-downloadable
+                )
+                db.session.add(mat)
+
+        if filename or cw_text or external_url:
+            cw = LessonCourseware(
+                lesson_id=lesson.id,
+                title=cw_title,
+                courseware_type=cw_type,
+                filename=filename,
+                external_url=external_url if external_url else None,
+                content_text=cw_text if cw_text else None
+            )
+            db.session.add(cw)
+
+        # 3. Handle Lesson Post-Assessment CSV
+        post_csv = request.files.get('post_assessment_csv')
+        if post_csv and post_csv.filename:
+            try:
+                q_list, errs = parse_assessment_csv(post_csv.stream, filename=post_csv.filename)
+                if not errs:
+                    for q in q_list:
+                        ass = CourseAssessment(
+                            course_id=course.id,
+                            lesson_id=lesson.id,
+                            assessment_type='LESSON_POST',
+                            serial_number=q['serial_number'],
+                            question=q['question'],
+                            option1=q['option1'],
+                            option2=q['option2'],
+                            option3=q['option3'],
+                            option4=q['option4'],
+                            correct_option=q['correct_option'],
+                            lesson_number=lesson_number
+                        )
+                        db.session.add(ass)
+            except Exception as e:
+                flash(f"Post-assessment CSV parsing warning: {str(e)}", "warning")
+
+        # Notify enrolled learners about new/updated lesson
+        try:
+            from app.models.notification import LearnerNotification
+            for en in course.enrollments:
+                notif = LearnerNotification(
+                    learner_id=en.learner_id,
                     course_id=course.id,
                     lesson_id=lesson.id,
-                    assessment_type='LESSON_POST',
-                    serial_number=q['serial_number'],
-                    question=q['question'],
-                    option1=q['option1'],
-                    option2=q['option2'],
-                    option3=q['option3'],
-                    option4=q['option4'],
-                    correct_option=q['correct_option'],
-                    lesson_number=lesson_number
+                    title=f"Lesson Updated: {title}",
+                    message=f"Lesson #{lesson_number} '{title}' has been added/updated in '{course.name}'.",
+                    notification_type='LESSON_UPDATED'
                 )
-                db.session.add(ass)
+                db.session.add(notif)
+        except Exception:
+            pass
 
-    # Notify enrolled learners about new/updated lesson
-    from app.models.notification import LearnerNotification
-    for en in course.enrollments:
-        notif = LearnerNotification(
-            learner_id=en.learner_id,
-            course_id=course.id,
-            lesson_id=lesson.id,
-            title=f"Lesson Updated: {title}",
-            message=f"Lesson #{lesson_number} '{title}' has been added/updated in '{course.name}'.",
-            notification_type='LESSON_UPDATED'
-        )
-        db.session.add(notif)
+        db.session.commit()
+        recalculate_course_duration(course.id)
 
-    db.session.commit()
-    recalculate_course_duration(course.id)
+        flash(f"Lesson #{lesson_number} '{title}' ({duration_hours} hrs) created and course total duration auto-updated!", "success")
+        return redirect(url_for('courses.view_course', course_id=course.id))
 
-    flash(f"Lesson #{lesson_number} '{title}' ({duration_hours} hrs) created and course total duration auto-updated!", "success")
-    return redirect(url_for('courses.view_course', course_id=course.id))
+    except Exception as general_err:
+        db.session.rollback()
+        flash(f"An error occurred while creating the lesson: {str(general_err)}", "danger")
+        return redirect(url_for('courses.view_course', course_id=course.id))
+
 
 
 @courses_bp.route('/<int:course_id>/clear_lessons', methods=['POST'])
@@ -459,82 +504,95 @@ def delete_lesson(lesson_id):
     return redirect(url_for('courses.view_course', course_id=course_id))
 
 
-@courses_bp.route('/lesson/<int:lesson_id>/add_courseware', methods=['POST'])
+@courses_bp.route('/lesson/<int:lesson_id>/add_courseware', methods=['GET', 'POST'])
 @admin_required
 def add_lesson_courseware(lesson_id):
     """
     Attach Non-Downloadable Courseware (Video, PDF view, PPT slides, SCORM, Text) to a Lesson.
     """
-
     lesson = CourseLesson.query.get_or_404(lesson_id)
-    title = request.form.get('title', '').strip()
-    c_type = request.form.get('courseware_type', 'Video URL').strip()
-    external_url = request.form.get('external_url', '').strip()
-    if external_url:
-        from app.services.gdrive_service import parse_gdrive_url
-        is_gd, emb_url, g_type, file_id = parse_gdrive_url(external_url)
-        if is_gd:
-            external_url = emb_url
-            if c_type in ['Auto', 'Video URL', '']:
-                c_type = f"Google Drive ({g_type})"
-        else:
-            external_url = format_youtube_embed(external_url)
-    content_text = request.form.get('content_text', '').strip()
-    file_obj = request.files.get('courseware_file')
-
-    if not title:
-        flash("Courseware title is required.", "danger")
+    if request.method == 'GET':
         return redirect(url_for('courses.view_course', course_id=lesson.course_id))
 
-    filename = None
-    if file_obj and file_obj.filename:
-        ext = os.path.splitext(file_obj.filename)[1].lower()
-        short_id = uuid.uuid4().hex[:8]
-        filename = f"cw_{lesson.id}_{short_id}{ext}"
-        
-        if c_type == 'SCORM' or ext == '.zip':
-            from app.services.scorm_service import process_scorm_package
-            scorm_id_str = f"scorm_{short_id}"
-            upload_base_folder = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads'))
-            launch_href, err_msg = process_scorm_package(file_obj, scorm_id_str, upload_base_folder)
-            if err_msg:
-                flash(err_msg, "danger")
-                return redirect(url_for('courses.view_course', course_id=lesson.course_id))
-            filename = scorm_id_str
-            external_url = launch_href
-            c_type = 'SCORM'
-        else:
-            from app.services.b2_service import upload_file_to_b2
-            uploaded_name = upload_file_to_b2(file_obj, filename, folder='materials', content_type=file_obj.content_type)
-            if uploaded_name:
-                filename = uploaded_name
+    try:
+        title = request.form.get('title', '').strip()
+        c_type = request.form.get('courseware_type', 'Video URL').strip()
+        external_url = request.form.get('external_url', '').strip()
+        if external_url:
+            from app.services.gdrive_service import parse_gdrive_url
+            is_gd, emb_url, g_type, file_id = parse_gdrive_url(external_url)
+            if is_gd:
+                external_url = emb_url
+                if c_type in ['Auto', 'Video URL', '']:
+                    c_type = f"Google Drive ({g_type})"
             else:
-                flash("Failed to upload file to cloud.", "danger")
-                return redirect(url_for('courses.view_course', course_id=lesson.course_id))
+                external_url = format_youtube_embed(external_url)
+        content_text = request.form.get('content_text', '').strip()
+        file_obj = request.files.get('courseware_file')
+
+        if not title:
+            flash("Courseware title is required.", "danger")
+            return redirect(url_for('courses.view_course', course_id=lesson.course_id))
+
+        filename = None
+        if file_obj and file_obj.filename:
+            ext = os.path.splitext(file_obj.filename)[1].lower()
+            short_id = uuid.uuid4().hex[:8]
+            filename = f"cw_{lesson.id}_{short_id}{ext}"
             
-            # Also create a non-downloadable CourseMaterial record for inline viewing
-            mat = CourseMaterial(
-                course_id=lesson.course_id,
-                title=f"[Lesson {lesson.lesson_number} Courseware] {title}",
-                material_type='Video' if ext in ['.mp4', '.webm'] else ('PDF' if ext == '.pdf' else 'PPT'),
-                filename=filename,
-                allow_download=False # NON-DOWNLOADABLE as required!
-            )
-            db.session.add(mat)
+            if c_type == 'SCORM' or ext == '.zip':
+                from app.services.scorm_service import process_scorm_package
+                scorm_id_str = f"scorm_{short_id}"
+                upload_base_folder = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads'))
+                launch_href, err_msg = process_scorm_package(file_obj, scorm_id_str, upload_base_folder)
+                if err_msg:
+                    flash(err_msg, "danger")
+                    return redirect(url_for('courses.view_course', course_id=lesson.course_id))
+                filename = scorm_id_str
+                external_url = launch_href
+                c_type = 'SCORM'
+            else:
+                try:
+                    from app.services.b2_service import upload_file_to_b2
+                    uploaded_name = upload_file_to_b2(file_obj, filename, folder='materials', content_type=file_obj.content_type)
+                    if uploaded_name:
+                        filename = uploaded_name
+                    else:
+                        flash("Failed to upload file to cloud storage.", "warning")
+                        filename = None
+                except Exception as b2_err:
+                    flash(f"Cloud upload error: {str(b2_err)}", "warning")
+                    filename = None
+                
+                if filename:
+                    mat = CourseMaterial(
+                        course_id=lesson.course_id,
+                        title=f"[Lesson {lesson.lesson_number} Courseware] {title}",
+                        material_type='Video' if ext in ['.mp4', '.webm'] else ('PDF' if ext == '.pdf' else 'PPT'),
+                        filename=filename,
+                        allow_download=False
+                    )
+                    db.session.add(mat)
 
-    cw = LessonCourseware(
-        lesson_id=lesson.id,
-        title=title,
-        courseware_type=c_type,
-        filename=filename,
-        external_url=external_url if external_url else None,
-        content_text=content_text if content_text else None
-    )
-    db.session.add(cw)
-    db.session.commit()
+        cw = LessonCourseware(
+            lesson_id=lesson.id,
+            title=title,
+            courseware_type=c_type,
+            filename=filename,
+            external_url=external_url if external_url else None,
+            content_text=content_text if content_text else None
+        )
+        db.session.add(cw)
+        db.session.commit()
 
-    flash(f"Non-downloadable courseware '{title}' attached to Lesson #{lesson.lesson_number}.", "success")
-    return redirect(url_for('courses.view_course', course_id=lesson.course_id))
+        flash(f"Non-downloadable courseware '{title}' attached to Lesson #{lesson.lesson_number}.", "success")
+        return redirect(url_for('courses.view_course', course_id=lesson.course_id))
+
+    except Exception as err:
+        db.session.rollback()
+        flash(f"An error occurred while adding courseware: {str(err)}", "danger")
+        return redirect(url_for('courses.view_course', course_id=lesson.course_id))
+
 
 
 @courses_bp.route('/courseware/<int:courseware_id>/add_audio_track', methods=['POST'])
@@ -651,10 +709,17 @@ def upload_lesson_assessment(lesson_id):
         flash("Please select a CSV file.", "danger")
         return redirect(url_for('courses.view_course', course_id=lesson.course_id))
 
+    try:
+        from app.services.b2_service import upload_file_to_b2
+        upload_file_to_b2(csv_file, f"les_{lesson.id}_{csv_file.filename}", folder='assessments')
+    except Exception as b2_err:
+        print(f"Assessment CSV B2 upload notice: {b2_err}")
+
     q_list, errs = parse_assessment_csv(csv_file.stream, filename=csv_file.filename)
     if errs:
         flash(f"CSV Errors: {', '.join(errs[:3])}", "danger")
         return redirect(url_for('courses.view_course', course_id=lesson.course_id))
+
 
     # Delete existing questions for this lesson & type
     CourseAssessment.query.filter_by(lesson_id=lesson.id, assessment_type=assessment_type).delete()
@@ -694,10 +759,17 @@ def upload_course_end_assessment(course_id):
         flash("Please select a CSV file.", "danger")
         return redirect(url_for('courses.view_course', course_id=course.id))
 
+    try:
+        from app.services.b2_service import upload_file_to_b2
+        upload_file_to_b2(csv_file, f"course_end_{course.id}_{csv_file.filename}", folder='assessments')
+    except Exception as b2_err:
+        print(f"Course End CSV B2 upload notice: {b2_err}")
+
     q_list, errs = parse_assessment_csv(csv_file.stream, filename=csv_file.filename)
     if errs:
         flash(f"CSV Errors: {', '.join(errs[:3])}", "danger")
         return redirect(url_for('courses.view_course', course_id=course.id))
+
 
     CourseAssessment.query.filter((CourseAssessment.course_id == course.id) & (CourseAssessment.assessment_type.in_(['COURSE_END', 'POST'])) & (CourseAssessment.lesson_id == None)).delete()
 
@@ -1223,6 +1295,11 @@ def download_material(material_id):
                 download_name=f"{mat.title}{ext}"
             )
 
+        from app.services.b2_service import get_b2_url
+        b2_url = get_b2_url(mat.filename, folder='materials')
+        if b2_url:
+            return redirect(b2_url)
+
     flash("Material file not found on server.", "danger")
     return redirect(url_for('courses.view_course', course_id=mat.course_id))
 
@@ -1255,6 +1332,12 @@ def get_courseware_raw_file(courseware_id):
             resp.headers['Access-Control-Expose-Headers'] = 'Content-Length, Content-Range, Accept-Ranges, ETag'
             resp.headers['Accept-Ranges'] = 'bytes'
             return resp
+        
+        from app.services.b2_service import get_b2_url
+        b2_url = get_b2_url(cw.filename, folder='materials')
+        if b2_url:
+            return redirect(b2_url)
+            
     return jsonify({'error': 'File not found'}), 404
 
 
@@ -1286,7 +1369,14 @@ def get_material_raw_file(material_id):
             resp.headers['Access-Control-Expose-Headers'] = 'Content-Length, Content-Range, Accept-Ranges, ETag'
             resp.headers['Accept-Ranges'] = 'bytes'
             return resp
+
+        from app.services.b2_service import get_b2_url
+        b2_url = get_b2_url(mat.filename, folder='materials')
+        if b2_url:
+            return redirect(b2_url)
+
     return jsonify({'error': 'File not found'}), 404
+
 
 
 @courses_bp.route('/courseware/<int:courseware_id>/slide_img/<filename>')
