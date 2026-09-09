@@ -215,7 +215,7 @@
         <!-- Broadcast Notifications Card -->
         <div class="card border-0 shadow-sm p-3 mt-4">
             <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-bullhorn text-teal me-2"></i> Broadcast Alerts & Notifications</h5>
-            <form action="{{ url_for('super_admin.broadcast_notification') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ url_for('dashboard.broadcast_notification') }}" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="mb-3">
                     <label class="form-label text-xs fw-bold text-uppercase text-muted">Target Audience</label>

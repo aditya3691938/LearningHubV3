@@ -459,11 +459,25 @@
 
                             <div class="p-2" style="max-height: 320px; overflow-y: auto;" id="navNotifList">
                                 {% for n in user_notifications %}
-                                <div class="p-2.5 mb-1 rounded-3 {% if not n.is_read %}bg-teal-subtle border-start border-3 border-teal{% else %}bg-light{% endif %} d-flex align-items-start gap-2">
-                                    <i class="fa-solid {% if n.notification_type == 'COURSE_ASSIGNED' %}fa-book-open text-teal{% elif n.notification_type == 'LESSON_UPDATED' %}fa-pen-to-square text-warning{% else %}fa-circle-info text-info{% endif %} mt-1"></i>
-                                    <div class="flex-grow-1">
-                                        <strong class="d-block text-dark small">{{ n.title }}</strong>
-                                        <span class="text-muted text-xs d-block">{{ n.message }}</span>
+                                <div class="p-2.5 mb-1 rounded-3 {% if not n.is_read %}bg-teal-subtle border-start border-3 border-teal{% else %}bg-light{% endif %} d-flex align-items-start gap-2 notification-item"
+                                     style="cursor: pointer; transition: background-color 0.2s;"
+                                     data-bs-toggle="modal" data-bs-target="#notificationModal"
+                                     data-id="{{ n.id }}"
+                                     data-read="{{ 'true' if n.is_read else 'false' }}"
+                                     data-title="{{ n.title }}"
+                                     data-message="{{ n.message }}"
+                                     data-date="{{ n.created_at.strftime('%d %b, %H:%M') if n.created_at else '' }}"
+                                     data-image="{% if n.image_path %}{{ url_for('static', filename=n.image_path) }}{% endif %}">
+                                    
+                                    {% if n.image_path %}
+                                        <img src="{{ url_for('static', filename=n.image_path) }}" alt="Notification Image" class="rounded mt-1 shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">
+                                    {% else %}
+                                        <i class="fa-solid {% if n.notification_type == 'COURSE_ASSIGNED' %}fa-book-open text-teal{% elif n.notification_type == 'LESSON_UPDATED' %}fa-pen-to-square text-warning{% else %}fa-circle-info text-info{% endif %} mt-1"></i>
+                                    {% endif %}
+                                    
+                                    <div class="flex-grow-1" style="overflow: hidden;">
+                                        <strong class="d-block text-dark small text-truncate">{{ n.title }}</strong>
+                                        <span class="text-muted text-xs d-block text-truncate">{{ n.message }}</span>
                                         <small class="text-muted text-xxs mt-1 d-block"><i class="fa-regular fa-clock me-1"></i>{{ n.created_at.strftime('%d %b, %H:%M') if n.created_at else '' }}</small>
                                     </div>
                                 </div>
@@ -869,6 +883,97 @@
             }
         });
     }
+    </script>
+
+    <!-- Notification Details Modal -->
+    <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+          <div class="modal-header bg-navy text-white border-0 py-3">
+            <h5 class="modal-title fw-bold" id="notificationModalLabel">
+                <i class="fa-solid fa-bell text-gold me-2"></i> <span id="notifModalTitle">Notification</span>
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-4 text-dark">
+            <small class="text-muted text-xs d-block mb-3 border-bottom pb-2" id="notifModalDate"></small>
+            <div id="notifModalImageContainer" class="mb-3 d-none text-center">
+                <img src="" id="notifModalImage" class="img-fluid rounded-3 border" style="max-height: 250px; object-fit: contain;" alt="Notification Image">
+            </div>
+            <div class="fs-6 fw-medium text-secondary" style="white-space: pre-wrap;" id="notifModalMessage"></div>
+          </div>
+          <div class="modal-footer border-top-0 bg-light">
+            <button type="button" class="btn btn-secondary rounded-pill px-4 btn-sm" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var notificationModal = document.getElementById('notificationModal');
+        if (notificationModal) {
+            notificationModal.addEventListener('show.bs.modal', function (event) {
+                var button = event.relatedTarget;
+                var title = button.getAttribute('data-title');
+                var message = button.getAttribute('data-message');
+                var date = button.getAttribute('data-date');
+                var image = button.getAttribute('data-image');
+
+                var modalTitle = notificationModal.querySelector('#notifModalTitle');
+                var modalMessage = notificationModal.querySelector('#notifModalMessage');
+                var modalDate = notificationModal.querySelector('#notifModalDate');
+                var imgContainer = notificationModal.querySelector('#notifModalImageContainer');
+                var imgElement = notificationModal.querySelector('#notifModalImage');
+
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                modalDate.innerHTML = '<i class="fa-regular fa-clock me-1"></i>' + date;
+                
+                if (image && image.trim() !== '') {
+                    imgElement.src = image;
+                    imgContainer.classList.remove('d-none');
+                } else {
+                    imgElement.src = '';
+                    imgContainer.classList.add('d-none');
+                }
+
+                // Mark as read if unread
+                var isRead = button.getAttribute('data-read');
+                var notifId = button.getAttribute('data-id');
+                if (isRead === 'false' && notifId) {
+                    fetch('/learners/notifications/mark_read/' + notifId, {
+                        method: 'POST',
+                        headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
+                    })
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.status === 'success') {
+                            button.setAttribute('data-read', 'true');
+                            button.classList.remove('bg-teal-subtle', 'border-start', 'border-3', 'border-teal');
+                            button.classList.add('bg-light');
+                            
+                            // Optional: Decrement badge count
+                            var badge = document.getElementById('navUnreadBadge');
+                            var bellBadge = document.querySelector('#notificationDropdown .badge');
+                            if (badge) {
+                                var count = parseInt(badge.textContent) - 1;
+                                if (count > 0) {
+                                    badge.textContent = count + ' new';
+                                    if (bellBadge) bellBadge.textContent = count;
+                                } else {
+                                    badge.remove();
+                                    if (bellBadge) bellBadge.remove();
+                                    var markAllBtn = document.getElementById('navMarkAllBtn');
+                                    if (markAllBtn) markAllBtn.remove();
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+    });
     </script>
     {% block extra_js %}{% endblock %}
 </body>
