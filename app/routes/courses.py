@@ -378,28 +378,48 @@ def add_lesson(course_id):
         if cw_file and cw_file.filename:
             ext = os.path.splitext(cw_file.filename)[1].lower()
             short_id = uuid.uuid4().hex[:8]
-            filename = f"cw_{lesson.id}_{short_id}{ext}"
-            try:
-                from app.services.b2_service import upload_file_to_b2
-                uploaded_name = upload_file_to_b2(cw_file, filename, folder='materials', content_type=cw_file.content_type)
-                if uploaded_name:
-                    filename = uploaded_name
+            
+            if cw_type == 'SCORM' or ext == '.zip':
+                from app.services.scorm_service import process_scorm_package
+                scorm_id_str = f"scorm_{short_id}"
+                upload_base_folder = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads'))
+                launch_href, err_msg = process_scorm_package(cw_file, scorm_id_str, upload_base_folder)
+                if err_msg:
+                    flash(f"SCORM package error: {err_msg}", "danger")
                 else:
-                    flash("Cloud storage upload returned empty result. Courseware saved without cloud file.", "warning")
-                    filename = None
-            except Exception as b2_err:
-                flash(f"Failed to upload file to cloud storage: {str(b2_err)}", "warning")
-                filename = None
+                    filename = scorm_id_str
+                    external_url = url_for('courses.serve_scorm_file', scorm_id_str=scorm_id_str, filename=launch_href)
+                    cw_type = 'SCORM'
+            else:
+                filename = f"cw_{lesson.id}_{short_id}{ext}"
+                if ext in ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv']:
+                    cw_type = 'Video'
+                elif ext == '.pdf':
+                    cw_type = 'PDF'
+                elif ext in ['.ppt', '.pptx']:
+                    cw_type = 'PPT'
 
-            if filename:
-                mat = CourseMaterial(
-                    course_id=course.id,
-                    title=f"[Lesson {lesson_number}] {cw_title}",
-                    material_type='Video' if ext in ['.mp4', '.webm'] else ('PDF' if ext == '.pdf' else 'PPT'),
-                    filename=filename,
-                    allow_download=False # Non-downloadable
-                )
-                db.session.add(mat)
+                try:
+                    from app.services.b2_service import upload_file_to_b2
+                    uploaded_name = upload_file_to_b2(cw_file, filename, folder='materials', content_type=cw_file.content_type)
+                    if uploaded_name:
+                        filename = uploaded_name
+                    else:
+                        flash("Cloud storage upload returned empty result. Courseware saved without cloud file.", "warning")
+                        filename = None
+                except Exception as b2_err:
+                    flash(f"Failed to upload file to cloud storage: {str(b2_err)}", "warning")
+                    filename = None
+
+                if filename:
+                    mat = CourseMaterial(
+                        course_id=course.id,
+                        title=f"[Lesson {lesson_number}] {cw_title}",
+                        material_type='Video' if ext in ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'] else ('PDF' if ext == '.pdf' else 'PPT'),
+                        filename=filename,
+                        allow_download=False # Non-downloadable
+                    )
+                    db.session.add(mat)
 
         if filename or cw_text or external_url:
             cw = LessonCourseware(
@@ -411,6 +431,7 @@ def add_lesson(course_id):
                 content_text=cw_text if cw_text else None
             )
             db.session.add(cw)
+
 
         # 3. Handle Lesson Post-Assessment CSV
         post_csv = request.files.get('post_assessment_csv')
@@ -549,8 +570,9 @@ def add_lesson_courseware(lesson_id):
                     flash(err_msg, "danger")
                     return redirect(url_for('courses.view_course', course_id=lesson.course_id))
                 filename = scorm_id_str
-                external_url = launch_href
+                external_url = url_for('courses.serve_scorm_file', scorm_id_str=scorm_id_str, filename=launch_href)
                 c_type = 'SCORM'
+
             else:
                 try:
                     from app.services.b2_service import upload_file_to_b2
@@ -1564,7 +1586,7 @@ def stream_courseware(courseware_id):
             mimetype = None
             if ext == '.pdf':
                 mimetype = 'application/pdf'
-            elif ext in ['.mp4', '.webm', '.ogg', '.mov']:
+            elif ext in ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv']:
                 mimetype = f'video/{ext[1:]}'
 
             return send_file(
@@ -1572,6 +1594,12 @@ def stream_courseware(courseware_id):
                 mimetype=mimetype,
                 as_attachment=False
             )
+        else:
+            from app.services.b2_service import get_b2_url
+            b2_url = get_b2_url(cw.filename, folder='materials')
+            if b2_url:
+                return redirect(b2_url)
+
 
     return f"""
     <!DOCTYPE html>
