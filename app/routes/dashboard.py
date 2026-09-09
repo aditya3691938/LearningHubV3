@@ -244,7 +244,7 @@ def resolve_issue(issue_id):
     notif = LearnerNotification(
         learner_id=issue.learner_id,
         title="Support Issue Resolved! ✅",
-        message=f"Your support ticket #{issue.id} regarding '{issue.category}' has been marked as resolved by the Administrator.{extension_msg} Let us know if you need anything else!",
+        message=f"Your issue has been resolved by the Administrator.{extension_msg}",
         notification_type='SYSTEM_UPDATE'
     )
     db.session.add(notif)

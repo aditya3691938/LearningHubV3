@@ -2,7 +2,7 @@
 
 {% block title %}Support Tickets Helpdesk - Admin Panel{% endblock %}
 
-{% block public_content %}
+{% block content %}
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
     <div class="card-header bg-navy text-white py-3 px-4 d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-2">
@@ -56,7 +56,7 @@
                         </td>
                         <td class="px-3 py-3">
                             {% if issue.status == 'Open' %}
-                            <span class="badge bg-danger text-white fw-bold"><i class="fa-solid fa-spinner fa-spin me-1"></i> Open</span>
+                            <span class="badge bg-danger text-white fw-bold">Open</span>
                             {% else %}
                             <span class="badge bg-success text-white fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Resolved</span>
                             {% endif %}
@@ -69,7 +69,7 @@
                             <form action="{{ url_for('dashboard.resolve_issue', issue_id=issue.id) }}" method="POST" class="d-inline">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <button type="submit" class="btn btn-xs btn-success fw-bold py-1 px-2.5 rounded-3 shadow-xs">
-                                    <i class="fa-solid fa-check me-1"></i> Issue Resolved
+                                    <i class="fa-solid fa-check me-1"></i> Close Ticket
                                 </button>
                             </form>
                             {% else %}
