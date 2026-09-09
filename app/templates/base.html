@@ -472,10 +472,10 @@
                                      data-title="{{ n.title }}"
                                      data-message="{{ n.message }}"
                                      data-date="{{ n.created_at.strftime('%d %b, %H:%M') if n.created_at else '' }}"
-                                     data-image="{% if n.image_path %}{{ url_for('static', filename=n.image_path) }}{% endif %}">
+                                     data-image="{% if n.image_path %}{{ get_b2_url(n.image_path.split('/')[-1], folder='notifications') }}{% endif %}">
                                     
                                     {% if n.image_path %}
-                                        <img src="{{ url_for('static', filename=n.image_path) }}" alt="Notification Image" class="rounded mt-1 shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">
+                                        <img src="{{ get_b2_url(n.image_path.split('/')[-1], folder='notifications') }}" alt="Notification Image" class="rounded mt-1 shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">
                                     {% else %}
                                         <i class="fa-solid {% if n.notification_type == 'COURSE_ASSIGNED' %}fa-book-open text-teal{% elif n.notification_type == 'LESSON_UPDATED' %}fa-pen-to-square text-warning{% else %}fa-circle-info text-info{% endif %} mt-1"></i>
                                     {% endif %}
@@ -548,7 +548,7 @@
                     <!-- Account Dropdown -->
                     <div class="dropdown flex-shrink-0 d-inline-flex align-items-center">
                         <button class="btn border d-flex align-items-center justify-content-center rounded-circle bg-white shadow-xs p-0 flex-shrink-0 admin-profile-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="{% if admin_logged_in %}Account: {{ admin_username }}{% else %}Account: {{ session.get('learner_name', 'Learner') }}{% endif %}" style="height: 36px; width: 36px;">
-                            <img src="{% if global_profile_picture %}{{ url_for('static', filename='uploads/profiles/' + global_profile_picture) }}{% else %}https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120{% endif %}" alt="Profile Avatar" class="rounded-circle border border-2 border-teal shadow-xs flex-shrink-0 admin-profile-avatar" style="width: 28px; height: 28px; object-fit: cover;">
+                            <img src="{% if global_profile_picture %}{{ get_b2_url(global_profile_picture, folder='profiles') }}{% else %}https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120{% endif %}" alt="Profile Avatar" class="rounded-circle border border-2 border-teal shadow-xs flex-shrink-0 admin-profile-avatar" style="width: 28px; height: 28px; object-fit: cover;">
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-2" style="min-width: 220px;">
                             <li class="px-3 py-2.5 border-bottom mb-1 bg-light rounded-3">
@@ -582,7 +582,7 @@
         </div>
         <div class="offcanvas-body py-3 px-3">
             <div class="mobile-nav-user-badge p-3 rounded-4 mb-3 border d-flex align-items-center gap-3">
-                <img src="{% if global_profile_picture %}{{ url_for('static', filename='uploads/profiles/' + global_profile_picture) }}{% else %}https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120{% endif %}" alt="Avatar" class="rounded-circle border border-2 border-teal" style="width: 44px; height: 44px; object-fit: cover;">
+                <img src="{% if global_profile_picture %}{{ get_b2_url(global_profile_picture, folder='profiles') }}{% else %}https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120{% endif %}" alt="Avatar" class="rounded-circle border border-2 border-teal" style="width: 44px; height: 44px; object-fit: cover;">
                 <div>
                     <div class="fw-bold text-dark">{% if admin_logged_in %}{{ admin_username }}{% elif session.get('learner_name') %}{{ session.get('learner_name') }}{% else %}Learner Portal{% endif %}</div>
                     <span class="badge bg-teal-light text-teal">{% if admin_logged_in %}L&D Admin{% elif session.get('learner_global_id') %}Learner ID: {{ session.get('learner_global_id') }}{% else %}Learner{% endif %}</span>

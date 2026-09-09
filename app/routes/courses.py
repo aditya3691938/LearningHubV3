@@ -98,10 +98,12 @@ def create_course():
             ext = os.path.splitext(thumb_file.filename)[1].lower()
             if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
                 thumb_filename = f"thumb_{new_course.course_id}_{uuid.uuid4().hex[:8]}{ext}"
-                thumb_dir = os.path.join(current_app.root_path, '..', 'uploads', 'thumbnails')
-                os.makedirs(thumb_dir, exist_ok=True)
-                thumb_file.save(os.path.join(thumb_dir, thumb_filename))
-                new_course.thumbnail_filename = thumb_filename
+                from app.services.b2_service import upload_file_to_b2
+                uploaded_name = upload_file_to_b2(thumb_file, thumb_filename, folder='thumbnails', content_type=thumb_file.content_type)
+                if uploaded_name:
+                    new_course.thumbnail_filename = uploaded_name
+                else:
+                    flash("Failed to upload thumbnail to cloud.", "danger")
 
         # Live Online & Live In Person duration set directly by admin at course level
         if mode in ['Live Online', 'Live In Person']:
@@ -342,8 +344,13 @@ def add_lesson(course_id):
         ext = os.path.splitext(cw_file.filename)[1].lower()
         short_id = uuid.uuid4().hex[:8]
         filename = f"cw_{lesson.id}_{short_id}{ext}"
-        save_path = os.path.join(current_app.config['MATERIALS_FOLDER'], filename)
-        cw_file.save(save_path)
+        from app.services.b2_service import upload_file_to_b2
+        uploaded_name = upload_file_to_b2(cw_file, filename, folder='materials', content_type=cw_file.content_type)
+        if uploaded_name:
+            filename = uploaded_name
+        else:
+            flash("Failed to upload courseware file.", "danger")
+            return redirect(url_for('courses.view_course', course_id=course.id))
 
         mat = CourseMaterial(
             course_id=course.id,
@@ -490,8 +497,13 @@ def add_lesson_courseware(lesson_id):
             external_url = launch_href
             c_type = 'SCORM'
         else:
-            save_path = os.path.join(current_app.config['MATERIALS_FOLDER'], filename)
-            file_obj.save(save_path)
+            from app.services.b2_service import upload_file_to_b2
+            uploaded_name = upload_file_to_b2(file_obj, filename, folder='materials', content_type=file_obj.content_type)
+            if uploaded_name:
+                filename = uploaded_name
+            else:
+                flash("Failed to upload file to cloud.", "danger")
+                return redirect(url_for('courses.view_course', course_id=lesson.course_id))
             
             # Also create a non-downloadable CourseMaterial record for inline viewing
             mat = CourseMaterial(
@@ -541,10 +553,13 @@ def add_audio_track(courseware_id):
 
     short_id = uuid.uuid4().hex[:8]
     filename = f"audio_{cw.id}_{short_id}{ext}"
-    materials_folder = current_app.config['MATERIALS_FOLDER']
-    os.makedirs(materials_folder, exist_ok=True)
-    file_path = os.path.join(materials_folder, filename)
-    audio_file.save(file_path)
+    from app.services.b2_service import upload_file_to_b2
+    uploaded_name = upload_file_to_b2(audio_file, filename, folder='audio', content_type=audio_file.content_type)
+    if uploaded_name:
+        filename = uploaded_name
+    else:
+        flash("Failed to upload audio to cloud.", "danger")
+        return redirect(url_for('courses.view_course', course_id=cw.lesson.course_id))
 
     if make_default:
         for t in cw.audio_tracks:
@@ -842,10 +857,12 @@ def edit_course(course_id):
             ext = os.path.splitext(thumb_file.filename)[1].lower()
             if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
                 thumb_filename = f"thumb_{course.course_id}_{uuid.uuid4().hex[:8]}{ext}"
-                thumb_dir = os.path.join(current_app.root_path, '..', 'uploads', 'thumbnails')
-                os.makedirs(thumb_dir, exist_ok=True)
-                thumb_file.save(os.path.join(thumb_dir, thumb_filename))
-                course.thumbnail_filename = thumb_filename
+                from app.services.b2_service import upload_file_to_b2
+                uploaded_name = upload_file_to_b2(thumb_file, thumb_filename, folder='thumbnails', content_type=thumb_file.content_type)
+                if uploaded_name:
+                    course.thumbnail_filename = uploaded_name
+                else:
+                    flash("Failed to upload thumbnail to cloud.", "danger")
 
         # Live Online & Live In Person duration defined directly by admin at course level
         if course.mode in ['Live Online', 'Live In Person']:
@@ -1036,14 +1053,23 @@ def upload_material(course_id):
 
         short_id = uuid.uuid4().hex[:8]
         filename = f"mat_{course.course_id}_{short_id}{ext}"
-        save_path = os.path.join(current_app.config['MATERIALS_FOLDER'], filename)
-        material_file.save(save_path)
-
-        file_size_bytes = os.path.getsize(save_path)
+        from app.services.b2_service import upload_file_to_b2
+        uploaded_name = upload_file_to_b2(material_file, filename, folder='materials', content_type=material_file.content_type)
+        if not uploaded_name:
+            flash("Failed to upload material to cloud.", "danger")
+            return redirect(url_for('courses.view_course', course_id=course.id))
+        
+        filename = uploaded_name
+        
+        # Calculate file size from FileStorage object
+        material_file.seek(0, 2)  # seek to end
+        file_size_bytes = material_file.tell()
+        material_file.seek(0)  # reset
+        
         if file_size_bytes < 1024 * 1024:
-            size_str = f"{round(file_size_bytes / 1024, 1)} KB"
+            size_str = f"{file_size_bytes / 1024:.1f} KB"
         else:
-            size_str = f"{round(file_size_bytes / (1024 * 1024), 2)} MB"
+            size_str = f"{file_size_bytes / (1024 * 1024):.1f} MB"
     else:
         flash("Please provide a Google Drive URL / External link or upload a file.", "danger")
         return redirect(url_for('courses.view_course', course_id=course.id))
@@ -1613,9 +1639,13 @@ def author_lesson(course_id, lesson_id):
             if doc_file and doc_file.filename:
                 # Save to uploads folder
                 filename = f"doc_{uuid.uuid4().hex}_{doc_file.filename}"
-                upload_dir = os.path.join(current_app.root_path, '..', 'uploads', 'materials')
-                os.makedirs(upload_dir, exist_ok=True)
-                doc_file.save(os.path.join(upload_dir, filename))
+                from app.services.b2_service import upload_file_to_b2
+                uploaded_name = upload_file_to_b2(doc_file, filename, folder='materials', content_type=doc_file.content_type)
+                if uploaded_name:
+                    filename = uploaded_name
+                else:
+                    flash("Failed to upload document to cloud.", "danger")
+                    return redirect(url_for('courses.view_course', course_id=course.id))
                 
                 # Determine courseware type
                 ext = doc_file.filename.split('.')[-1].lower()

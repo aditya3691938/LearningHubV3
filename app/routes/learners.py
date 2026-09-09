@@ -1486,18 +1486,18 @@ def view_learner_profile():
                 flash("Invalid Date Format. Please try again.", "danger")
                 
         if profile_pic and profile_pic.filename:
-            from werkzeug.utils import secure_filename
+            from app.services.b2_service import upload_file_to_b2
             import uuid
             import os
-            from flask import current_app
             
             ext = os.path.splitext(profile_pic.filename)[1]
             pic_filename = f"profile_{learner.id}_{uuid.uuid4().hex[:8]}{ext}"
-            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
-            os.makedirs(upload_dir, exist_ok=True)
-            profile_pic.save(os.path.join(upload_dir, pic_filename))
-            learner.profile_picture = pic_filename
-            updated = True
+            uploaded_name = upload_file_to_b2(profile_pic, pic_filename, folder='profiles', content_type=profile_pic.content_type)
+            if uploaded_name:
+                learner.profile_picture = uploaded_name
+                updated = True
+            else:
+                flash("Failed to upload profile picture to cloud.", "danger")
 
         if updated:
             db.session.commit()

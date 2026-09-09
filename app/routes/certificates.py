@@ -69,9 +69,13 @@ def upload_external():
         import uuid
         ext = os.path.splitext(file.filename)[1]
         pdf_filename = f"ext_cert_{uuid.uuid4().hex}{ext}"
-        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'external_certs')
-        os.makedirs(upload_dir, exist_ok=True)
-        file.save(os.path.join(upload_dir, pdf_filename))
+        from app.services.b2_service import upload_file_to_b2
+        uploaded_name = upload_file_to_b2(file, pdf_filename, folder='external_certs', content_type=file.content_type)
+        if uploaded_name:
+            pdf_filename = uploaded_name
+        else:
+            flash("Failed to upload certificate.", "danger")
+            return redirect(url_for('dashboard.index'))
         
     try:
         date_earned = datetime.strptime(date_earned_str, '%Y-%m-%d').date()

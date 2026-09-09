@@ -149,6 +149,7 @@ def create_app(config_class=Config):
             'learner_theme': learner_theme,
             'open_tickets_count': open_tickets_count,
             'global_profile_picture': global_profile_picture,
+            'get_b2_url': __import__('app.services.b2_service', fromlist=['get_b2_url']).get_b2_url
         }
 
     # Custom error handlers

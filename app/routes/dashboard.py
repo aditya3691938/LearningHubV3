@@ -105,13 +105,15 @@ def admin_profile():
                 flash("Invalid Date Format. Please try again.", "danger")
                 
         if profile_pic and profile_pic.filename:
+            from app.services.b2_service import upload_file_to_b2
             ext = os.path.splitext(profile_pic.filename)[1]
             pic_filename = f"admin_{admin.id}_{uuid.uuid4().hex[:8]}{ext}"
-            upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'profiles')
-            os.makedirs(upload_dir, exist_ok=True)
-            profile_pic.save(os.path.join(upload_dir, pic_filename))
-            admin.profile_picture = pic_filename
-            updated = True
+            uploaded_name = upload_file_to_b2(profile_pic, pic_filename, folder='profiles', content_type=profile_pic.content_type)
+            if uploaded_name:
+                admin.profile_picture = uploaded_name
+                updated = True
+            else:
+                flash("Failed to upload profile picture.", "danger")
             
         if updated:
             db.session.commit()
@@ -154,17 +156,15 @@ def broadcast_notification():
     image_path = None
     image_file = request.files.get('image')
     if image_file and image_file.filename:
+        from app.services.b2_service import upload_file_to_b2
         from werkzeug.utils import secure_filename
         import uuid
-        import os
-        from flask import current_app
         filename = secure_filename(image_file.filename)
         unique_filename = f"{uuid.uuid4().hex}_{filename}"
-        upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'notifications')
-        os.makedirs(upload_dir, exist_ok=True)
-        file_path = os.path.join(upload_dir, unique_filename)
-        image_file.save(file_path)
-        image_path = f"uploads/notifications/{unique_filename}"
+        
+        uploaded_name = upload_file_to_b2(image_file, unique_filename, folder='notifications', content_type=image_file.content_type)
+        if uploaded_name:
+            image_path = f"notifications/{uploaded_name}"
 
     if audience == 'specific':
         raw_gids = request.form.get('global_id', '')
