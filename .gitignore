@@ -21,5 +21,6 @@ static/qr_codes/*
 *.db-wal
 instance/
 scratch/
-*.deb
-
+# Media and test archives
+*.mp4
+*.zip

@@ -64,7 +64,10 @@ def upload_external():
         return redirect(url_for('certificates.my_certificates'))
         
     pdf_filename = None
-    if file and file.filename:
+    b2_cert_file = request.form.get('b2_uploaded_filename')
+    if b2_cert_file:
+        pdf_filename = b2_cert_file
+    elif file and file.filename:
         from werkzeug.utils import secure_filename
         import uuid
         ext = os.path.splitext(file.filename)[1]

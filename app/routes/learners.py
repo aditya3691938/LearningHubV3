@@ -1498,19 +1498,23 @@ def view_learner_profile():
             except ValueError:
                 flash("Invalid Date Format. Please try again.", "danger")
                 
-        if profile_pic and profile_pic.filename:
+        b2_profile_pic = request.form.get('b2_uploaded_filename')
+        if b2_profile_pic:
+            learner.profile_picture = b2_profile_pic
+            updated = True
+        elif profile_pic and profile_pic.filename:
             from app.services.b2_service import upload_file_to_b2
             import uuid
             import os
             
             ext = os.path.splitext(profile_pic.filename)[1]
             pic_filename = f"profile_{learner.id}_{uuid.uuid4().hex[:8]}{ext}"
-            uploaded_name = upload_file_to_b2(profile_pic, pic_filename, folder='profiles', content_type=profile_pic.content_type)
+            uploaded_name = upload_file_to_b2(profile_pic, pic_filename, folder='profile_pics', content_type=profile_pic.content_type)
             if uploaded_name:
                 learner.profile_picture = uploaded_name
                 updated = True
             else:
-                flash("Failed to upload profile picture to cloud.", "danger")
+                flash("Failed to upload profile picture.", "danger")
 
         if updated:
             db.session.commit()

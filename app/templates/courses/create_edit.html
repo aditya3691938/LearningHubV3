@@ -93,7 +93,7 @@
 
                 <div class="col-md-6">
                     <label for="thumbnail_file" class="form-label fw-bold"><i class="fa-solid fa-image text-info me-1"></i> Course Thumbnail Image <span class="badge bg-outline-secondary border text-muted">Optional</span></label>
-                    <input type="file" class="form-control" id="thumbnail_file" name="thumbnail_file" accept="image/*">
+                    <input type="file" class="form-control" id="thumbnail_file" name="thumbnail_file" accept="image/*" data-b2-upload="true" data-folder="thumbnails">
                     <small class="text-muted">Upload JPG, PNG, GIF, or WebP thumbnail image for course cards</small>
                     {% if course and course.thumbnail_filename %}
                     <div class="mt-2">

@@ -104,11 +104,15 @@ def admin_profile():
             except ValueError:
                 flash("Invalid Date Format. Please try again.", "danger")
                 
-        if profile_pic and profile_pic.filename:
+        b2_profile_pic = request.form.get('b2_uploaded_filename')
+        if b2_profile_pic:
+            admin.profile_picture = b2_profile_pic
+            updated = True
+        elif profile_pic and profile_pic.filename:
             from app.services.b2_service import upload_file_to_b2
             ext = os.path.splitext(profile_pic.filename)[1]
             pic_filename = f"admin_{admin.id}_{uuid.uuid4().hex[:8]}{ext}"
-            uploaded_name = upload_file_to_b2(profile_pic, pic_filename, folder='profiles', content_type=profile_pic.content_type)
+            uploaded_name = upload_file_to_b2(profile_pic, pic_filename, folder='profile_pics', content_type=profile_pic.content_type)
             if uploaded_name:
                 admin.profile_picture = uploaded_name
                 updated = True
@@ -154,17 +158,21 @@ def broadcast_notification():
         return redirect(url_for('dashboard.index'))
         
     image_path = None
-    image_file = request.files.get('image')
-    if image_file and image_file.filename:
-        from app.services.b2_service import upload_file_to_b2
-        from werkzeug.utils import secure_filename
-        import uuid
-        filename = secure_filename(image_file.filename)
-        unique_filename = f"{uuid.uuid4().hex}_{filename}"
-        
-        uploaded_name = upload_file_to_b2(image_file, unique_filename, folder='notifications', content_type=image_file.content_type)
-        if uploaded_name:
-            image_path = f"notifications/{uploaded_name}"
+    b2_dash_img = request.form.get('b2_uploaded_filename')
+    if b2_dash_img:
+        image_path = f"dashboard/{b2_dash_img}"
+    else:
+        image_file = request.files.get('image')
+        if image_file and image_file.filename:
+            from app.services.b2_service import upload_file_to_b2
+            from werkzeug.utils import secure_filename
+            import uuid
+            filename = secure_filename(image_file.filename)
+            unique_filename = f"{uuid.uuid4().hex}_{filename}"
+            
+            uploaded_name = upload_file_to_b2(image_file, unique_filename, folder='dashboard', content_type=image_file.content_type)
+            if uploaded_name:
+                image_path = f"dashboard/{uploaded_name}"
 
     if audience == 'specific':
         raw_gids = request.form.get('global_id', '')

@@ -97,18 +97,22 @@ def create_course():
         db.session.add(new_course)
         db.session.commit()
 
-        # Handle Thumbnail Upload
-        thumb_file = request.files.get('thumbnail_file')
-        if thumb_file and thumb_file.filename:
-            ext = os.path.splitext(thumb_file.filename)[1].lower()
-            if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
-                thumb_filename = f"thumb_{new_course.course_id}_{uuid.uuid4().hex[:8]}{ext}"
-                from app.services.b2_service import upload_file_to_b2
-                uploaded_name = upload_file_to_b2(thumb_file, thumb_filename, folder='thumbnails', content_type=thumb_file.content_type)
-                if uploaded_name:
-                    new_course.thumbnail_filename = uploaded_name
-                else:
-                    flash("Failed to upload thumbnail to cloud.", "danger")
+        # Handle Thumbnail Upload (Direct B2 Upload or Server Fallback)
+        b2_thumb = request.form.get('b2_uploaded_filename')
+        if b2_thumb:
+            new_course.thumbnail_filename = b2_thumb
+        else:
+            thumb_file = request.files.get('thumbnail_file')
+            if thumb_file and thumb_file.filename:
+                ext = os.path.splitext(thumb_file.filename)[1].lower()
+                if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                    thumb_filename = f"thumb_{new_course.course_id}_{uuid.uuid4().hex[:8]}{ext}"
+                    from app.services.b2_service import upload_file_to_b2
+                    uploaded_name = upload_file_to_b2(thumb_file, thumb_filename, folder='thumbnails', content_type=thumb_file.content_type)
+                    if uploaded_name:
+                        new_course.thumbnail_filename = uploaded_name
+                    else:
+                        flash("Failed to upload thumbnail to cloud.", "danger")
 
         # Live Online & Live In Person duration set directly by admin at course level
         if mode in ['Live Online', 'Live In Person']:
@@ -371,11 +375,34 @@ def add_lesson(course_id):
 
         # 2. Handle Non-Downloadable Lesson Courseware File / Text / Video URL
         cw_file = request.files.get('courseware_file')
+        b2_cw_file = request.form.get('b2_uploaded_filename')
         cw_title = request.form.get('courseware_title', '').strip() or f"{title} Courseware"
         cw_text = request.form.get('courseware_text', '').strip()
 
         filename = None
-        if cw_file and cw_file.filename:
+        if b2_cw_file:
+            filename = b2_cw_file
+            ext = os.path.splitext(b2_cw_file)[1].lower()
+            if cw_type == 'SCORM' or ext == '.zip':
+                launch_href = request.form.get('b2_scorm_launch_href', 'index.html')
+                external_url = url_for('courses.serve_scorm_file', scorm_id_str=filename, filename=launch_href)
+                cw_type = 'SCORM'
+            else:
+                if ext in ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv']:
+                    cw_type = 'Video'
+                elif ext == '.pdf':
+                    cw_type = 'PDF'
+                elif ext in ['.ppt', '.pptx']:
+                    cw_type = 'PPT'
+                mat = CourseMaterial(
+                    course_id=course.id,
+                    title=f"[Lesson {lesson_number}] {cw_title}",
+                    material_type='Video' if ext in ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'] else ('PDF' if ext == '.pdf' else 'PPT'),
+                    filename=filename,
+                    allow_download=False
+                )
+                db.session.add(mat)
+        elif cw_file and cw_file.filename:
             ext = os.path.splitext(cw_file.filename)[1].lower()
             short_id = uuid.uuid4().hex[:8]
             
@@ -556,7 +583,24 @@ def add_lesson_courseware(lesson_id):
             return redirect(url_for('courses.view_course', course_id=lesson.course_id))
 
         filename = None
-        if file_obj and file_obj.filename:
+        b2_cw_file = request.form.get('b2_uploaded_filename')
+        if b2_cw_file:
+            filename = b2_cw_file
+            ext = os.path.splitext(b2_cw_file)[1].lower()
+            if c_type == 'SCORM' or ext == '.zip':
+                launch_href = request.form.get('b2_scorm_launch_href', 'index.html')
+                external_url = url_for('courses.serve_scorm_file', scorm_id_str=filename, filename=launch_href)
+                c_type = 'SCORM'
+            else:
+                mat = CourseMaterial(
+                    course_id=lesson.course_id,
+                    title=f"[Lesson {lesson.lesson_number} Courseware] {title}",
+                    material_type='Video' if ext in ['.mp4', '.webm'] else ('PDF' if ext == '.pdf' else 'PPT'),
+                    filename=filename,
+                    allow_download=False
+                )
+                db.session.add(mat)
+        elif file_obj and file_obj.filename:
             ext = os.path.splitext(file_obj.filename)[1].lower()
             short_id = uuid.uuid4().hex[:8]
             filename = f"cw_{lesson.id}_{short_id}{ext}"
@@ -629,23 +673,27 @@ def add_audio_track(courseware_id):
         flash("Audio track language label is required (e.g. Telugu, Hindi, Tamil).", "danger")
         return redirect(url_for('courses.view_course', course_id=cw.lesson.course_id))
 
-    if not audio_file or not audio_file.filename:
-        flash("Please select an audio file (.mp3, .m4a, .aac, .wav).", "danger")
-        return redirect(url_for('courses.view_course', course_id=cw.lesson.course_id))
+    b2_audio = request.form.get('b2_uploaded_filename')
+    filename = None
+    if b2_audio:
+        filename = b2_audio
+    elif audio_file and audio_file.filename:
+        ext = os.path.splitext(audio_file.filename)[1].lower()
+        if ext not in ['.mp3', '.m4a', '.aac', '.wav', '.ogg', '.opus', '.flac']:
+            flash("Invalid audio format. Please upload an MP3, M4A, AAC, or WAV file.", "danger")
+            return redirect(url_for('courses.view_course', course_id=cw.lesson.course_id))
 
-    ext = os.path.splitext(audio_file.filename)[1].lower()
-    if ext not in ['.mp3', '.m4a', '.aac', '.wav', '.ogg', '.opus', '.flac']:
-        flash("Invalid audio format. Please upload an MP3, M4A, AAC, or WAV file.", "danger")
-        return redirect(url_for('courses.view_course', course_id=cw.lesson.course_id))
-
-    short_id = uuid.uuid4().hex[:8]
-    filename = f"audio_{cw.id}_{short_id}{ext}"
-    from app.services.b2_service import upload_file_to_b2
-    uploaded_name = upload_file_to_b2(audio_file, filename, folder='audio', content_type=audio_file.content_type)
-    if uploaded_name:
-        filename = uploaded_name
+        short_id = uuid.uuid4().hex[:8]
+        filename = f"audio_{cw.id}_{short_id}{ext}"
+        from app.services.b2_service import upload_file_to_b2
+        uploaded_name = upload_file_to_b2(audio_file, filename, folder='audio', content_type=audio_file.content_type)
+        if uploaded_name:
+            filename = uploaded_name
+        else:
+            flash("Failed to upload audio to cloud.", "danger")
+            return redirect(url_for('courses.view_course', course_id=cw.lesson.course_id))
     else:
-        flash("Failed to upload audio to cloud.", "danger")
+        flash("Please select an audio file (.mp3, .m4a, .aac, .wav).", "danger")
         return redirect(url_for('courses.view_course', course_id=cw.lesson.course_id))
 
     if make_default:
@@ -959,18 +1007,22 @@ def edit_course(course_id):
         else:
             course.completion_date = None
 
-        # Handle Thumbnail Upload
-        thumb_file = request.files.get('thumbnail_file')
-        if thumb_file and thumb_file.filename:
-            ext = os.path.splitext(thumb_file.filename)[1].lower()
-            if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
-                thumb_filename = f"thumb_{course.course_id}_{uuid.uuid4().hex[:8]}{ext}"
-                from app.services.b2_service import upload_file_to_b2
-                uploaded_name = upload_file_to_b2(thumb_file, thumb_filename, folder='thumbnails', content_type=thumb_file.content_type)
-                if uploaded_name:
-                    course.thumbnail_filename = uploaded_name
-                else:
-                    flash("Failed to upload thumbnail to cloud.", "danger")
+        # Handle Thumbnail Upload (Direct B2 Upload or Server Fallback)
+        b2_thumb = request.form.get('b2_uploaded_filename')
+        if b2_thumb:
+            course.thumbnail_filename = b2_thumb
+        else:
+            thumb_file = request.files.get('thumbnail_file')
+            if thumb_file and thumb_file.filename:
+                ext = os.path.splitext(thumb_file.filename)[1].lower()
+                if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                    thumb_filename = f"thumb_{course.course_id}_{uuid.uuid4().hex[:8]}{ext}"
+                    from app.services.b2_service import upload_file_to_b2
+                    uploaded_name = upload_file_to_b2(thumb_file, thumb_filename, folder='thumbnails', content_type=thumb_file.content_type)
+                    if uploaded_name:
+                        course.thumbnail_filename = uploaded_name
+                    else:
+                        flash("Failed to upload thumbnail to cloud.", "danger")
 
         # Live Online & Live In Person duration defined directly by admin at course level
         if course.mode in ['Live Online', 'Live In Person']:
@@ -1128,6 +1180,9 @@ def upload_material(course_id):
     material_type = user_mat_type if user_mat_type != 'Auto' else 'External Link'
     size_str = 'N/A'
 
+    b2_mat_file = request.form.get('b2_uploaded_filename')
+    b2_size_str = request.form.get('b2_file_size_str', 'N/A')
+
     if external_url:
         from app.services.gdrive_service import parse_gdrive_url
         is_gdrive, embed_url, g_type, file_id = parse_gdrive_url(external_url)
@@ -1140,6 +1195,27 @@ def upload_material(course_id):
                 material_type = 'SCORM Link'
             else:
                 material_type = 'External Link'
+
+    elif b2_mat_file:
+        filename = b2_mat_file
+        ext = os.path.splitext(b2_mat_file)[1].lower()
+        size_str = b2_size_str
+
+        if user_mat_type == 'Auto':
+            if ext in ['.pdf']:
+                material_type = 'PDF'
+            elif ext in ['.ppt', '.pptx']:
+                material_type = 'PPT'
+            elif ext in ['.mp4', '.webm', '.avi', '.mkv', '.mov']:
+                material_type = 'Video'
+            elif ext in ['.xlsx', '.xls', '.csv']:
+                material_type = 'Excel'
+            elif ext in ['.zip', '.rar']:
+                material_type = 'SCORM'
+            elif ext in ['.doc', '.docx', '.txt']:
+                material_type = 'Document'
+            else:
+                material_type = 'Other File'
 
     elif material_file and material_file.filename:
         orig_filename = material_file.filename
@@ -1676,6 +1752,20 @@ def delete_material(material_id):
 @courses_bp.route('/scorm/content/<scorm_id_str>/<path:filename>')
 def serve_scorm_file(scorm_id_str, filename):
     scorm_dir = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'scorm', scorm_id_str))
+    target_file_path = os.path.join(scorm_dir, filename)
+    if not os.path.exists(target_file_path):
+        os.makedirs(scorm_dir, exist_ok=True)
+        zip_filename = f"{scorm_id_str}.zip" if not scorm_id_str.endswith('.zip') else scorm_id_str
+        zip_path = os.path.join(scorm_dir, 'package.zip')
+        from app.services.b2_service import download_file_from_b2
+        downloaded = download_file_from_b2(zip_filename, folder='scorm', local_path=zip_path)
+        if downloaded and os.path.exists(zip_path):
+            try:
+                import zipfile
+                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                    zip_ref.extractall(scorm_dir)
+            except Exception as e:
+                print(f"Error unzipping SCORM package on-demand: {e}")
     return send_from_directory(scorm_dir, filename)
 
 
