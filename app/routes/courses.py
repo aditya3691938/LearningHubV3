@@ -1774,9 +1774,11 @@ def delete_material(material_id):
 @courses_bp.route('/scorm/content/<scorm_id_str>/<path:filename>')
 def serve_scorm_file(scorm_id_str, filename):
     scorm_dir = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'scorm', scorm_id_str))
-    target_file_path = os.path.join(scorm_dir, filename)
 
-    if not os.path.exists(target_file_path):
+    clean_filename = filename.split('?')[0].split('#')[0]
+    target_file_path = os.path.join(scorm_dir, clean_filename)
+
+    if not os.path.exists(target_file_path) and not os.path.exists(os.path.join(scorm_dir, 'imsmanifest.xml')):
         os.makedirs(scorm_dir, exist_ok=True)
         zip_filename = f"{scorm_id_str}.zip" if not scorm_id_str.endswith('.zip') else scorm_id_str
         zip_path = os.path.join(scorm_dir, 'package.zip')
@@ -1792,34 +1794,39 @@ def serve_scorm_file(scorm_id_str, filename):
             except Exception as e:
                 print(f"Error unzipping SCORM package on-demand: {e}")
 
-    # Re-check target file path after extraction attempt
-    if not os.path.exists(target_file_path):
-        possible_launch_files = [
-            'scormdriver/indexAPI.html',
-            'index_lms.html',
-            'story.html',
-            'index.htm'
-        ]
-        for candidate in possible_launch_files:
-            candidate_path = os.path.join(scorm_dir, candidate)
-            if os.path.exists(candidate_path):
-                return send_from_directory(scorm_dir, candidate)
+    if os.path.exists(target_file_path) and os.path.isfile(target_file_path):
+        return send_from_directory(scorm_dir, clean_filename)
 
-        manifest_meta = os.path.join(scorm_dir, 'res_manifest.json')
-        if os.path.exists(manifest_meta):
-            try:
-                import json
-                with open(manifest_meta, 'r') as f:
-                    data = json.load(f)
-                    meta_launch = data.get('launch_href')
-                    if meta_launch and os.path.exists(os.path.join(scorm_dir, meta_launch)):
-                        return send_from_directory(scorm_dir, meta_launch)
-            except Exception:
-                pass
+    ext = os.path.splitext(clean_filename)[1].lower()
+    if ext in ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.woff', '.woff2', '.ttf', '.eot', '.json', '.wasm', '.mp4', '.mp3']:
+        return "Asset not found", 404
 
-        return "<div style='font-family: sans-serif; padding: 2rem; color: #721c24; background: #f8d7da; border-radius: 8px;'><strong>SCORM Content Not Found</strong><p>The requested SCORM package file could not be located.</p></div>", 404
+    possible_launch_files = [
+        'scormdriver/indexAPI.html',
+        'scormcontent/index.html',
+        'index.html',
+        'index_lms.html',
+        'story.html',
+        'index.htm'
+    ]
+    for candidate in possible_launch_files:
+        candidate_path = os.path.join(scorm_dir, candidate)
+        if os.path.exists(candidate_path):
+            return send_from_directory(scorm_dir, candidate)
 
-    return send_from_directory(scorm_dir, filename)
+    manifest_meta = os.path.join(scorm_dir, 'res_manifest.json')
+    if os.path.exists(manifest_meta):
+        try:
+            import json
+            with open(manifest_meta, 'r') as f:
+                data = json.load(f)
+                meta_launch = data.get('launch_href')
+                if meta_launch and os.path.exists(os.path.join(scorm_dir, meta_launch)):
+                    return send_from_directory(scorm_dir, meta_launch)
+        except Exception:
+            pass
+
+    return "<div style='font-family: sans-serif; padding: 2rem; color: #721c24; background: #f8d7da; border-radius: 8px;'><strong>SCORM Content Not Found</strong><p>The requested SCORM package launch file could not be located.</p></div>", 404
 
 
 @courses_bp.route('/<int:course_id>/download_analytics')
