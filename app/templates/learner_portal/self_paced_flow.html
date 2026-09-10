@@ -336,7 +336,7 @@
                             </div>
                             {% endif %}
 
-                        {% elif is_gd or cw.external_url or cw.courseware_type in ['PDF', 'PPT', 'Excel', 'Doc', 'Google Drive', 'Google Slides', 'Google Doc', 'Google Sheet', 'Google Deck', 'Presentation', 'Deck', 'Document', 'Embed', 'Link', 'URL'] or cw.courseware_type.startswith('Google') or (cw.filename and cw.filename.split('.')[-1]|lower in ['pdf', 'ppt', 'pptx', 'xls', 'xlsx', 'doc', 'docx', 'csv']) %}
+                        {% elif (is_gd or cw.external_url or cw.courseware_type in ['PDF', 'PPT', 'Excel', 'Doc', 'Google Drive', 'Google Slides', 'Google Doc', 'Google Sheet', 'Google Deck', 'Presentation', 'Deck', 'Document', 'Embed', 'Link', 'URL'] or cw.courseware_type.startswith('Google') or (cw.filename and cw.filename.split('.')[-1]|lower in ['pdf', 'ppt', 'pptx', 'xls', 'xlsx', 'doc', 'docx', 'csv'])) and cw.courseware_type != 'SCORM' %}
                             <div class="bg-white border rounded-3 overflow-hidden shadow-sm my-2">
                                 <div class="p-2.5 bg-navy text-white d-flex align-items-center justify-content-between flex-wrap gap-2">
                                     <div class="d-flex align-items-center gap-2">
@@ -714,8 +714,8 @@
                                         GetDiagnostic: function() { return "No diagnostic info"; }
                                     };
                                 </script>
-                                {% if cw.filename and cw.external_url %}
-                                <iframe id="scorm-content-iframe" src="{{ url_for('courses.serve_scorm_file', scorm_id_str=cw.filename, filename=cw.external_url) }}" class="w-100 h-100 border-0" allowfullscreen></iframe>
+                                {% if cw.external_url %}
+                                <iframe id="scorm-content-iframe" src="{% if cw.external_url.startswith('http') or cw.external_url.startswith('/') %}{{ cw.external_url }}{% else %}{{ url_for('courses.serve_scorm_file', scorm_id_str=cw.filename, filename=cw.external_url) }}{% endif %}" class="w-100 h-100 border-0" allowfullscreen></iframe>
                                 {% else %}
                                 <div class="text-center py-5 text-muted">
                                     <i class="fa-solid fa-triangle-exclamation fa-3x text-warning mb-3"></i>

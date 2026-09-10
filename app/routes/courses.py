@@ -384,7 +384,16 @@ def add_lesson(course_id):
             filename = b2_cw_file
             ext = os.path.splitext(b2_cw_file)[1].lower()
             if cw_type == 'SCORM' or ext == '.zip':
-                launch_href = request.form.get('b2_scorm_launch_href', 'index.html')
+                from app.services.scorm_service import process_scorm_package
+                upload_base_folder = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads'))
+                scorm_dir = os.path.join(upload_base_folder, 'scorm', filename)
+                zip_path = os.path.join(scorm_dir, 'package.zip')
+                if not os.path.exists(zip_path):
+                    from app.services.b2_service import download_file_from_b2
+                    download_file_from_b2(filename, folder='scorm', local_path=zip_path)
+                launch_href, err_msg = process_scorm_package(zip_path if os.path.exists(zip_path) else filename, filename, upload_base_folder)
+                if not launch_href:
+                    launch_href = request.form.get('b2_scorm_launch_href', 'index.html')
                 external_url = url_for('courses.serve_scorm_file', scorm_id_str=filename, filename=launch_href)
                 cw_type = 'SCORM'
             else:
@@ -588,7 +597,16 @@ def add_lesson_courseware(lesson_id):
             filename = b2_cw_file
             ext = os.path.splitext(b2_cw_file)[1].lower()
             if c_type == 'SCORM' or ext == '.zip':
-                launch_href = request.form.get('b2_scorm_launch_href', 'index.html')
+                from app.services.scorm_service import process_scorm_package
+                upload_base_folder = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads'))
+                scorm_dir = os.path.join(upload_base_folder, 'scorm', filename)
+                zip_path = os.path.join(scorm_dir, 'package.zip')
+                if not os.path.exists(zip_path):
+                    from app.services.b2_service import download_file_from_b2
+                    download_file_from_b2(filename, folder='scorm', local_path=zip_path)
+                launch_href, err_msg = process_scorm_package(zip_path if os.path.exists(zip_path) else filename, filename, upload_base_folder)
+                if not launch_href:
+                    launch_href = request.form.get('b2_scorm_launch_href', 'index.html')
                 external_url = url_for('courses.serve_scorm_file', scorm_id_str=filename, filename=launch_href)
                 c_type = 'SCORM'
             else:
