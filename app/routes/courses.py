@@ -1802,8 +1802,8 @@ def serve_scorm_file(scorm_id_str, filename):
         return "Asset not found", 404
 
     possible_launch_files = [
-        'scormdriver/indexAPI.html',
         'scormcontent/index.html',
+        'scormdriver/indexAPI.html',
         'index.html',
         'index_lms.html',
         'story.html',

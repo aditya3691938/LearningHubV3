@@ -68,13 +68,24 @@ def process_scorm_package(zip_file_or_path, scorm_id_str, upload_base_folder):
                 rel_base = os.path.relpath(os.path.dirname(manifest_path), scorm_folder)
                 if rel_base and rel_base != '.':
                     launch_href = os.path.join(rel_base, launch_href)
+                
+                # For Articulate Rise 360 packages, prefer direct scormcontent/index.html player over scormdriver blank.html wrapper
+                rise_direct = os.path.join(scorm_folder, 'scormcontent', 'index.html')
+                if 'scormdriver' in launch_href.lower() and os.path.exists(rise_direct):
+                    return 'scormcontent/index.html', None
+
                 return launch_href.replace('\\', '/'), None
         except Exception as e:
             print(f"Error parsing SCORM imsmanifest.xml: {e}")
 
+    # Direct player check for Rise 360
+    rise_direct = os.path.join(scorm_folder, 'scormcontent', 'index.html')
+    if os.path.exists(rise_direct):
+        return 'scormcontent/index.html', None
+
     for root_dir, dirs, files in os.walk(scorm_folder):
         for f in files:
-            if f.lower() in ['indexapi.html', 'index.html', 'story.html', 'index_lms.html', 'launch.html']:
+            if f.lower() in ['index.html', 'story.html', 'index_lms.html', 'indexapi.html', 'launch.html']:
                 rel_path = os.path.relpath(os.path.join(root_dir, f), scorm_folder)
                 return rel_path.replace('\\', '/'), None
 
