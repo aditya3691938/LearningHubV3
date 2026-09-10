@@ -65,6 +65,8 @@ function setupB2Input(input) {
         }
 
         try {
+            const fileContentType = file.type || 'application/octet-stream';
+
             // Step 1: Request Presigned Upload URL from backend
             const res = await fetch('/api/b2/presigned-upload-url', {
                 method: 'POST',
@@ -72,7 +74,7 @@ function setupB2Input(input) {
                 body: JSON.stringify({
                     filename: file.name,
                     folder: folder,
-                    content_type: file.type || 'application/octet-stream'
+                    content_type: fileContentType
                 })
             });
 
@@ -91,9 +93,7 @@ function setupB2Input(input) {
             await new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open('PUT', uploadUrl, true);
-                if (file.type) {
-                    xhr.setRequestHeader('Content-Type', file.type);
-                }
+                xhr.setRequestHeader('Content-Type', fileContentType);
 
                 xhr.upload.onprogress = (evt) => {
                     if (evt.lengthComputable) {
@@ -111,7 +111,7 @@ function setupB2Input(input) {
                     }
                 };
 
-                xhr.onerror = () => reject(new Error('Network error during B2 direct upload'));
+                xhr.onerror = () => reject(new Error('Network or CORS error during B2 direct upload'));
                 xhr.ontimeout = () => reject(new Error('B2 upload request timed out'));
                 xhr.send(file);
             });
@@ -143,7 +143,7 @@ function setupB2Input(input) {
             }
 
             // Temporarily rename/clear the original file input so form submission won't send binary bytes to Render
-            input.dataset.originalName = input.name;
+            input.dataset.originalName = input.name || input.dataset.originalName || 'file';
             input.removeAttribute('name');
 
             if (submitBtn) {
@@ -153,10 +153,15 @@ function setupB2Input(input) {
 
         } catch (err) {
             console.error('B2 Direct Upload Error:', err);
-            progressBar.classList.add('bg-danger');
-            progressBar.classList.remove('progress-bar-animated');
-            statusText.textContent = `Upload failed: ${err.message}`;
-            statusText.className = 'b2-upload-status text-danger fw-bold';
+            progressBar.classList.add('bg-warning');
+            progressBar.classList.remove('progress-bar-animated', 'bg-success');
+            statusText.textContent = `Direct B2 upload notice: ${err.message}. Standard server fallback active.`;
+            statusText.className = 'b2-upload-status text-warning fw-bold';
+
+            // Ensure file input name is restored for standard server form submit fallback
+            if (input.dataset.originalName) {
+                input.name = input.dataset.originalName;
+            }
 
             if (submitBtn) {
                 submitBtn.disabled = false;
