@@ -390,7 +390,9 @@ def add_lesson(course_id):
                 zip_path = os.path.join(scorm_dir, 'package.zip')
                 if not os.path.exists(zip_path):
                     from app.services.b2_service import download_file_from_b2
-                    download_file_from_b2(filename, folder='scorm', local_path=zip_path)
+                    downloaded = download_file_from_b2(filename, folder='scorm', local_path=zip_path)
+                    if not downloaded:
+                        download_file_from_b2(filename, folder='materials', local_path=zip_path)
                 launch_href, err_msg = process_scorm_package(zip_path if os.path.exists(zip_path) else filename, filename, upload_base_folder)
                 if not launch_href:
                     launch_href = request.form.get('b2_scorm_launch_href', 'index.html')
@@ -603,7 +605,9 @@ def add_lesson_courseware(lesson_id):
                 zip_path = os.path.join(scorm_dir, 'package.zip')
                 if not os.path.exists(zip_path):
                     from app.services.b2_service import download_file_from_b2
-                    download_file_from_b2(filename, folder='scorm', local_path=zip_path)
+                    downloaded = download_file_from_b2(filename, folder='scorm', local_path=zip_path)
+                    if not downloaded:
+                        download_file_from_b2(filename, folder='materials', local_path=zip_path)
                 launch_href, err_msg = process_scorm_package(zip_path if os.path.exists(zip_path) else filename, filename, upload_base_folder)
                 if not launch_href:
                     launch_href = request.form.get('b2_scorm_launch_href', 'index.html')
@@ -1771,19 +1775,50 @@ def delete_material(material_id):
 def serve_scorm_file(scorm_id_str, filename):
     scorm_dir = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'scorm', scorm_id_str))
     target_file_path = os.path.join(scorm_dir, filename)
+
     if not os.path.exists(target_file_path):
         os.makedirs(scorm_dir, exist_ok=True)
         zip_filename = f"{scorm_id_str}.zip" if not scorm_id_str.endswith('.zip') else scorm_id_str
         zip_path = os.path.join(scorm_dir, 'package.zip')
         from app.services.b2_service import download_file_from_b2
         downloaded = download_file_from_b2(zip_filename, folder='scorm', local_path=zip_path)
+        if not downloaded:
+            downloaded = download_file_from_b2(zip_filename, folder='materials', local_path=zip_path)
         if downloaded and os.path.exists(zip_path):
             try:
-                import zipfile
-                with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                    zip_ref.extractall(scorm_dir)
+                from app.services.scorm_service import process_scorm_package
+                upload_base_folder = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads'))
+                process_scorm_package(zip_path, scorm_id_str, upload_base_folder)
             except Exception as e:
                 print(f"Error unzipping SCORM package on-demand: {e}")
+
+    # Re-check target file path after extraction attempt
+    if not os.path.exists(target_file_path):
+        possible_launch_files = [
+            'scormdriver/indexAPI.html',
+            'index_lms.html',
+            'story.html',
+            'index.htm'
+        ]
+        for candidate in possible_launch_files:
+            candidate_path = os.path.join(scorm_dir, candidate)
+            if os.path.exists(candidate_path):
+                return send_from_directory(scorm_dir, candidate)
+
+        manifest_meta = os.path.join(scorm_dir, 'res_manifest.json')
+        if os.path.exists(manifest_meta):
+            try:
+                import json
+                with open(manifest_meta, 'r') as f:
+                    data = json.load(f)
+                    meta_launch = data.get('launch_href')
+                    if meta_launch and os.path.exists(os.path.join(scorm_dir, meta_launch)):
+                        return send_from_directory(scorm_dir, meta_launch)
+            except Exception:
+                pass
+
+        return "<div style='font-family: sans-serif; padding: 2rem; color: #721c24; background: #f8d7da; border-radius: 8px;'><strong>SCORM Content Not Found</strong><p>The requested SCORM package file could not be located.</p></div>", 404
+
     return send_from_directory(scorm_dir, filename)
 
 

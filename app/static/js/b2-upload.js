@@ -64,6 +64,12 @@ function setupB2Input(input) {
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Uploading to B2 Cloud...';
         }
 
+        let targetFolder = input.dataset.folder || 'materials';
+        const cwTypeSelect = parentForm ? parentForm.querySelector('[name="courseware_type"]') : null;
+        if (file.name.toLowerCase().endsWith('.zip') || (cwTypeSelect && cwTypeSelect.value === 'SCORM')) {
+            targetFolder = 'scorm';
+        }
+
         try {
             const fileContentType = file.type || 'application/octet-stream';
 
@@ -73,7 +79,7 @@ function setupB2Input(input) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     filename: file.name,
-                    folder: folder,
+                    folder: targetFolder,
                     content_type: fileContentType
                 })
             });
@@ -138,7 +144,7 @@ function setupB2Input(input) {
             setHiddenInput(parentForm, 'b2_file_size_bytes', file.size.toString());
 
             // For SCORM packages, check if launch file can be auto-detected or defaults to index.html
-            if (folder === 'scorm' || file.name.endsWith('.zip')) {
+            if (targetFolder === 'scorm' || file.name.endsWith('.zip')) {
                 setHiddenInput(parentForm, 'b2_scorm_launch_href', 'index.html');
             }
 
