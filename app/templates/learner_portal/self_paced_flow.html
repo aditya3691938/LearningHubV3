@@ -636,83 +636,104 @@
                         {% elif cw.courseware_type == 'SCORM' %}
                             <div class="scorm-player-wrapper border-0" style="height: 600px; width: 100%; background: #fff; position: relative;">
                                 <script>
-                                    window.API = {
-                                        LMSInitialize: function() {
-                                            console.log("SCORM API: LMSInitialize");
-                                            return "true";
-                                        },
-                                        LMSGetValue: function(element) {
-                                            console.log("SCORM API: LMSGetValue -> " + element);
-                                            if (element === "cmi.core.lesson_status") {
-                                                {% if active_les.id in reviewed_lesson_ids %}
-                                                return "completed";
-                                                {% else %}
-                                                return "not attempted";
-                                                {% endif %}
-                                            }
-                                            return "";
-                                        },
-                                        LMSSetValue: function(element, value) {
-                                            console.log("SCORM API: LMSSetValue -> " + element + " = " + value);
-                                            if (element === "cmi.core.lesson_status" && (value === "completed" || value === "passed")) {
-                                                fetch("{{ url_for('learners.save_scorm_progress') }}", {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
-                                                    body: JSON.stringify({ lesson_id: {{ active_les.id }}, status: value })
-                                                })
-                                                .then(r => r.json())
-                                                .then(d => {
-                                                    console.log("SCORM Progress saved:", d);
-                                                    if (d.status === 'success') {
-                                                        window.location.reload();
-                                                    }
-                                                });
-                                            }
-                                            return "true";
-                                        },
-                                        LMSCommit: function() { return "true"; },
-                                        LMSFinish: function() { return "true"; },
-                                        GetLastError: function() { return 0; },
-                                        GetErrorString: function() { return "No error"; },
-                                        GetDiagnostic: function() { return "No diagnostic info"; }
-                                    };
-                                    window.API_1484_11 = {
-                                        Initialize: function() { return "true"; },
-                                        GetValue: function(element) { 
-                                            console.log("SCORM 2004 API: GetValue -> " + element);
-                                            if (element === "cmi.completion_status") {
-                                                {% if active_les.id in reviewed_lesson_ids %}
-                                                return "completed";
-                                                {% else %}
-                                                return "incomplete";
-                                                {% endif %}
-                                            }
-                                            return ""; 
-                                        },
-                                        SetValue: function(element, value) {
-                                            console.log("SCORM 2004 API: SetValue -> " + element + " = " + value);
-                                            if ((element === "cmi.completion_status" || element === "cmi.success_status") && (value === "completed" || value === "passed")) {
-                                                fetch("{{ url_for('learners.save_scorm_progress') }}", {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
-                                                    body: JSON.stringify({ lesson_id: {{ active_les.id }}, status: 'completed' })
-                                                })
-                                                .then(r => r.json())
-                                                .then(d => {
-                                                    console.log("SCORM Progress saved:", d);
-                                                    if (d.status === 'success') {
-                                                        window.location.reload();
-                                                    }
-                                                });
-                                            }
-                                            return "true";
-                                        },
-                                        Commit: function() { return "true"; },
-                                        Terminate: function() { return "true"; },
-                                        GetLastError: function() { return 0; },
-                                        GetErrorString: function() { return "No error"; },
-                                        GetDiagnostic: function() { return "No diagnostic info"; }
-                                    };
+                                    (function() {
+                                        var scorm12 = {
+                                            LMSInitialize: function() { console.log("SCORM 1.2 API: LMSInitialize"); return "true"; },
+                                            LMSGetValue: function(element) {
+                                                console.log("SCORM 1.2 API: LMSGetValue -> " + element);
+                                                if (element === "cmi.core.lesson_status") {
+                                                    {% if active_les.id in reviewed_lesson_ids %}
+                                                    return "completed";
+                                                    {% else %}
+                                                    return "not attempted";
+                                                    {% endif %}
+                                                }
+                                                if (element === "cmi.core.student_name") return "{{ current_user_name or 'Learner' }}";
+                                                if (element === "cmi.core.student_id") return "{{ current_user_id or '10001' }}";
+                                                if (element === "cmi.core.credit") return "credit";
+                                                if (element === "cmi.core.entry") return "ab-initio";
+                                                if (element === "cmi.core.lesson_mode") return "normal";
+                                                return "";
+                                            },
+                                            LMSSetValue: function(element, value) {
+                                                console.log("SCORM 1.2 API: LMSSetValue -> " + element + " = " + value);
+                                                if (element === "cmi.core.lesson_status" && (value === "completed" || value === "passed")) {
+                                                    fetch("{{ url_for('learners.save_scorm_progress') }}", {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+                                                        body: JSON.stringify({ lesson_id: {{ active_les.id }}, status: value })
+                                                    })
+                                                    .then(r => r.json())
+                                                    .then(d => {
+                                                        console.log("SCORM Progress saved:", d);
+                                                        if (d.status === 'success') { window.location.reload(); }
+                                                    });
+                                                }
+                                                return "true";
+                                            },
+                                            LMSCommit: function() { return "true"; },
+                                            LMSFinish: function() { return "true"; },
+                                            LMSGetLastError: function() { return "0"; },
+                                            GetLastError: function() { return "0"; },
+                                            LMSGetErrorString: function() { return "No error"; },
+                                            GetErrorString: function() { return "No error"; },
+                                            LMSGetDiagnostic: function() { return "No diagnostic info"; },
+                                            GetDiagnostic: function() { return "No diagnostic info"; }
+                                        };
+
+                                        var scorm2004 = {
+                                            Initialize: function() { console.log("SCORM 2004 API: Initialize"); return "true"; },
+                                            GetValue: function(element) { 
+                                                console.log("SCORM 2004 API: GetValue -> " + element);
+                                                if (element === "cmi.completion_status") {
+                                                    {% if active_les.id in reviewed_lesson_ids %}
+                                                    return "completed";
+                                                    {% else %}
+                                                    return "incomplete";
+                                                    {% endif %}
+                                                }
+                                                if (element === "cmi.learner_name") return "{{ current_user_name or 'Learner' }}";
+                                                if (element === "cmi.learner_id") return "{{ current_user_id or '10001' }}";
+                                                return ""; 
+                                            },
+                                            SetValue: function(element, value) {
+                                                console.log("SCORM 2004 API: SetValue -> " + element + " = " + value);
+                                                if ((element === "cmi.completion_status" || element === "cmi.success_status") && (value === "completed" || value === "passed")) {
+                                                    fetch("{{ url_for('learners.save_scorm_progress') }}", {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+                                                        body: JSON.stringify({ lesson_id: {{ active_les.id }}, status: 'completed' })
+                                                    })
+                                                    .then(r => r.json())
+                                                    .then(d => {
+                                                        console.log("SCORM Progress saved:", d);
+                                                        if (d.status === 'success') { window.location.reload(); }
+                                                    });
+                                                }
+                                                return "true";
+                                            },
+                                            Commit: function() { return "true"; },
+                                            Terminate: function() { return "true"; },
+                                            GetLastError: function() { return "0"; },
+                                            GetErrorString: function() { return "No error"; },
+                                            GetDiagnostic: function() { return "No diagnostic info"; }
+                                        };
+
+                                        window.API = scorm12;
+                                        window.API_1484_11 = scorm2004;
+                                        if (window.parent) {
+                                            try {
+                                                window.parent.API = scorm12;
+                                                window.parent.API_1484_11 = scorm2004;
+                                            } catch (e) {}
+                                        }
+                                        if (window.top) {
+                                            try {
+                                                window.top.API = scorm12;
+                                                window.top.API_1484_11 = scorm2004;
+                                            } catch (e) {}
+                                        }
+                                    })();
                                 </script>
                                 {% if cw.external_url %}
                                 <iframe id="scorm-content-iframe" src="{% if cw.external_url.startswith('http') or cw.external_url.startswith('/') %}{{ cw.external_url }}{% else %}{{ url_for('courses.serve_scorm_file', scorm_id_str=cw.filename, filename=cw.external_url) }}{% endif %}" class="w-100 h-100 border-0" allowfullscreen></iframe>
