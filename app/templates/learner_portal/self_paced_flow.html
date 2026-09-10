@@ -637,6 +637,7 @@
                             <div class="scorm-player-wrapper border-0" style="height: 600px; width: 100%; background: #fff; position: relative;">
                                 <script>
                                     (function() {
+                                        var lastScore = null;
                                         var scorm12 = {
                                             LMSInitialize: function() { console.log("SCORM 1.2 API: LMSInitialize"); return "true"; },
                                             LMSGetValue: function(element) {
@@ -650,6 +651,7 @@
                                                 }
                                                 if (element === "cmi.core.student_name") return "{{ current_user_name or 'Learner' }}";
                                                 if (element === "cmi.core.student_id") return "{{ current_user_id or '10001' }}";
+                                                if (element === "cmi.core.score.raw") return lastScore !== null ? lastScore.toString() : "0";
                                                 if (element === "cmi.core.credit") return "credit";
                                                 if (element === "cmi.core.entry") return "ab-initio";
                                                 if (element === "cmi.core.lesson_mode") return "normal";
@@ -657,15 +659,18 @@
                                             },
                                             LMSSetValue: function(element, value) {
                                                 console.log("SCORM 1.2 API: LMSSetValue -> " + element + " = " + value);
+                                                if (element === "cmi.core.score.raw") {
+                                                    lastScore = parseFloat(value);
+                                                }
                                                 if (element === "cmi.core.lesson_status" && (value === "completed" || value === "passed")) {
                                                     fetch("{{ url_for('learners.save_scorm_progress') }}", {
                                                         method: 'POST',
                                                         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
-                                                        body: JSON.stringify({ lesson_id: {{ active_les.id }}, status: value })
+                                                        body: JSON.stringify({ lesson_id: {{ active_les.id }}, status: value, score: lastScore })
                                                     })
                                                     .then(r => r.json())
                                                     .then(d => {
-                                                        console.log("SCORM Progress saved:", d);
+                                                        console.log("SCORM Progress & Score saved:", d);
                                                         if (d.status === 'success') { window.location.reload(); }
                                                     });
                                                 }
@@ -692,21 +697,27 @@
                                                     return "incomplete";
                                                     {% endif %}
                                                 }
+                                                if (element === "cmi.score.raw") return lastScore !== null ? lastScore.toString() : "0";
                                                 if (element === "cmi.learner_name") return "{{ current_user_name or 'Learner' }}";
                                                 if (element === "cmi.learner_id") return "{{ current_user_id or '10001' }}";
                                                 return ""; 
                                             },
                                             SetValue: function(element, value) {
                                                 console.log("SCORM 2004 API: SetValue -> " + element + " = " + value);
+                                                if (element === "cmi.score.raw" || element === "cmi.score.scaled") {
+                                                    var valNum = parseFloat(value);
+                                                    if (element === "cmi.score.scaled") valNum = valNum * 100;
+                                                    lastScore = valNum;
+                                                }
                                                 if ((element === "cmi.completion_status" || element === "cmi.success_status") && (value === "completed" || value === "passed")) {
                                                     fetch("{{ url_for('learners.save_scorm_progress') }}", {
                                                         method: 'POST',
                                                         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
-                                                        body: JSON.stringify({ lesson_id: {{ active_les.id }}, status: 'completed' })
+                                                        body: JSON.stringify({ lesson_id: {{ active_les.id }}, status: 'completed', score: lastScore })
                                                     })
                                                     .then(r => r.json())
                                                     .then(d => {
-                                                        console.log("SCORM Progress saved:", d);
+                                                        console.log("SCORM Progress & Score saved:", d);
                                                         if (d.status === 'success') { window.location.reload(); }
                                                     });
                                                 }

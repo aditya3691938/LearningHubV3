@@ -1164,16 +1164,16 @@ def save_scorm_progress():
     data = request.get_json() or {}
     lesson_id = data.get('lesson_id')
     status = data.get('status', '').lower() # 'completed', 'passed', 'failed'
+    raw_score = data.get('score') # Raw score or percentage from SCORM
 
     if not lesson_id:
         return jsonify({'status': 'error', 'message': 'Missing lesson_id'}), 400
 
     lesson = CourseLesson.query.get_or_404(lesson_id)
+    enrollment = LearnerEnrollment.query.filter_by(learner_id=learner_id, course_id=lesson.course_id).first()
 
-    if status in ['completed', 'passed']:
-        # Find the learner's enrollment for this course
-        enrollment = LearnerEnrollment.query.filter_by(learner_id=learner_id, course_id=lesson.course_id).first()
-        if enrollment:
+    if enrollment:
+        if status in ['completed', 'passed']:
             rev = LessonReview.query.filter_by(enrollment_id=enrollment.id, lesson_id=lesson.id).first()
             if not rev:
                 rev = LessonReview(
@@ -1181,9 +1181,28 @@ def save_scorm_progress():
                     lesson_id=lesson.id
                 )
                 db.session.add(rev)
-                db.session.commit()
 
-    return jsonify({'status': 'success', 'lesson_id': lesson.id, 'scorm_status': status})
+        # Record SCORM quiz score telemetry into AssessmentAttempt table
+        if raw_score is not None:
+            try:
+                score_val = float(raw_score)
+                pass_pct = lesson.course.pass_percentage or 80.0
+                attempt = AssessmentAttempt(
+                    enrollment_id=enrollment.id,
+                    lesson_id=lesson.id,
+                    assessment_type='SCORM_QUIZ',
+                    score_percentage=score_val,
+                    total_questions=1,
+                    correct_answers=1 if score_val >= pass_pct else 0,
+                    pass_fail='Passed' if score_val >= pass_pct else 'Failed'
+                )
+                db.session.add(attempt)
+            except Exception as e:
+                print(f"Error logging SCORM score attempt: {e}")
+
+        db.session.commit()
+
+    return jsonify({'status': 'success', 'lesson_id': lesson.id, 'scorm_status': status, 'score': raw_score})
 
 
 @learners_bp.route('/grant_extension/<int:enrollment_id>', methods=['POST'])
