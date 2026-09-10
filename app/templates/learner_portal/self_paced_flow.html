@@ -351,13 +351,17 @@
                                         <span class="badge bg-teal-light text-teal border border-teal-subtle text-xxs">{{ g_type if is_gd else cw.courseware_type }}</span>
                                     </div>
                                 </div>
-                                <div class="w-100" style="height: 600px; min-height: 480px; background: #1e1e1e;">
+                                <div class="w-100 position-relative" style="height: 600px; min-height: 480px; background: #1e1e1e;">
+                                    <div id="doc-loader-overlay-{{ cw.id }}" class="d-flex flex-column align-items-center justify-content-center w-100 h-100 position-absolute top-0 start-0 z-3 text-white" style="background: rgba(15, 23, 42, 0.95); transition: opacity 0.4s ease, visibility 0.4s ease;">
+                                        <div class="spinner-border text-info mb-2" role="status" style="width: 2.5rem; height: 2.5rem;"></div>
+                                        <small class="fw-bold text-white-50"><i class="fa-solid fa-file-lines me-1"></i> Loading Document Viewer...</small>
+                                    </div>
                                     {% if is_gd %}
-                                        <iframe src="{{ emb_url }}" class="w-100 h-100 border-0" allowfullscreen allow="autoplay"></iframe>
+                                        <iframe src="{{ emb_url }}" class="w-100 h-100 border-0" allowfullscreen allow="autoplay" onload="dismissScormLoader('doc-loader-overlay-{{ cw.id }}')"></iframe>
                                     {% elif cw.external_url %}
-                                        <iframe src="{{ cw.external_url }}" class="w-100 h-100 border-0" allowfullscreen allow="autoplay"></iframe>
+                                        <iframe src="{{ cw.external_url }}" class="w-100 h-100 border-0" allowfullscreen allow="autoplay" onload="dismissScormLoader('doc-loader-overlay-{{ cw.id }}')"></iframe>
                                     {% else %}
-                                        <iframe src="{{ url_for('courses.stream_courseware', courseware_id=cw.id) }}#toolbar=0" class="w-100 h-100 border-0" allowfullscreen></iframe>
+                                        <iframe src="{{ url_for('courses.stream_courseware', courseware_id=cw.id) }}#toolbar=0" class="w-100 h-100 border-0" allowfullscreen onload="dismissScormLoader('doc-loader-overlay-{{ cw.id }}')"></iframe>
                                     {% endif %}
                                 </div>
                             </div>
@@ -747,7 +751,28 @@
                                     })();
                                 </script>
                                 {% if cw.external_url %}
-                                <iframe id="scorm-content-iframe" src="{% if cw.external_url.startswith('http') or cw.external_url.startswith('/') %}{{ cw.external_url }}{% else %}{{ url_for('courses.serve_scorm_file', scorm_id_str=cw.filename, filename=cw.external_url) }}{% endif %}" class="w-100 h-100 border-0" allowfullscreen></iframe>
+                                <div id="scorm-loader-overlay-{{ cw.id }}" class="d-flex flex-column align-items-center justify-content-center w-100 h-100 position-absolute top-0 start-0 z-3 text-white" style="background: linear-gradient(135deg, #0A4B5C 0%, #062b35 100%); transition: opacity 0.4s ease, visibility 0.4s ease;">
+                                    <div class="spinner-grow text-teal mb-3" role="status" style="width: 3.5rem; height: 3.5rem; color: #00d2d3;">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <h6 class="fw-bold text-white mb-1 letter-spacing-1 font-monospace"><i class="fa-solid fa-cube text-warning me-2 animate-pulse"></i> LOADING INTERACTIVE COURSEWARE...</h6>
+                                    <p class="small text-white-50 mb-3">Initializing interactive SCORM module & assets...</p>
+                                    <div class="progress w-50" style="height: 4px; background: rgba(255,255,255,0.15); border-radius: 2px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" style="width: 100%;"></div>
+                                    </div>
+                                </div>
+                                <iframe id="scorm-content-iframe" src="{% if cw.external_url.startswith('http') or cw.external_url.startswith('/') %}{{ cw.external_url }}{% else %}{{ url_for('courses.serve_scorm_file', scorm_id_str=cw.filename, filename=cw.external_url) }}{% endif %}" class="w-100 h-100 border-0" allowfullscreen onload="dismissScormLoader('scorm-loader-overlay-{{ cw.id }}')"></iframe>
+                                <script>
+                                    function dismissScormLoader(loaderId) {
+                                        const loader = document.getElementById(loaderId);
+                                        if (loader) {
+                                            loader.style.opacity = '0';
+                                            loader.style.visibility = 'hidden';
+                                            setTimeout(function() { if (loader.parentNode) loader.parentNode.removeChild(loader); }, 450);
+                                        }
+                                    }
+                                    setTimeout(function() { dismissScormLoader('scorm-loader-overlay-{{ cw.id }}'); }, 10000);
+                                </script>
                                 {% else %}
                                 <div class="text-center py-5 text-muted">
                                     <i class="fa-solid fa-triangle-exclamation fa-3x text-warning mb-3"></i>
