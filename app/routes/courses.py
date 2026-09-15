@@ -7,6 +7,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from app.models import db
 from app.models.course import Course, CourseAssessment, CourseMaterial, CourseLesson, LessonCourseware, CoursewareAudioTrack, RiseCoursewareVersion, LearnerBlockProgress
 from app.models.feedback import FeedbackRepository, FeedbackResponse
+from app.models.quiz import Quiz
 from app.models.live_class import LiveClass
 from app.services.assessment_service import parse_assessment_csv
 from app.services.report_service import generate_course_analytics_csv, generate_class_attendance_csv
@@ -1167,8 +1168,6 @@ def edit_course(course_id):
         flash(f"Course {course.course_id} updated successfully.", "success")
         return redirect(url_for('courses.view_course', course_id=course.id))
 
-    from app.models.feedback import FeedbackRepository
-    from app.models.quiz import Quiz
     feedback_repos = FeedbackRepository.query.all()
     quizzes = Quiz.query.all()
     return render_template('courses/create_edit.html', course=course, auto_id=course.course_id, feedback_repos=feedback_repos, quizzes=quizzes)
