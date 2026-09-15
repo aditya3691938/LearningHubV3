@@ -167,7 +167,7 @@
                 </div>
             </div>
 
-            {% set sel_les_id = request.args.get('lesson_id') %}
+            {% set sel_les_id = request.args.get('lesson_id') or request.args.get('sel_les_id') or request.args.get('les_id') or sel_les_id %}
 
             
             {% if not sel_les_id %}
@@ -363,13 +363,16 @@
                                     {% else %}
                                         <iframe src="{{ url_for('courses.stream_courseware', courseware_id=cw.id) }}#toolbar=0" class="w-100 h-100 border-0" allowfullscreen onload="dismissScormLoader('doc-loader-overlay-{{ cw.id }}')"></iframe>
                                     {% endif %}
+                                    <script>
+                                        setTimeout(function() { dismissScormLoader('doc-loader-overlay-{{ cw.id }}'); }, 2500);
+                                    </script>
                                 </div>
                             </div>
 
-                        {% elif cw.courseware_type == 'Text' %}
+                        {% elif cw.courseware_type in ['Text', 'Reading Text', 'Text / Reading Instructions'] or (not cw.filename and not cw.external_url and cw.content_text) %}
                             {% set is_rise_blocks = False %}
                             {% set rise_blocks = [] %}
-                            {% if enable_content_authoring and cw.content_text %}
+                            {% if cw.content_text %}
                                 {% set rise_blocks = cw.content_text | from_json %}
                                 {% if rise_blocks is sequence and rise_blocks|length > 0 %}
                                     {% set is_rise_blocks = True %}
@@ -631,9 +634,13 @@
                             {% else %}
                                 <!-- Plain Text Reading Block -->
                                 <div class="p-4 bg-white border rounded">
-                                    <h5 class="fw-bold text-navy mb-3">{{ cw.title }}</h5>
+                                    <h5 class="fw-bold text-navy mb-3"><i class="fa-solid fa-file-lines text-teal me-2"></i>{{ cw.title }}</h5>
                                     <div class="lh-base" style="font-size: 0.95rem;">
-                                        {{ cw.content_text | safe }}
+                                        {% if cw.content_text %}
+                                            {{ cw.content_text | safe }}
+                                        {% else %}
+                                            <p class="text-muted mb-0"><em>{{ active_les.summary or 'Reading instructions and study materials provided for this lesson.' }}</em></p>
+                                        {% endif %}
                                     </div>
                                 </div>
                             {% endif %}
@@ -1128,6 +1135,19 @@
 {% endif %}
 
 <script>
+function dismissScormLoader(loaderId) {
+    var loader = document.getElementById(loaderId);
+    if (loader) {
+        loader.style.opacity = '0';
+        loader.style.visibility = 'hidden';
+        setTimeout(function() {
+            if (loader && loader.parentNode) {
+                loader.parentNode.removeChild(loader);
+            }
+        }, 450);
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.audio-track-select').forEach(function(selectEl) {
         var cwId = selectEl.getAttribute('data-cw-id');

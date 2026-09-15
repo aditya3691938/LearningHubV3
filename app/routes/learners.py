@@ -778,7 +778,7 @@ def self_paced_flow(course_id_str):
         feedback_resp=feedback_resp,
         certificate=cert,
         is_course_expired=is_course_expired,
-        sel_les_id=request.args.get('sel_les_id') or request.args.get('les_id')
+        sel_les_id=request.args.get('lesson_id') or request.args.get('sel_les_id') or request.args.get('les_id')
     )
 
 
