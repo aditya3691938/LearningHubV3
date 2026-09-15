@@ -6,6 +6,7 @@ import json
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session, send_file, current_app, send_from_directory
 from app.models import db
 from app.models.course import Course, CourseAssessment, CourseMaterial, CourseLesson, LessonCourseware, CoursewareAudioTrack, RiseCoursewareVersion, LearnerBlockProgress
+from app.models.feedback import FeedbackRepository, FeedbackResponse
 from app.models.live_class import LiveClass
 from app.services.assessment_service import parse_assessment_csv
 from app.services.report_service import generate_course_analytics_csv, generate_class_attendance_csv
@@ -1143,14 +1144,20 @@ def edit_course(course_id):
 
         # Check if feedback repository or course assessment was updated/added:
         # Demote any completed enrollments for this course back to 'In Progress' if feedback or course end assessment is pending!
-        from app.models.feedback import FeedbackResponse
         from app.models.enrollment import AssessmentAttempt
         for en in course.enrollments:
             passed_att = AssessmentAttempt.query.filter_by(enrollment_id=en.id, assessment_type='COURSE_END', passed=True).first()
             has_post_exam = CourseAssessment.query.filter_by(course_id=course.id, assessment_type='COURSE_END').count() > 0
             
-            fb_repo = course.feedback_repository or FeedbackRepository.query.first()
-            fb_resp = FeedbackResponse.query.filter_by(repo_id=fb_repo.id, learner_id=en.learner_id).first() if fb_repo else None
+            fb_repo = course.feedback_repository
+            if not fb_repo and course.feedback_repo_id:
+                fb_repo = FeedbackRepository.query.get(course.feedback_repo_id)
+            if not fb_repo:
+                fb_repo = FeedbackRepository.query.first()
+                
+            fb_resp = None
+            if fb_repo and hasattr(fb_repo, 'id'):
+                fb_resp = FeedbackResponse.query.filter_by(repo_id=fb_repo.id, learner_id=en.learner_id).first()
             
             if (has_post_exam and not passed_att) or (fb_repo and not fb_resp):
                 if en.completion_status == 'Completed':
