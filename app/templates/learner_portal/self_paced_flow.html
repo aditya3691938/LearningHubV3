@@ -369,7 +369,7 @@
                                 </div>
                             </div>
 
-                        {% elif cw.courseware_type in ['Text', 'Reading Text', 'Text / Reading Instructions'] or (not cw.filename and not cw.external_url and cw.content_text) %}
+                        {% elif cw.courseware_type in ['Text', 'Reading Text', 'Text / Reading Instructions'] or (cw.filename and cw.filename.split('.')[-1]|lower in ['txt', 'text', 'md', 'log', 'csv']) or (not cw.filename and not cw.external_url and cw.content_text) %}
                             {% set is_rise_blocks = False %}
                             {% set rise_blocks = [] %}
                             {% if cw.content_text %}
@@ -633,11 +633,15 @@
                                 </style>
                             {% else %}
                                 <!-- Plain Text Reading Block -->
-                                <div class="p-4 bg-white border rounded">
+                                <div class="p-4 bg-white border rounded-3 shadow-xs">
                                     <h5 class="fw-bold text-navy mb-3"><i class="fa-solid fa-file-lines text-teal me-2"></i>{{ cw.title }}</h5>
-                                    <div class="lh-base" style="font-size: 0.95rem;">
+                                    <div class="lh-base text-dark" style="font-size: 0.98rem; white-space: pre-wrap; font-family: system-ui, -apple-system, sans-serif;">
                                         {% if cw.content_text %}
-                                            {{ cw.content_text | safe }}
+                                            {{ cw.content_text }}
+                                        {% elif cw.filename %}
+                                            <div class="ratio ratio-16x9 border rounded overflow-hidden" style="height: 550px;">
+                                                <iframe src="{{ url_for('courses.stream_courseware', courseware_id=cw.id) }}" class="w-100 h-100 border-0"></iframe>
+                                            </div>
                                         {% else %}
                                             <p class="text-muted mb-0"><em>{{ active_les.summary or 'Reading instructions and study materials provided for this lesson.' }}</em></p>
                                         {% endif %}

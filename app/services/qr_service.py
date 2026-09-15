@@ -1,6 +1,6 @@
 import os
 import qrcode
-from flask import current_app
+from flask import current_app, request, has_request_context
 
 def generate_class_qr(class_id, base_url=None):
     """
@@ -10,7 +10,13 @@ def generate_class_qr(class_id, base_url=None):
     Returns relative static URL.
     """
     if not base_url:
-        base_url = "http://localhost:5000"
+        base_url = os.environ.get('PUBLIC_URL') or os.environ.get('BASE_URL')
+        if not base_url and current_app:
+            base_url = current_app.config.get('PUBLIC_URL') or current_app.config.get('BASE_URL')
+        if not base_url and has_request_context():
+            base_url = request.host_url
+        if not base_url:
+            base_url = "http://localhost:5000"
     base_url = base_url.rstrip('/')
     target_url = f"{base_url}/learner/login?classId={class_id}"
 

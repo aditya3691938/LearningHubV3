@@ -58,7 +58,7 @@
                     <a href="{{ url_for('classes.download_qr', class_id_str=live_class.class_id) }}" class="btn btn-navy bg-navy text-white fw-bold shadow-sm">
                         <i class="fa-solid fa-download me-2"></i> Download QR Code (PNG)
                     </a>
-                    <a href="http://localhost:5000/learner/login?classId={{ live_class.class_id }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                    <a href="{{ url_for('learners.learner_login', _external=True) }}?classId={{ live_class.class_id }}" target="_blank" class="btn btn-outline-primary btn-sm">
                         <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Open Learner Link
                     </a>
                 </div>

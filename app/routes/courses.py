@@ -436,6 +436,16 @@ def add_lesson(course_id):
                     cw_type = 'PDF'
                 elif ext in ['.ppt', '.pptx']:
                     cw_type = 'PPT'
+                elif ext in ['.txt', '.md', '.markdown', '.text', '.html', '.htm', '.csv', '.log']:
+                    cw_type = 'Text'
+                    try:
+                        raw_bytes = cw_file.stream.read()
+                        cw_file.stream.seek(0)
+                        decoded_text = raw_bytes.decode('utf-8', errors='ignore').strip()
+                        if decoded_text and not cw_text:
+                            cw_text = decoded_text
+                    except Exception as t_err:
+                        print(f"Error reading uploaded text file: {t_err}")
 
                 try:
                     from app.services.b2_service import upload_file_to_b2
@@ -640,6 +650,17 @@ def add_lesson_courseware(lesson_id):
                 c_type = 'SCORM'
 
             else:
+                if ext in ['.txt', '.md', '.markdown', '.text', '.html', '.htm', '.csv', '.log']:
+                    c_type = 'Text'
+                    try:
+                        raw_bytes = file_obj.stream.read()
+                        file_obj.stream.seek(0)
+                        decoded_text = raw_bytes.decode('utf-8', errors='ignore').strip()
+                        if decoded_text and not content_text:
+                            content_text = decoded_text
+                    except Exception as t_err:
+                        print(f"Error reading uploaded text file: {t_err}")
+
                 try:
                     from app.services.b2_service import upload_file_to_b2
                     uploaded_name = upload_file_to_b2(file_obj, filename, folder='materials', content_type=file_obj.content_type)
@@ -1677,7 +1698,38 @@ def stream_courseware(courseware_id):
         </html>
         """, 200, {'Content-Type': 'text/html'}
 
-    # 3. Handle PDF, Video, or other uploads (NEVER send raw PPT files to browser)
+    # 3. Handle Text files, PDF, Video, or other uploads
+    if cw.filename and ext in ['.txt', '.text', '.log', '.csv', '.md', '.markdown']:
+        file_path = os.path.join(current_app.config['MATERIALS_FOLDER'], cw.filename)
+        text_content = cw.content_text or ""
+        if not text_content and os.path.exists(file_path):
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    text_content = f.read()
+            except Exception:
+                pass
+        if not text_content:
+            from app.services.b2_service import get_b2_url
+            b2_url = get_b2_url(cw.filename, folder='materials')
+            if b2_url:
+                try:
+                    import urllib.request
+                    req = urllib.request.urlopen(b2_url, timeout=5)
+                    text_content = req.read().decode('utf-8', errors='ignore')
+                except Exception:
+                    return redirect(b2_url)
+        return f"""<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <style>
+                body {{ background: #ffffff; color: #0f172a; font-family: system-ui, -apple-system, sans-serif; padding: 24px; line-height: 1.6; white-space: pre-wrap; font-size: 0.98rem; word-break: break-word; }}
+            </style>
+        </head>
+        <body>{text_content or 'No text content available.'}</body>
+        </html>""", 200, {'Content-Type': 'text/html; charset=utf-8'}
+
     if cw.filename and ext not in ['.ppt', '.pptx']:
         file_path = os.path.join(current_app.config['MATERIALS_FOLDER'], cw.filename)
         if os.path.exists(file_path):
@@ -1797,6 +1849,34 @@ def serve_scorm_file(scorm_id_str, filename):
     if os.path.exists(target_file_path) and os.path.isfile(target_file_path):
         return send_from_directory(scorm_dir, clean_filename)
 
+    # Search scorm_dir recursively for nested asset files or subpath mismatches
+    if os.path.exists(scorm_dir):
+        clean_norm = os.path.normpath(clean_filename).replace('\\', '/')
+        found_rel_path = None
+        for root, dirs, files in os.walk(scorm_dir):
+            for f in files:
+                full_p = os.path.join(root, f)
+                rel_p = os.path.relpath(full_p, scorm_dir).replace('\\', '/')
+                if rel_p.lower() == clean_norm.lower() or rel_p.lower().endswith('/' + clean_norm.lower()):
+                    found_rel_path = rel_p
+                    break
+            if found_rel_path:
+                break
+
+        if not found_rel_path:
+            base_name = os.path.basename(clean_filename).lower()
+            if base_name:
+                for root, dirs, files in os.walk(scorm_dir):
+                    for f in files:
+                        if f.lower() == base_name:
+                            found_rel_path = os.path.relpath(os.path.join(root, f), scorm_dir).replace('\\', '/')
+                            break
+                    if found_rel_path:
+                        break
+
+        if found_rel_path and os.path.isfile(os.path.join(scorm_dir, found_rel_path)):
+            return send_from_directory(scorm_dir, found_rel_path)
+
     ext = os.path.splitext(clean_filename)[1].lower()
     if ext in ['.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.woff', '.woff2', '.ttf', '.eot', '.json', '.wasm', '.mp4', '.mp3']:
         return "Asset not found", 404
@@ -1813,6 +1893,10 @@ def serve_scorm_file(scorm_id_str, filename):
         candidate_path = os.path.join(scorm_dir, candidate)
         if os.path.exists(candidate_path):
             return send_from_directory(scorm_dir, candidate)
+        for root, dirs, files in os.walk(scorm_dir):
+            if candidate.split('/')[-1].lower() in [f.lower() for f in files]:
+                rel_cand = os.path.relpath(os.path.join(root, candidate.split('/')[-1]), scorm_dir)
+                return send_from_directory(scorm_dir, rel_cand)
 
     manifest_meta = os.path.join(scorm_dir, 'res_manifest.json')
     if os.path.exists(manifest_meta):

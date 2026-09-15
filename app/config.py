@@ -13,6 +13,8 @@ class Config:
     SQLALCHEMY_DATABASE_URI = _db_url or f'sqlite:///{os.path.join(BASE_DIR, "lms.db")}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     ENABLE_CONTENT_AUTHORING = os.environ.get('ENABLE_CONTENT_AUTHORING', 'False') == 'True'
+    PUBLIC_URL = os.environ.get('PUBLIC_URL') or os.environ.get('BASE_URL')
+    BASE_URL = PUBLIC_URL
     
     # Decoupled Storage Provider Configuration (MinIO / S3 compat)
     STORAGE_PROVIDER = os.environ.get('STORAGE_PROVIDER', 'local')
