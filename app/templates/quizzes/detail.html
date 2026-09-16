@@ -1,12 +1,15 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="mb-4 d-flex justify-content-between align-items-center">
+<div class="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <div>
         <a href="{{ url_for('quizzes.list_quizzes') }}" class="btn btn-light rounded-pill shadow-sm mb-2 text-muted">
             <i class="fas fa-arrow-left me-2"></i> Back to Quizzes
         </a>
-        <h3 class="fw-bold text-navy mb-0">{{ quiz.title }}</h3>
+        <h3 class="fw-bold text-navy mb-0 d-inline-block me-3">{{ quiz.title }}</h3>
+        <a href="{{ url_for('quizzes.edit_quiz', quiz_id=quiz.id) }}" class="btn btn-sm btn-outline-primary rounded-pill shadow-sm align-top mt-1">
+            <i class="fas fa-pencil me-1"></i> Edit Details
+        </a>
         <p class="text-muted mt-2 mb-0">{{ quiz.description or 'No description provided.' }}</p>
     </div>
     <div class="text-end">
@@ -18,24 +21,24 @@
 
 <div class="row">
     <!-- Questions List -->
-    <div class="col-lg-8">
+    <div class="col-lg-7">
         <div class="card shadow-sm border-0 rounded-4 mb-4">
-            <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between">
-                <h5 class="fw-bold text-navy"><i class="fas fa-list-ol text-teal me-2"></i> Questions ({{ questions|length }})</h5>
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-navy mb-0"><i class="fas fa-list-ol text-teal me-2"></i> Questions ({{ questions|length }})</h5>
             </div>
             <div class="card-body">
                 {% if questions %}
                 <div class="accordion" id="questionsAccordion">
                     {% for q in questions %}
                     <div class="accordion-item border-0 mb-3 shadow-sm rounded-4 overflow-hidden">
-                        <h2 class="accordion-header">
-                            <button class="accordion-button {% if not loop.first %}collapsed{% endif %} bg-light text-navy fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseQ{{ q.id }}">
+                        <h2 class="accordion-header d-flex align-items-center bg-light">
+                            <button class="accordion-button {% if not loop.first %}collapsed{% endif %} bg-light text-navy fw-bold flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapseQ{{ q.id }}">
                                 Q{{ q.serial_number }}. {{ q.question_text }}
                             </button>
                         </h2>
                         <div id="collapseQ{{ q.id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#questionsAccordion">
                             <div class="accordion-body bg-white">
-                                <ul class="list-group list-group-flush">
+                                <ul class="list-group list-group-flush mb-3">
                                     <li class="list-group-item {% if q.correct_option == 'Option1' %}list-group-item-success fw-bold{% endif %}">A) {{ q.option1 }} {% if q.correct_option == 'Option1' %}<i class="fas fa-check-circle text-success float-end"></i>{% endif %}</li>
                                     <li class="list-group-item {% if q.correct_option == 'Option2' %}list-group-item-success fw-bold{% endif %}">B) {{ q.option2 }} {% if q.correct_option == 'Option2' %}<i class="fas fa-check-circle text-success float-end"></i>{% endif %}</li>
                                     <li class="list-group-item {% if q.correct_option == 'Option3' %}list-group-item-success fw-bold{% endif %}">C) {{ q.option3 }} {% if q.correct_option == 'Option3' %}<i class="fas fa-check-circle text-success float-end"></i>{% endif %}</li>
@@ -44,32 +47,43 @@
                                     <li class="list-group-item {% if q.correct_option == 'Option5' %}list-group-item-success fw-bold{% endif %}">E) {{ q.option5 }} {% if q.correct_option == 'Option5' %}<i class="fas fa-check-circle text-success float-end"></i>{% endif %}</li>
                                     {% endif %}
                                 </ul>
+                                <div class="text-end">
+                                    <form action="{{ url_for('quizzes.delete_question', quiz_id=quiz.id, question_id=q.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete question Q{{ q.serial_number }}?');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-xs btn-outline-danger rounded-pill px-3 py-1">
+                                            <i class="fas fa-trash me-1"></i> Delete Question
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="text-center text-muted py-4">
-                    <i class="fas fa-folder-open fa-2x mb-2 text-light"></i>
-                    <p>No questions added yet.</p>
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-folder-open fa-3x mb-3 text-light"></i>
+                    <h5>No Questions Added Yet</h5>
+                    <p class="small">Add questions using the form on the right or bulk upload via CSV.</p>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
 
-    <!-- Add Question Form -->
-    <div class="col-lg-4">
-        <div class="card shadow-sm border-0 rounded-4 sticky-top" style="top: 20px;">
+    <!-- Right Column: Add Question / CSV Upload / Delete Quiz -->
+    <div class="col-lg-5">
+        <!-- Add Question Form -->
+        <div class="card shadow-sm border-0 rounded-4 mb-4">
             <div class="card-header bg-navy text-white rounded-top-4 py-3">
                 <h5 class="mb-0 fw-bold"><i class="fas fa-plus-circle me-2"></i> Add Question</h5>
             </div>
             <div class="card-body">
                 <form action="{{ url_for('quizzes.add_question', quiz_id=quiz.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Question Text</label>
-                        <textarea name="question_text" class="form-control" rows="2" required></textarea>
+                        <label class="form-label fw-bold small">Question Text</label>
+                        <textarea name="question_text" class="form-control" rows="2" required placeholder="Enter the question here..."></textarea>
                     </div>
                     
                     <div class="row g-2 mb-2">
@@ -100,8 +114,8 @@
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label fw-bold">Correct Option</label>
-                        <select name="correct_option" class="form-select" required>
+                        <label class="form-label fw-bold small">Correct Option</label>
+                        <select name="correct_option" class="form-select form-select-sm" required>
                             <option value="">Select Correct Option...</option>
                             <option value="Option1">Option A</option>
                             <option value="Option2">Option B</option>
@@ -115,10 +129,36 @@
                         <i class="fas fa-save me-2"></i> Save Question
                     </button>
                 </form>
-                
-                <hr class="my-4">
-                
+            </div>
+        </div>
+
+        <!-- CSV Bulk Upload Card -->
+        <div class="card shadow-sm border-0 rounded-4 mb-4">
+            <div class="card-header bg-light border-bottom-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold text-navy"><i class="fas fa-file-csv text-teal me-2"></i> Bulk Import via CSV / Excel</h6>
+                <a href="{{ url_for('courses.download_sample_csv', csv_type='assessment') }}" class="btn btn-xs btn-outline-primary rounded-pill">
+                    <i class="fas fa-download me-1"></i> Sample CSV
+                </a>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('quizzes.upload_csv', quiz_id=quiz.id) }}" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label small text-muted">Select CSV or Excel file</label>
+                        <input type="file" name="csv_file" accept=".csv, .xlsx, .xls" class="form-control form-control-sm" required>
+                    </div>
+                    <button type="submit" class="btn btn-outline-teal w-100 rounded-pill btn-sm">
+                        <i class="fas fa-upload me-2"></i> Upload & Append Questions
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Delete Entire Quiz Card -->
+        <div class="card shadow-sm border-0 rounded-4 border-danger border-top border-3">
+            <div class="card-body text-center p-3">
                 <form action="{{ url_for('quizzes.delete_quiz', quiz_id=quiz.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to completely delete this quiz and all its questions?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-outline-danger w-100 rounded-pill btn-sm">
                         <i class="fas fa-trash me-2"></i> Delete Entire Quiz
                     </button>
