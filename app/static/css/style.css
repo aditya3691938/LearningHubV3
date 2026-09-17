@@ -548,6 +548,41 @@ h1, h2, h3, h4, h5, h6, strong, b {
     color: #FFFFFF !important;
 }
 
+.btn-toggle-select {
+    background-color: rgba(13, 148, 136, 0.08) !important;
+    color: #0D9488 !important;
+    border: 1px solid rgba(13, 148, 136, 0.35) !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    padding: 0.25rem 0.75rem !important;
+    border-radius: 50rem !important;
+    transition: all 0.2s ease-in-out !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+}
+
+.btn-toggle-select:hover {
+    background-color: #0D9488 !important;
+    color: #ffffff !important;
+    border-color: #0D9488 !important;
+    box-shadow: 0 2px 8px rgba(13, 148, 136, 0.3) !important;
+}
+
+.btn-toggle-select.is-selected {
+    background-color: rgba(225, 29, 72, 0.08) !important;
+    color: #E11D48 !important;
+    border-color: rgba(225, 29, 72, 0.35) !important;
+}
+
+.btn-toggle-select.is-selected:hover {
+    background-color: #E11D48 !important;
+    color: #ffffff !important;
+    border-color: #E11D48 !important;
+    box-shadow: 0 2px 8px rgba(225, 29, 72, 0.3) !important;
+}
+
 .badge {
     font-family: var(--font-heading) !important;
     font-weight: 600 !important;
