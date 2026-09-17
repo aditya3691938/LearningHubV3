@@ -21,7 +21,10 @@ def get_presigned_upload_url():
     if not filename:
         return jsonify({'error': 'Filename is required'}), 400
 
-    allowed_folders = ['thumbnails', 'materials', 'audio', 'scorm', 'profile_pics', 'dashboard', 'external_certs', 'general']
+    if folder == 'profiles':
+        folder = 'profile_pics'
+
+    allowed_folders = ['thumbnails', 'materials', 'audio', 'scorm', 'profile_pics', 'profiles', 'dashboard', 'external_certs', 'general']
     if folder and folder not in allowed_folders:
         folder = 'general'
 

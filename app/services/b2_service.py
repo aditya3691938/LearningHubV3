@@ -160,15 +160,30 @@ def get_b2_url(filename, folder='', expires_in=86400):
     If the bucket is Private or credentials are configured, generates a SigV4 presigned URL
     allowing direct browser playback/downloads without 'UnauthorizedAccess' errors.
     """
-    endpoint = os.environ.get('B2_ENDPOINT_URL') or os.environ.get('S3_ENDPOINT_URL')
-    bucket = os.environ.get('B2_BUCKET_NAME') or os.environ.get('S3_BUCKET')
-    if not endpoint or not bucket or not filename:
+    if not filename:
         return None
 
-    key = f"{folder}/{filename}" if folder else filename
+    if str(filename).startswith('http://') or str(filename).startswith('https://'):
+        return filename
+
+    # Normalize folder aliases
+    if folder == 'profiles':
+        folder = 'profile_pics'
+
+    clean_filename = str(filename)
+    if clean_filename.startswith('profiles/'):
+        clean_filename = clean_filename[len('profiles/'):]
+    if clean_filename.startswith('profile_pics/'):
+        clean_filename = clean_filename[len('profile_pics/'):]
+
+    key = f"{folder}/{clean_filename}" if folder else clean_filename
+
+    endpoint = os.environ.get('B2_ENDPOINT_URL') or os.environ.get('S3_ENDPOINT_URL')
+    bucket = os.environ.get('B2_BUCKET_NAME') or os.environ.get('S3_BUCKET')
+
     b2 = get_b2_client()
 
-    if b2:
+    if b2 and bucket:
         try:
             return b2.generate_presigned_url(
                 'get_object',
@@ -176,10 +191,17 @@ def get_b2_url(filename, folder='', expires_in=86400):
                 ExpiresIn=expires_in
             )
         except Exception as e:
-            print(f"Presigned URL generation notice: {e}")
+            print(f"Presigned URL generation notice for '{key}': {e}")
 
-    endpoint = endpoint.rstrip('/')
-    return f"{endpoint}/{bucket}/{key}"
+    if endpoint and bucket:
+        endpoint = endpoint.rstrip('/')
+        return f"{endpoint}/{bucket}/{key}"
+
+    # Fallback to local upload directory route if B2 environment is not set up
+    final_name = clean_filename.split('/')[-1]
+    if folder:
+        return f"/static/uploads/{folder}/{final_name}"
+    return f"/static/uploads/{final_name}"
 
 
 
