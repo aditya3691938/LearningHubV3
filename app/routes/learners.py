@@ -1093,30 +1093,29 @@ def take_assessment(course_id, assessment_type):
                 'correct_text': c_text
             })
 
-        if is_course_end:
-            if passed:
-                flash(f"Congratulations! You passed the Course-End Assessment with {score_pct}%. Please submit the Course Feedback form to complete your course and receive your certificate!", "success")
-            else:
-                flash(f"Course-End Assessment score: {score_pct}% ({correct}/{total}). Pass mark is {course.pass_percentage}%. Attempts remaining: {max(0, 3 - enrollment.attempts_count)}.", "warning" if enrollment.attempts_count < 3 else "danger")
-            if live_class:
-                return redirect(url_for('learners.class_flow', class_id_str=live_class.class_id))
-            else:
-                return redirect(url_for('learners.self_paced_flow', course_id_str=course.course_id))
+        if passed:
+            flash(f"Assessment Passed! Final Score: {score_pct}% ({correct}/{total} correct).", "success")
         else:
-            # Show per-question result breakdown
-            return render_template(
-                'learner_portal/assessment_result.html',
-                course=course,
-                live_class=live_class,
-                assessment_type=type_upper,
-                questions=questions,
-                q_details=q_details,
-                user_answers=user_answers,
-                score_pct=score_pct,
-                passed=passed,
-                correct=correct,
-                total=total
-            )
+            flash(f"Assessment Score: {score_pct}% ({correct}/{total} correct). Pass threshold is {course.pass_percentage}%.", "warning")
+
+        from app.models.feedback import FeedbackRepository
+        # Always render assessment_result.html breakdown view regardless of assessment type or score
+        return render_template(
+            'learner_portal/assessment_result.html',
+            course=course,
+            live_class=live_class,
+            assessment_type=type_upper,
+            is_course_end=is_course_end,
+            attempts_count=enrollment.attempts_count if is_course_end else None,
+            questions=questions,
+            q_details=q_details,
+            user_answers=user_answers,
+            score_pct=score_pct,
+            passed=passed,
+            correct=correct,
+            total=total,
+            feedback_repo=course.feedback_repository or FeedbackRepository.query.first()
+        )
 
     return render_template(
         'learner_portal/assessment.html',

@@ -4,73 +4,112 @@
 <div class="row justify-content-center">
   <div class="col-12 col-lg-9 col-xl-8">
     {% set type_label = assessment_type.replace('_', ' ') %}
-    <div class="card border-0 shadow-sm mb-4 overflow-hidden">
+    <div class="card border-0 shadow-sm mb-4 overflow-hidden rounded-4">
       <div class="card-body p-0">
-        <div class="p-5 text-white text-center" style="background: {% if passed %}linear-gradient(135deg,#10b981,#059669){% else %}linear-gradient(135deg,#ef4444,#dc2626){% endif %};">
+        <div class="p-5 text-white text-center" style="background: {% if passed %}linear-gradient(135deg, #0D9488 0%, #059669 100%){% else %}linear-gradient(135deg, #EF4444 0%, #DC2626 100%){% endif %};">
           <i class="fa-solid {% if passed %}fa-circle-check{% else %}fa-circle-xmark{% endif %} fa-4x mb-3 d-block"></i>
-          <h2 class="fw-bold mb-1">{% if passed %}Assessment Passed!{% else %}Not Passed Yet{% endif %}</h2>
-          <p class="mb-4 opacity-75">{{ type_label }} — {{ course.name }}</p>
-          <div class="d-flex justify-content-center gap-5">
-            <div class="text-center">
-              <div class="fw-bold" style="font-size:2.5rem;">{{ score_pct }}%</div>
-              <small class="opacity-75">Your Score</small>
+          <h2 class="fw-extrabold mb-1">{% if passed %}Assessment Passed!{% else %}Not Passed Yet{% endif %}</h2>
+          <p class="mb-4 text-white-50 font-monospace fs-6">{{ type_label }} — {{ course.name }}</p>
+
+          <div class="d-flex justify-content-center align-items-center gap-4 gap-md-5">
+            <div class="text-center bg-white-10 backdrop-blur px-4 py-2.5 rounded-3 border border-white-20" style="background: rgba(255,255,255,0.15);">
+              <div class="fw-extrabold" style="font-size:2.4rem;">{{ score_pct }}%</div>
+              <small class="text-white-50 text-uppercase tracking-wider fw-bold" style="font-size:0.7rem;">Your Score</small>
             </div>
-            <div class="text-center">
-              <div class="fw-bold" style="font-size:2.5rem;">{{ correct }}/{{ total }}</div>
-              <small class="opacity-75">Correct Answers</small>
+            <div class="text-center bg-white-10 backdrop-blur px-4 py-2.5 rounded-3 border border-white-20" style="background: rgba(255,255,255,0.15);">
+              <div class="fw-extrabold" style="font-size:2.4rem;">{{ correct }}/{{ total }}</div>
+              <small class="text-white-50 text-uppercase tracking-wider fw-bold" style="font-size:0.7rem;">Correct Answers</small>
+            </div>
+            <div class="text-center bg-white-10 backdrop-blur px-4 py-2.5 rounded-3 border border-white-20" style="background: rgba(255,255,255,0.15);">
+              <div class="fw-extrabold" style="font-size:2.4rem;">{{ course.pass_percentage }}%</div>
+              <small class="text-white-50 text-uppercase tracking-wider fw-bold" style="font-size:0.7rem;">Pass Threshold</small>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <div class="d-flex gap-2 mb-4 flex-wrap">
-      {% if live_class %}
-      <a href="{{ url_for('learners.class_flow', class_id_str=live_class.class_id) }}" class="btn btn-teal fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> Back to Class</a>
-      {% else %}
-      <a href="{{ url_for('learners.self_paced_flow', course_id_str=course.course_id) }}" class="btn btn-teal fw-bold"><i class="fa-solid fa-arrow-left me-1"></i> Back to Course</a>
+
+    <!-- Navigation & Action Controls -->
+    <div class="d-flex gap-2 mb-4 flex-wrap align-items-center justify-content-between">
+      <div class="d-flex gap-2 flex-wrap">
+        {% if live_class %}
+        <a href="{{ url_for('learners.class_flow', class_id_str=live_class.class_id) }}" class="btn btn-teal text-white fw-bold rounded-3 shadow-xs">
+          <i class="fa-solid fa-arrow-left me-1"></i> Return to Live Class
+        </a>
+        {% else %}
+        <a href="{{ url_for('learners.self_paced_flow', course_id_str=course.course_id) }}" class="btn btn-teal text-white fw-bold rounded-3 shadow-xs">
+          <i class="fa-solid fa-arrow-left me-1"></i> Return to Course
+        </a>
+        {% endif %}
+        <a href="{{ url_for('learners.my_portal') }}" class="btn btn-light border fw-bold rounded-3 shadow-xs">
+          <i class="fa-solid fa-house me-1"></i> My Portal
+        </a>
+      </div>
+
+      {% if is_course_end and passed and feedback_repo %}
+      <a href="{{ url_for('learners.submit_feedback', repo_id=feedback_repo.id, course_id=course.id) }}" class="btn btn-warning text-dark fw-bold rounded-3 shadow-xs px-4">
+        <i class="fa-solid fa-pen-to-square me-1"></i> Complete Course Feedback <i class="fa-solid fa-arrow-right ms-1"></i>
+      </a>
       {% endif %}
-      <a href="{{ url_for('learners.my_portal') }}" class="btn btn-light border fw-semibold"><i class="fa-solid fa-house me-1"></i> My Portal</a>
     </div>
-    <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-list-check me-2 text-teal"></i> Question Breakdown</h5>
+
+    <!-- Question Validator Breakdown Summary -->
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-list-check me-2 text-teal"></i> Assessment Validator Summary</h5>
+      <span class="badge bg-teal-subtle text-teal border border-teal-subtle font-monospace px-3 py-1.5 rounded-pill">{{ correct }} of {{ total }} Correct</span>
+    </div>
+
     {% for item in q_details %}
     {% set q = item.question %}
     {% set is_correct = item.is_correct %}
-    <div class="card border-0 shadow-sm mb-3 p-3 border-start border-4 {% if is_correct %}border-success{% else %}border-danger{% endif %}">
+    <div class="card border-0 shadow-sm mb-3 p-3.5 border-start border-4 rounded-3 {% if is_correct %}border-success{% else %}border-danger{% endif %}">
       <div class="d-flex align-items-start gap-3">
-        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 {% if is_correct %}bg-success-subtle{% else %}bg-danger-subtle{% endif %}" style="width:36px;height:36px;min-width:36px;">
-          <i class="fa-solid {% if is_correct %}fa-check text-success{% else %}fa-xmark text-danger{% endif %}"></i>
+        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 mt-1 {% if is_correct %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %}" style="width:36px;height:36px;min-width:36px;">
+          <i class="fa-solid {% if is_correct %}fa-check{% else %}fa-xmark{% endif %} fs-5"></i>
         </div>
         <div class="flex-grow-1">
-          <p class="fw-semibold text-dark mb-3 small">Q{{ loop.index }}. {{ q.question }}</p>
-          <div class="row g-2">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="badge {% if is_correct %}bg-success-subtle text-success border border-success-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %} font-monospace">
+              Question {{ loop.index }} &bull; {% if is_correct %}Correct (+1){% else %}Incorrect (0){% endif %}
+            </span>
+          </div>
+          <p class="fw-bold text-navy mb-3 fs-6">{{ q.question }}</p>
+          <div class="row g-2.5">
             {% set options = [(1, q.option1), (2, q.option2), (3, q.option3), (4, q.option4), (5, q.option5)] %}
             {% for opt_idx, opt_text in options %}
             {% if opt_text %}
             <div class="col-12 col-sm-6">
-              <div class="p-2 rounded-3 border small
-                {% if opt_idx == item.correct_opt_idx %}bg-success-subtle border-success text-success fw-semibold
-                {% elif opt_idx == item.user_opt_idx and not is_correct %}bg-danger-subtle border-danger text-danger
-                {% else %}bg-light text-muted{% endif %}">
-                {% if opt_idx == item.correct_opt_idx %}<i class="fa-solid fa-check me-1"></i> (Correct Answer)
-                {% elif opt_idx == item.user_opt_idx and not is_correct %}<i class="fa-solid fa-xmark me-1"></i> (Your Choice)
-                {% else %}<i class="fa-regular fa-circle me-1 opacity-50"></i>{% endif %}
-                {{ opt_text }}
+              <div class="p-2.5 rounded-3 border small transition-all
+                {% if opt_idx == item.correct_opt_idx %}bg-success-subtle border-success text-success fw-bold shadow-xs
+                {% elif opt_idx == item.user_opt_idx and not is_correct %}bg-danger-subtle border-danger text-danger fw-bold shadow-xs
+                {% else %}bg-light text-muted opacity-75{% endif %}">
+                {% if opt_idx == item.correct_opt_idx %}
+                  <i class="fa-solid fa-circle-check me-1.5 text-success"></i> <strong>{{ opt_text }}</strong> <span class="badge bg-success text-white ms-1 text-xxs">Correct Answer</span>
+                {% elif opt_idx == item.user_opt_idx and not is_correct %}
+                  <i class="fa-solid fa-circle-xmark me-1.5 text-danger"></i> <strong>{{ opt_text }}</strong> <span class="badge bg-danger text-white ms-1 text-xxs">Your Selection</span>
+                {% else %}
+                  <i class="fa-regular fa-circle me-1.5 opacity-50"></i> {{ opt_text }}
+                {% endif %}
               </div>
             </div>
             {% endif %}
             {% endfor %}
           </div>
           {% if not is_correct %}
-          <p class="text-muted text-xs mt-2.5 mb-0"><i class="fa-solid fa-lightbulb text-warning me-1"></i>
-            Your answer: <strong class="text-danger">{{ item.user_selected_text }}</strong> &nbsp;&bull;&nbsp;
-            Correct answer: <strong class="text-success">{{ item.correct_text }}</strong>
-          </p>
+          <div class="p-2.5 bg-light rounded-3 border mt-3 small text-secondary">
+            <i class="fa-solid fa-lightbulb text-warning me-1.5"></i>
+            <strong>Summary:</strong> Your answer was <strong class="text-danger">'{{ item.user_selected_text }}'</strong>.
+            The correct answer is <strong class="text-success">'{{ item.correct_text }}'</strong>.
+          </div>
           {% endif %}
         </div>
       </div>
     </div>
     {% else %}
-    <div class="text-center py-5 text-muted"><i class="fa-solid fa-circle-info fa-2x mb-2 d-block opacity-30"></i>No question details available.</div>
+    <div class="card border-0 shadow-sm p-5 text-center text-muted rounded-4">
+      <i class="fa-solid fa-circle-info fa-3x mb-3 text-teal opacity-50"></i>
+      <h6 class="fw-bold">No question details available</h6>
+    </div>
     {% endfor %}
   </div>
 </div>
