@@ -81,6 +81,10 @@ def create_course():
             flash('Course Name is required.', 'danger')
             return redirect(url_for('courses.create_course'))
 
+        access_type = request.form.get('access_type', 'Public').strip()
+        target_department = request.form.get('target_department', 'ALL').strip()
+        target_designation = request.form.get('target_designation', 'ALL').strip()
+
         course_id = Course.generate_course_id(mode)
         new_course = Course(
             course_id=course_id,
@@ -94,7 +98,10 @@ def create_course():
             post_quiz_id=int(request.form.get('post_quiz_id')) if request.form.get('post_quiz_id') else None,
             has_certificate=has_certificate,
             is_sequential=is_sequential,
-            completion_date=completion_date
+            completion_date=completion_date,
+            access_type=access_type,
+            target_department=target_department,
+            target_designation=target_designation
         )
         db.session.add(new_course)
         db.session.commit()
@@ -200,10 +207,13 @@ def create_course():
 
     from app.models.feedback import FeedbackRepository
     from app.models.quiz import Quiz
+    from app.models.user import Learner
     feedback_repos = FeedbackRepository.query.all()
     quizzes = Quiz.query.all()
+    departments = [d[0] for d in db.session.query(Learner.department).filter(Learner.department.isnot(None), Learner.department != '').distinct().order_by(Learner.department).all() if d[0]]
+    designations = [d[0] for d in db.session.query(Learner.designation).filter(Learner.designation.isnot(None), Learner.designation != '').distinct().order_by(Learner.designation).all() if d[0]]
     auto_id = Course.generate_course_id('Self Paced')
-    return render_template('courses/create_edit.html', auto_id=auto_id, course=None, feedback_repos=feedback_repos, quizzes=quizzes)
+    return render_template('courses/create_edit.html', auto_id=auto_id, course=None, feedback_repos=feedback_repos, quizzes=quizzes, departments=departments, designations=designations)
 
 
 @courses_bp.route('/generate_id')
@@ -1052,6 +1062,10 @@ def edit_course(course_id):
         else:
             course.completion_date = None
 
+        course.access_type = request.form.get('access_type', 'Public').strip()
+        course.target_department = request.form.get('target_department', 'ALL').strip()
+        course.target_designation = request.form.get('target_designation', 'ALL').strip()
+
         # Handle Thumbnail Upload (Direct B2 Upload or Server Fallback)
         b2_thumb = request.form.get('b2_uploaded_filename')
         if b2_thumb:
@@ -1168,9 +1182,12 @@ def edit_course(course_id):
         flash(f"Course {course.course_id} updated successfully.", "success")
         return redirect(url_for('courses.view_course', course_id=course.id))
 
+    from app.models.user import Learner
     feedback_repos = FeedbackRepository.query.all()
     quizzes = Quiz.query.all()
-    return render_template('courses/create_edit.html', course=course, auto_id=course.course_id, feedback_repos=feedback_repos, quizzes=quizzes)
+    departments = [d[0] for d in db.session.query(Learner.department).filter(Learner.department.isnot(None), Learner.department != '').distinct().order_by(Learner.department).all() if d[0]]
+    designations = [d[0] for d in db.session.query(Learner.designation).filter(Learner.designation.isnot(None), Learner.designation != '').distinct().order_by(Learner.designation).all() if d[0]]
+    return render_template('courses/create_edit.html', course=course, auto_id=course.course_id, feedback_repos=feedback_repos, quizzes=quizzes, departments=departments, designations=designations)
 
 
 @courses_bp.route('/<int:course_id>/archive', methods=['POST'])

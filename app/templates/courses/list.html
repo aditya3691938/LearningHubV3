@@ -87,6 +87,7 @@
                         <th>Course ID</th>
                         <th>Course Name</th>
                         <th>Mode</th>
+                        <th>Access</th>
                         <th>Duration</th>
                         <th>Pass %</th>
                         <th>Assessments</th>
@@ -123,6 +124,17 @@
                             <span class="badge bg-primary-subtle text-primary border border-primary-subtle">Live Online</span>
                             {% else %}
                             <span class="badge bg-secondary-subtle text-secondary border">{{ c.mode }}</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Access">
+                            {% if c.access_type == 'Private' %}
+                            <span class="badge bg-warning-subtle text-dark border border-warning-subtle" title="Dept: {{ c.target_department or 'ALL' }} | Desg: {{ c.target_designation or 'ALL' }}">
+                                <i class="fa-solid fa-lock me-1 text-warning"></i> Private
+                            </span>
+                            {% else %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                <i class="fa-solid fa-globe me-1 text-success"></i> Public
+                            </span>
                             {% endif %}
                         </td>
                         <td data-label="Duration">{{ c.duration_hours }} Hours</td>

@@ -109,6 +109,47 @@
                     <small class="text-muted">Target completion date for learners (Optional)</small>
                 </div>
 
+                <div class="col-md-12">
+                    <div class="card p-3 bg-light border-0">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h6 class="fw-bold text-navy mb-0">
+                                <i class="fa-solid fa-user-lock me-2 text-primary"></i> Course Access Control & Visibility
+                            </h6>
+                            <span class="badge bg-white text-dark border font-monospace">Public / Private Targeting</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="access_type" class="form-label fw-bold">Access Type</label>
+                                <select class="form-select" id="access_type" name="access_type" onchange="toggleAccessTargetingFields()">
+                                    <option value="Public" {% if not course or course.access_type == 'Public' %}selected{% endif %}>Public (Open to All Learners)</option>
+                                    <option value="Private" {% if course and course.access_type == 'Private' %}selected{% endif %}>Private (Target Specific Dept / Designation)</option>
+                                </select>
+                                <small class="text-muted d-block mt-1">Public courses are open to all catalog learners. Private courses restrict access to assigned target groups.</small>
+                            </div>
+                            <div class="col-md-4" id="target_dept_container">
+                                <label for="target_department" class="form-label fw-bold">Target Department</label>
+                                <select class="form-select" id="target_department" name="target_department">
+                                    <option value="ALL" {% if not course or course.target_department == 'ALL' or not course.target_department %}selected{% endif %}>All Departments</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept }}" {% if course and course.target_department == dept %}selected{% endif %}>{{ dept }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted d-block mt-1">Restrict course to learners in a specific department</small>
+                            </div>
+                            <div class="col-md-4" id="target_desg_container">
+                                <label for="target_designation" class="form-label fw-bold">Target Designation</label>
+                                <select class="form-select" id="target_designation" name="target_designation">
+                                    <option value="ALL" {% if not course or course.target_designation == 'ALL' or not course.target_designation %}selected{% endif %}>All Designations</option>
+                                    {% for desg in designations %}
+                                    <option value="{{ desg }}" {% if course and course.target_designation == desg %}selected{% endif %}>{{ desg }}</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted d-block mt-1">Restrict course to learners with a specific designation</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="col-md-12" id="sequential_container">
                     <div class="card p-3 bg-light border-0">
                         <div class="d-flex align-items-center justify-content-between">
@@ -217,6 +258,22 @@ document.addEventListener('DOMContentLoaded', function() {
     modeSelect.addEventListener('change', fetchCourseId);
     fetchCourseId();
     {% endif %}
+
+    function toggleAccessTargetingFields() {
+        const accessSelect = document.getElementById('access_type');
+        if (!accessSelect) return;
+        const isPrivate = accessSelect.value === 'Private';
+        const deptContainer = document.getElementById('target_dept_container');
+        const desgContainer = document.getElementById('target_desg_container');
+        if (deptContainer) deptContainer.style.opacity = isPrivate ? '1' : '0.6';
+        if (desgContainer) desgContainer.style.opacity = isPrivate ? '1' : '0.6';
+    }
+
+    const accessSelect = document.getElementById('access_type');
+    if (accessSelect) {
+        accessSelect.addEventListener('change', toggleAccessTargetingFields);
+        toggleAccessTargetingFields();
+    }
 
     modeSelect.addEventListener('change', updateModeVisibility);
     updateModeVisibility();

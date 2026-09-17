@@ -51,15 +51,26 @@
             <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden course-card position-relative transition-all" style="transition: transform 0.2s ease;">
                 <div class="position-relative">
                     {% if c.thumbnail_filename %}
-                    <img src="{{ url_for('static', filename='uploads/' + c.thumbnail_filename) }}" class="card-img-top object-fit-cover" style="height: 160px;" alt="{{ c.name }}">
+                    <img src="{{ get_b2_url(c.thumbnail_filename, folder='thumbnails') }}" class="card-img-top object-fit-cover" style="height: 160px;" alt="{{ c.name }}">
                     {% else %}
                     <div class="bg-teal-subtle text-teal d-flex align-items-center justify-content-center" style="height: 160px; font-size: 3rem;">
                         <i class="fa-solid {% if c.mode == 'Live' %}fa-users{% else %}fa-laptop-code{% endif %}"></i>
                     </div>
                     {% endif %}
-                    <span class="badge position-absolute top-0 end-0 m-3 shadow-sm {% if c.mode == 'Live' %}bg-info text-white{% else %}bg-teal text-white{% endif %}">
-                        {{ c.mode }}
-                    </span>
+                    <div class="position-absolute top-0 end-0 m-2.5 d-flex flex-column align-items-end gap-1">
+                        <span class="badge shadow-xs {% if c.mode == 'Live' %}bg-info text-white{% else %}bg-teal text-white{% endif %}">
+                            {{ c.mode }}
+                        </span>
+                        {% if c.access_type == 'Private' %}
+                        <span class="badge bg-warning text-dark border border-warning shadow-xs">
+                            <i class="fa-solid fa-lock me-1"></i> Private
+                        </span>
+                        {% else %}
+                        <span class="badge bg-success text-white shadow-xs">
+                            <i class="fa-solid fa-globe me-1"></i> Public
+                        </span>
+                        {% endif %}
+                    </div>
                 </div>
                 
                 <div class="card-body p-3.5 d-flex flex-column justify-content-between">

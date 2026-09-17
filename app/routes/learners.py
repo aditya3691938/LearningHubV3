@@ -710,6 +710,10 @@ def self_paced_flow(course_id_str):
     learner = Learner.query.get_or_404(learner_id)
     course = Course.query.filter_by(course_id=course_id_str).first_or_404()
 
+    if not course.is_accessible_by(learner):
+        flash("This course is private and restricted to specific departments or designations.", "danger")
+        return redirect(url_for('learners.catalog'))
+
     enrollment = LearnerEnrollment.query.filter_by(learner_id=learner.id, course_id=course.id).first()
     if not enrollment:
         enrollment = LearnerEnrollment(
@@ -1477,19 +1481,20 @@ def catalog():
         
     courses = query.order_by(Course.name).all()
     
-    # Filter by search string in python for simplicity
+    # Get active enrollments to flag "Enrolled" courses
+    from app.models.enrollment import LearnerEnrollment
+    enrolls = LearnerEnrollment.query.filter_by(learner_id=learner_id).all()
+    enrolled_course_ids = {e.course_id for e in enrolls}
+
+    # Filter by search string and access permissions
     filtered_courses = []
     for c in courses:
         if search_query:
             if search_query not in c.name.lower() and (c.description and search_query not in c.description.lower()):
                 continue
-        filtered_courses.append(c)
+        if c.id in enrolled_course_ids or c.is_accessible_by(learner):
+            filtered_courses.append(c)
         
-    # Get active enrollments to flag "Enrolled" courses
-    from app.models.enrollment import LearnerEnrollment
-    enrolls = LearnerEnrollment.query.filter_by(learner_id=learner_id).all()
-    enrolled_course_ids = {e.course_id for e in enrolls}
-    
     return render_template(
         'learner_portal/catalog.html',
         learner=learner,

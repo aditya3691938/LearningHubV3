@@ -63,7 +63,24 @@ def create_app(config_class=Config):
     app.register_blueprint(quizzes_bp, url_prefix='/quizzes')
     app.register_blueprint(b2_bp)
 
-
+    # Ensure Course schema contains access_type, target_department, and target_designation
+    with app.app_context():
+        try:
+            from app.models import db
+            with db.engine.connect() as conn:
+                from sqlalchemy import text
+                for col_sql in [
+                    "ALTER TABLE courses ADD COLUMN access_type VARCHAR(20) DEFAULT 'Public'",
+                    "ALTER TABLE courses ADD COLUMN target_department VARCHAR(255) DEFAULT 'ALL'",
+                    "ALTER TABLE courses ADD COLUMN target_designation VARCHAR(255) DEFAULT 'ALL'"
+                ]:
+                    try:
+                        conn.execute(text(col_sql))
+                        conn.commit()
+                    except Exception:
+                        pass
+        except Exception:
+            pass
     # Custom Jinja template filters
     @app.template_filter('format_duration')
     def format_duration_filter(hours):

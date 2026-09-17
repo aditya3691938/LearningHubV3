@@ -17,6 +17,9 @@ class Course(db.Model):
     is_sequential = db.Column(db.Boolean, nullable=False, default=True) # Course-level sequential lesson access toggle
     completion_date = db.Column(db.DateTime, nullable=True) # Optional course target completion date
     is_archived = db.Column(db.Boolean, default=False, nullable=False) # Archived status flag
+    access_type = db.Column(db.String(20), nullable=False, default='Public') # 'Public' or 'Private'
+    target_department = db.Column(db.String(255), nullable=True, default='ALL') # 'ALL' or department name
+    target_designation = db.Column(db.String(255), nullable=True, default='ALL') # 'ALL' or designation name
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     pre_quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=True)
@@ -30,6 +33,38 @@ class Course(db.Model):
     feedback_repository = db.relationship('FeedbackRepository', backref='courses', lazy=True)
     pre_quiz = db.relationship('Quiz', foreign_keys=[pre_quiz_id], backref='pre_courses')
     post_quiz = db.relationship('Quiz', foreign_keys=[post_quiz_id], backref='post_courses')
+
+    def is_accessible_by(self, learner):
+        """
+        Checks if a course is accessible by a given learner object:
+        - If access_type == 'Public' (or target_department/target_designation are 'ALL'): accessible to all.
+        - If access_type == 'Private':
+          Accessible if learner's department matches target_department (or target_department == 'ALL')
+          AND learner's designation matches target_designation (or target_designation == 'ALL'),
+          OR if learner is already enrolled in the course.
+        """
+        if self.is_archived:
+            return False
+
+        access = (self.access_type or 'Public').strip().title()
+        if access == 'Public':
+            return True
+
+        if not learner:
+            return False
+
+        from app.models.enrollment import LearnerEnrollment
+        is_enrolled = LearnerEnrollment.query.filter_by(learner_id=learner.id, course_id=self.id).first() is not None
+        if is_enrolled:
+            return True
+
+        target_dept = (self.target_department or 'ALL').strip()
+        target_desg = (self.target_designation or 'ALL').strip()
+
+        dept_match = (target_dept == 'ALL') or (learner.department and learner.department.strip().lower() == target_dept.lower())
+        desg_match = (target_desg == 'ALL') or (learner.designation and learner.designation.strip().lower() == target_desg.lower())
+
+        return dept_match and desg_match
 
     @staticmethod
     def generate_course_id(mode='Self Paced'):
