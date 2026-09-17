@@ -163,20 +163,21 @@ def get_b2_url(filename, folder='', expires_in=86400):
     if not filename:
         return None
 
-    if str(filename).startswith('http://') or str(filename).startswith('https://'):
-        return filename
+    clean_filename = str(filename).strip()
+    if clean_filename.startswith('http://') or clean_filename.startswith('https://'):
+        return clean_filename
 
-    # Normalize folder aliases
-    if folder == 'profiles':
-        folder = 'profile_pics'
-
-    clean_filename = str(filename)
-    if clean_filename.startswith('profiles/'):
-        clean_filename = clean_filename[len('profiles/'):]
-    if clean_filename.startswith('profile_pics/'):
-        clean_filename = clean_filename[len('profile_pics/'):]
-
-    key = f"{folder}/{clean_filename}" if folder else clean_filename
+    # If filename contains a folder path like 'dashboard/abc.jpg' or 'profile_pics/xyz.png'
+    if '/' in clean_filename:
+        parts = clean_filename.split('/', 1)
+        folder_prefix = parts[0]
+        if folder_prefix == 'profiles':
+            folder_prefix = 'profile_pics'
+        key = f"{folder_prefix}/{parts[1]}"
+    else:
+        if folder == 'profiles':
+            folder = 'profile_pics'
+        key = f"{folder}/{clean_filename}" if folder else clean_filename
 
     endpoint = os.environ.get('B2_ENDPOINT_URL') or os.environ.get('S3_ENDPOINT_URL')
     bucket = os.environ.get('B2_BUCKET_NAME') or os.environ.get('S3_BUCKET')
@@ -198,10 +199,11 @@ def get_b2_url(filename, folder='', expires_in=86400):
         return f"{endpoint}/{bucket}/{key}"
 
     # Fallback to local upload directory route if B2 environment is not set up
-    final_name = clean_filename.split('/')[-1]
+    if '/' in clean_filename:
+        return f"/static/uploads/{clean_filename}"
     if folder:
-        return f"/static/uploads/{folder}/{final_name}"
-    return f"/static/uploads/{final_name}"
+        return f"/static/uploads/{folder}/{clean_filename}"
+    return f"/static/uploads/{clean_filename}"
 
 
 

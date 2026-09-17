@@ -480,10 +480,10 @@
                                      data-title="{{ n.title }}"
                                      data-message="{{ n.message }}"
                                      data-date="{{ n.created_at.strftime('%d %b, %H:%M') if n.created_at else '' }}"
-                                     data-image="{% if n.image_path %}{{ get_b2_url(n.image_path.split('/')[-1], folder='notifications') }}{% endif %}">
-                                    
-                                    {% if n.image_path %}
-                                        <img src="{{ get_b2_url(n.image_path.split('/')[-1], folder='notifications') }}" alt="Notification Image" class="rounded mt-1 shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">
+                                     data-image="{% if n.image_path %}{{ get_b2_url(n.image_path) }}{% endif %}">
+                                     
+                                     {% if n.image_path %}
+                                         <img src="{{ get_b2_url(n.image_path) }}" alt="Notification Image" class="rounded mt-1 shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">
                                     {% else %}
                                         <i class="fa-solid {% if n.notification_type == 'COURSE_ASSIGNED' %}fa-book-open text-teal{% elif n.notification_type == 'LESSON_UPDATED' %}fa-pen-to-square text-warning{% else %}fa-circle-info text-info{% endif %} mt-1"></i>
                                     {% endif %}
