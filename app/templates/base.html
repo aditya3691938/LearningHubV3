@@ -448,7 +448,7 @@
                         <button type="button" class="btn btn-link text-muted p-1 text-decoration-none dropdown-toggle hide-arrow d-inline-flex align-items-center justify-content-center" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications" style="height: 38px; width: 38px; border-radius: 50%; transition: background-color 0.2s;">
                             <i class="fa-regular fa-bell fs-5 text-teal"></i>
                             {% if unread_notif_count > 0 %}
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-circle text-white shadow-xs" style="background-color: var(--teal-primary); font-size: 0.65rem; padding: 0.35em 0.55em;">
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-circle text-white shadow-xs" id="navBellBadge" style="background-color: var(--teal-primary); font-size: 0.65rem; padding: 0.35em 0.55em;">
                                 {{ unread_notif_count }}
                             </span>
                             {% endif %}
@@ -512,6 +512,45 @@
                         </div>
 
                         <script>
+                        function clearAllUnreadNotifBadges() {
+                            ['navUnreadBadge', 'navBellBadge', 'unreadBadge'].forEach(function(id) {
+                                var el = document.getElementById(id);
+                                if (el) el.remove();
+                            });
+                            var navMarkBtn = document.getElementById('navMarkAllBtn');
+                            if (navMarkBtn) navMarkBtn.remove();
+                            var portalMarkBtn = document.querySelector('button[onclick="markAllRead()"]');
+                            if (portalMarkBtn) portalMarkBtn.remove();
+                        }
+
+                        function decrementUnreadNotifCounts() {
+                            ['navUnreadBadge', 'navBellBadge', 'unreadBadge'].forEach(function(badgeId) {
+                                var badge = document.getElementById(badgeId);
+                                if (badge) {
+                                    var rawText = badge.textContent.trim().replace(/\D+/g, '');
+                                    var currentCount = parseInt(rawText, 10);
+                                    if (!isNaN(currentCount) && currentCount > 1) {
+                                        var newCount = currentCount - 1;
+                                        if (badgeId === 'navUnreadBadge') {
+                                            badge.textContent = newCount + ' new';
+                                        } else {
+                                            badge.textContent = newCount;
+                                        }
+                                    } else {
+                                        badge.remove();
+                                    }
+                                }
+                            });
+
+                            var remainingUnread = document.querySelectorAll('.notification-item[data-read="false"]').length;
+                            if (remainingUnread === 0) {
+                                var navMarkBtn = document.getElementById('navMarkAllBtn');
+                                if (navMarkBtn) navMarkBtn.remove();
+                                var portalMarkBtn = document.querySelector('button[onclick="markAllRead()"]');
+                                if (portalMarkBtn) portalMarkBtn.remove();
+                            }
+                        }
+
                         function markAllReadNav() {
                             fetch('/learners/notifications/mark_read/0', {
                                 method: 'POST',
@@ -520,15 +559,11 @@
                             .then(r => r.json())
                             .then(d => {
                                 if (d.status === 'success') {
-                                    const badge = document.getElementById('navUnreadBadge');
-                                    const btn = document.getElementById('navMarkAllBtn');
-                                    const bellBadge = document.querySelector('#notificationDropdown .badge');
-                                    if (badge) badge.remove();
-                                    if (btn) btn.remove();
-                                    if (bellBadge) bellBadge.remove();
-                                    document.querySelectorAll('#navNotifList .bg-teal-subtle').forEach(el => {
-                                        el.classList.remove('bg-teal-subtle', 'border-start', 'border-3', 'border-teal');
+                                    clearAllUnreadNotifBadges();
+                                    document.querySelectorAll('#navNotifList .bg-teal-subtle, .notification-list .border-teal-subtle').forEach(el => {
+                                        el.classList.remove('bg-teal-subtle', 'border-start', 'border-3', 'border-teal', 'bg-light', 'border-teal-subtle');
                                         el.classList.add('bg-light');
+                                        el.setAttribute('data-read', 'true');
                                     });
                                 }
                             });
@@ -972,24 +1007,20 @@
                     .then(d => {
                         if (d.status === 'success') {
                             button.setAttribute('data-read', 'true');
-                            button.classList.remove('bg-teal-subtle', 'border-start', 'border-3', 'border-teal');
+                            button.classList.remove('bg-teal-subtle', 'border-start', 'border-3', 'border-teal', 'bg-light');
                             button.classList.add('bg-light');
                             
-                            // Optional: Decrement badge count
-                            var badge = document.getElementById('navUnreadBadge');
-                            var bellBadge = document.querySelector('#notificationDropdown .badge');
-                            if (badge) {
-                                var count = parseInt(badge.textContent) - 1;
-                                if (count > 0) {
-                                    badge.textContent = count + ' new';
-                                    if (bellBadge) bellBadge.textContent = count;
-                                } else {
-                                    badge.remove();
-                                    if (bellBadge) bellBadge.remove();
-                                    var markAllBtn = document.getElementById('navMarkAllBtn');
-                                    if (markAllBtn) markAllBtn.remove();
+                            // Also update matching item in portal page list if present
+                            if (notifId) {
+                                var portalItem = document.getElementById('notif-' + notifId);
+                                if (portalItem) {
+                                    portalItem.setAttribute('data-read', 'true');
+                                    portalItem.classList.remove('bg-light', 'border-teal-subtle');
+                                    portalItem.classList.add('bg-white');
                                 }
                             }
+
+                            decrementUnreadNotifCounts();
                         }
                     });
                 }

@@ -606,17 +606,24 @@ def my_portal():
 @learners_bp.route('/notifications/mark_read/<int:notif_id>', methods=['POST'])
 def mark_notification_read(notif_id):
     learner_id = session.get('learner_id')
-    if not learner_id:
+    admin_logged_in = session.get('admin_logged_in')
+    if not learner_id and not admin_logged_in:
         return jsonify({'status': 'error'}), 401
     
     from app.models.notification import LearnerNotification
     if notif_id == 0:
         # Mark all as read
-        notifications = LearnerNotification.query.filter_by(learner_id=learner_id, is_read=False).all()
+        if learner_id:
+            notifications = LearnerNotification.query.filter_by(learner_id=learner_id, is_read=False).all()
+        else:
+            notifications = LearnerNotification.query.filter_by(is_read=False).all()
         for n in notifications:
             n.is_read = True
     else:
-        notif = LearnerNotification.query.filter_by(id=notif_id, learner_id=learner_id).first()
+        if learner_id:
+            notif = LearnerNotification.query.filter_by(id=notif_id, learner_id=learner_id).first()
+        else:
+            notif = LearnerNotification.query.filter_by(id=notif_id).first()
         if notif:
             notif.is_read = True
     

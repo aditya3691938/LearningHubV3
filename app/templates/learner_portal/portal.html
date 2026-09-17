@@ -593,11 +593,18 @@
             .then(r => r.json())
             .then(d => {
                 if (d.status === 'success') {
-                    const badge = document.getElementById('unreadBadge');
-                    if (badge) badge.remove();
+                    if (typeof clearAllUnreadNotifBadges === 'function') {
+                        clearAllUnreadNotifBadges();
+                    } else {
+                        ['unreadBadge', 'navUnreadBadge', 'navBellBadge'].forEach(id => {
+                            const b = document.getElementById(id);
+                            if (b) b.remove();
+                        });
+                    }
                     document.querySelectorAll('.notification-list .border-teal-subtle').forEach(el => {
                         el.classList.remove('bg-light', 'border-teal-subtle');
                         el.classList.add('bg-white');
+                        el.setAttribute('data-read', 'true');
                     });
                     const markBtn = document.querySelector('button[onclick="markAllRead()"]');
                     if (markBtn) markBtn.remove();
