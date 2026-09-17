@@ -863,33 +863,35 @@
                         Next <i class="fa-solid fa-chevron-right ms-1"></i>
                     </a>
                     {% else %}
-                    <a href="{{ url_for('learners.take_assessment', course_id=course.id, assessment_type='COURSE_END') }}" class="btn text-white w-100 py-3 fw-bold rounded-3 shadow-sm text-center d-block fs-6" style="background-color: #0A4B5C;">
-                        Complete Course & Take Final Quiz <i class="fa-solid fa-chevron-right ms-1"></i>
+                    <a href="{% if feedback_repo %}{{ url_for('learners.submit_feedback', repo_id=feedback_repo.id, course_id=course.id) }}{% else %}{{ url_for('learners.my_portal') }}{% endif %}" class="btn text-white w-100 py-3 fw-bold rounded-3 shadow-sm text-center d-block fs-6" style="background-color: #0A4B5C;">
+                        Complete Lessons & Submit Feedback <i class="fa-solid fa-check-double ms-1"></i>
                     </a>
                     {% endif %}
                 </div>
             </div>
             {% endif %}
 
-            <!-- ================= COURSE END ASSESSMENT CARD ================= -->
+            <!-- ================= COURSE END ASSESSMENT CARD (OPTIONAL) ================= -->
             <div class="card border-0 shadow-sm mb-4 rounded-3 overflow-hidden">
                 <div class="card-header bg-white py-3 px-3 px-md-4 d-flex justify-content-between align-items-center border-bottom">
                     <h5 class="fw-bold text-navy mb-0"><i class="fa-solid fa-award me-2 text-warning"></i> Course End Assessment</h5>
-                    <span class="badge bg-danger font-monospace">Attempts: {{ enrollment.attempts_count }} / 3 Allowed</span>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary-subtle text-secondary border font-monospace">Optional Assessment</span>
+                        <span class="badge bg-danger font-monospace">Attempts: {{ enrollment.attempts_count }} / 3</span>
+                    </div>
                 </div>
                 <div class="card-body p-4 bg-white">
-                    <p class="text-muted small mb-3">Final comprehensive examination covering all course lessons.
-                        Requires {{ course.pass_percentage }}% pass mark to unlock course feedback & certification.</p>
+                    <p class="text-muted small mb-3">Optional comprehensive examination covering all course lessons. You can take this test to validate your mastery of the subject.</p>
 
                     {% set all_lessons_completed = (completed_lesson_ids|length >= course.lessons|length) if course.lessons else True %}
 
                     {% if has_pre_questions and not pre_attempt %}
                     <div class="alert alert-warning py-2 mb-0">
-                        <i class="fa-solid fa-lock me-1"></i> Locked: Complete Course Pre-Assessment first to unlock the final examination.
+                        <i class="fa-solid fa-lock me-1"></i> Locked: Complete Course Pre-Assessment first to unlock the examination.
                     </div>
                     {% elif not all_lessons_completed %}
                     <div class="alert alert-warning py-2 mb-0">
-                        <i class="fa-solid fa-lock me-1"></i> Locked: You must complete all {{ course.lessons|length }} course lessons (required viewing time & lesson post-assessments) to unlock the Course End Assessment.
+                        <i class="fa-solid fa-lock me-1"></i> Locked: You must complete all {{ course.lessons|length }} course lessons to unlock the Course End Assessment.
                     </div>
                     {% else %}
                     {% if course_end_attempt and course_end_attempt.passed %}
@@ -903,7 +905,7 @@
                     {% if enrollment.attempts_count < 3 %}
                     <a href="{{ url_for('learners.take_assessment', course_id=course.id, assessment_type='COURSE_END') }}"
                         class="btn btn-warning fw-bold text-dark w-100 shadow-sm">
-                        <i class="fa-solid fa-file-signature me-1"></i> Take Course End Assessment
+                        <i class="fa-solid fa-file-signature me-1"></i> Take Course End Assessment (Optional)
                     </a>
                     {% else %}
                     <div class="alert alert-danger py-2 mb-0">
@@ -936,7 +938,7 @@
                             </div>
                         </div>
                     {% else %}
-                        {% if course_end_attempt and course_end_attempt.passed %}
+                        {% if (course_end_attempt and course_end_attempt.passed) or all_lessons_completed %}
                             {% if feedback_repo %}
                             <a href="{{ url_for('learners.submit_feedback', repo_id=feedback_repo.id, course_id=course.id) }}"
                                 class="btn btn-primary bg-navy fw-bold text-white w-100 shadow-sm py-2">
@@ -947,7 +949,7 @@
                             {% endif %}
                         {% else %}
                         <div class="alert alert-warning py-2 mb-0">
-                            <i class="fa-solid fa-lock me-1"></i> Locked: Pass the Course End Assessment to unlock the Feedback Form.
+                            <i class="fa-solid fa-lock me-1"></i> Locked: Complete all course lessons to unlock the Feedback Form.
                         </div>
                         {% endif %}
                     {% endif %}

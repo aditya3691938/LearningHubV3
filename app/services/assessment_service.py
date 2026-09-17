@@ -112,6 +112,35 @@ def parse_assessment_csv(file_stream, filename=None):
     return questions, errors
 
 
+def resolve_option_index(val, q):
+    if not val:
+        return None
+    val_str = str(val).strip()
+    if not val_str:
+        return None
+    val_clean = val_str.lower().replace(' ', '').replace('_', '').replace('-', '')
+    if val_clean in ['option1', 'opt1', '1', 'a']:
+        return 1
+    if val_clean in ['option2', 'opt2', '2', 'b']:
+        return 2
+    if val_clean in ['option3', 'opt3', '3', 'c']:
+        return 3
+    if val_clean in ['option4', 'opt4', '4', 'd']:
+        return 4
+    if val_clean in ['option5', 'opt5', '5', 'e']:
+        return 5
+
+    for idx in range(1, 6):
+        opt_text = str(getattr(q, f'option{idx}', '') or '').strip()
+        if not opt_text:
+            continue
+        opt_clean = opt_text.lower().replace(' ', '').replace('_', '').replace('-', '')
+        if val_clean == opt_clean or val_str.lower() == opt_text.lower():
+            return idx
+
+    return None
+
+
 def evaluate_assessment(questions, user_answers, pass_percentage=80.0):
     """
     Evaluates user answers dictionary {question_id: selected_option}.
@@ -124,43 +153,12 @@ def evaluate_assessment(questions, user_answers, pass_percentage=80.0):
     total = len(questions)
 
     for q in questions:
-        user_ans = str(user_answers.get(str(q.id)) or user_answers.get(q.id, '')).strip().lower()
-        user_ans_clean = user_ans.replace(' ', '').replace('_', '')
+        user_val = user_answers.get(str(q.id)) or user_answers.get(q.id) or user_answers.get(f"q_{q.id}")
+        user_idx = resolve_option_index(user_val, q)
+        correct_idx = resolve_option_index(getattr(q, 'correct_option', ''), q)
 
-        target = str(q.correct_option or '').strip().lower()
-        target_clean = target.replace(' ', '').replace('_', '')
-
-        # 1. Exact or normalized option key match ('option1' == 'option1', 'option1' == '1')
-        if user_ans_clean == target_clean or f"option{user_ans_clean}" == target_clean or user_ans_clean == f"option{target_clean}":
+        if user_idx is not None and correct_idx is not None and user_idx == correct_idx:
             correct_count += 1
-        else:
-            # 2. Map target_clean to option field (e.g. 'option1') and check matching
-            opt_key = None
-            if target_clean in ['option1', 'opt1', '1', 'a']:
-                opt_key = 'option1'
-            elif target_clean in ['option2', 'opt2', '2', 'b']:
-                opt_key = 'option2'
-            elif target_clean in ['option3', 'opt3', '3', 'c']:
-                opt_key = 'option3'
-            elif target_clean in ['option4', 'opt4', '4', 'd']:
-                opt_key = 'option4'
-            elif target_clean in ['option5', 'opt5', '5', 'e']:
-                opt_key = 'option5'
-
-            if opt_key:
-                opt_val = str(getattr(q, opt_key, '') or '').strip().lower()
-                opt_val_clean = opt_val.replace(' ', '').replace('_', '')
-                if user_ans_clean == opt_key or user_ans_clean == opt_val_clean or user_ans == opt_val:
-                    correct_count += 1
-            else:
-                # 3. Check if target was option text matching user answer
-                matched = False
-                for opt_attr in ['option1', 'option2', 'option3', 'option4', 'option5']:
-                    opt_val = str(getattr(q, opt_attr, '') or '').strip().lower()
-                    if target == opt_val and (user_ans_clean == opt_attr or user_ans == opt_val):
-                        correct_count += 1
-                        matched = True
-                        break
 
     score_percentage = round((correct_count / total) * 100.0, 2)
     passed = score_percentage >= float(pass_percentage)

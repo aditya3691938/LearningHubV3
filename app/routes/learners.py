@@ -497,34 +497,39 @@ def my_portal():
         lessons_status = f"{done_count:02d}/{total_lessons:02d}"
         
         # 3. Post Assessment Status
+        has_course_end_questions = CourseAssessment.query.filter_by(course_id=en.course.id, assessment_type='COURSE_END').count() > 0
         course_end_att = AssessmentAttempt.query.filter_by(enrollment_id=en.id, assessment_type='COURSE_END').order_by(AssessmentAttempt.id.desc()).first()
-        if course_end_att and course_end_att.passed:
+        if not has_course_end_questions:
+            post_status = "N/A"
+        elif course_end_att and course_end_att.passed:
             post_status = "Passed"
         elif course_end_att and not course_end_att.passed:
-            post_status = "Failed" if en.attempts_count >= 3 else "Pending"
+            post_status = "Failed" if en.attempts_count >= 3 else ("Optional" if en.course.mode == 'Self Paced' else "Pending")
         else:
-            if total_lessons > 0 and done_count == total_lessons:
-                post_status = "Pending"
+            if en.course.mode == 'Self Paced':
+                post_status = "Optional" if (total_lessons == 0 or done_count == total_lessons) else "Locked"
             else:
-                post_status = "Locked"
-                
-        # 4. Feedback Status (Strictly locked until Post Assessment is Passed)
+                post_status = "Pending" if (total_lessons > 0 and done_count == total_lessons) else "Locked"
+
+        # 4. Feedback Status (Unlocked once all lessons are completed or if Post Assessment is Passed/Optional/N/A)
+        all_lessons_done = (total_lessons == 0 or done_count == total_lessons)
         from app.models.feedback import FeedbackResponse, FeedbackRepository
         fb_repo = en.course.feedback_repository or FeedbackRepository.query.first()
         fb_resp = None
         if fb_repo:
             fb_resp = FeedbackResponse.query.filter_by(repo_id=fb_repo.id, learner_id=learner.id).first()
-        
-        if post_status == "Passed":
+
+        if all_lessons_done or post_status in ["Passed", "N/A", "Optional"]:
             feedback_status = "Submitted" if fb_resp else "Pending"
         else:
             feedback_status = "Locked"
 
-        # Strict Database Completion Status Integrity Check:
-        # A course CANNOT have completion_status = 'Completed' if Post Assessment is not Passed or Feedback is not Submitted!
-        if en.completion_status == 'Completed':
-            if post_status != 'Passed' or feedback_status != 'Submitted':
-                en.completion_status = 'In Progress'
+        # Database Completion Status Check:
+        # Self-paced course is Completed if all lessons are completed AND feedback is submitted
+        if all_lessons_done and feedback_status == 'Submitted':
+            if en.completion_status != 'Completed':
+                en.completion_status = 'Completed'
+                en.completed_at = datetime.utcnow()
                 db.session.commit()
 
         # Live Class parameters
@@ -1066,10 +1071,31 @@ def take_assessment(course_id, assessment_type):
 
         db.session.commit()
 
-        # Redirect to result page instead of a plain flash message
+        # Build per-question detail breakdown using resolve_option_index
+        from app.services.assessment_service import resolve_option_index
+        q_details = []
+        for q in questions:
+            user_val = user_answers.get(str(q.id)) or user_answers.get(q.id) or user_answers.get(f"q_{q.id}")
+            u_idx = resolve_option_index(user_val, q)
+            c_idx = resolve_option_index(getattr(q, 'correct_option', ''), q)
+            is_cor = (u_idx is not None and c_idx is not None and u_idx == c_idx)
+
+            u_text = getattr(q, f"option{u_idx}", None) if u_idx else (user_val or "No answer")
+            c_text = getattr(q, f"option{c_idx}", q.correct_option) if c_idx else q.correct_option
+
+            q_details.append({
+                'question': q,
+                'user_val': user_val,
+                'user_opt_idx': u_idx,
+                'correct_opt_idx': c_idx,
+                'is_correct': is_cor,
+                'user_selected_text': u_text,
+                'correct_text': c_text
+            })
+
         if is_course_end:
             if passed:
-                flash(f"Congratulations! You passed the Course-End Assessment with {score_pct}%. Please submit the Course Feedback form below to complete your course and receive your certificate!", "success")
+                flash(f"Congratulations! You passed the Course-End Assessment with {score_pct}%. Please submit the Course Feedback form to complete your course and receive your certificate!", "success")
             else:
                 flash(f"Course-End Assessment score: {score_pct}% ({correct}/{total}). Pass mark is {course.pass_percentage}%. Attempts remaining: {max(0, 3 - enrollment.attempts_count)}.", "warning" if enrollment.attempts_count < 3 else "danger")
             if live_class:
@@ -1084,6 +1110,7 @@ def take_assessment(course_id, assessment_type):
                 live_class=live_class,
                 assessment_type=type_upper,
                 questions=questions,
+                q_details=q_details,
                 user_answers=user_answers,
                 score_pct=score_pct,
                 passed=passed,

@@ -17,7 +17,7 @@
             </div>
             <div class="text-center">
               <div class="fw-bold" style="font-size:2.5rem;">{{ correct }}/{{ total }}</div>
-              <small class="opacity-75">Correct</small>
+              <small class="opacity-75">Correct Answers</small>
             </div>
           </div>
         </div>
@@ -32,12 +32,10 @@
       <a href="{{ url_for('learners.my_portal') }}" class="btn btn-light border fw-semibold"><i class="fa-solid fa-house me-1"></i> My Portal</a>
     </div>
     <h5 class="fw-bold text-dark mb-3"><i class="fa-solid fa-list-check me-2 text-teal"></i> Question Breakdown</h5>
-    {% for q in questions %}
-    {% set q_key = 'q_' ~ q.id %}
-    {% set user_ans = user_answers.get(q_key, '') %}
-    {% set opts = [q.option1, q.option2, q.option3, q.option4, q.option5] | select | list %}
-    {% set is_correct = (user_ans == q.correct_option) %}
-    <div class="card border-0 shadow-sm mb-3 p-3 border-start border-3 {% if is_correct %}border-success{% else %}border-danger{% endif %}">
+    {% for item in q_details %}
+    {% set q = item.question %}
+    {% set is_correct = item.is_correct %}
+    <div class="card border-0 shadow-sm mb-3 p-3 border-start border-4 {% if is_correct %}border-success{% else %}border-danger{% endif %}">
       <div class="d-flex align-items-start gap-3">
         <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 {% if is_correct %}bg-success-subtle{% else %}bg-danger-subtle{% endif %}" style="width:36px;height:36px;min-width:36px;">
           <i class="fa-solid {% if is_correct %}fa-check text-success{% else %}fa-xmark text-danger{% endif %}"></i>
@@ -45,26 +43,27 @@
         <div class="flex-grow-1">
           <p class="fw-semibold text-dark mb-3 small">Q{{ loop.index }}. {{ q.question }}</p>
           <div class="row g-2">
-            {% for opt in opts %}
-            {% if opt %}
+            {% set options = [(1, q.option1), (2, q.option2), (3, q.option3), (4, q.option4), (5, q.option5)] %}
+            {% for opt_idx, opt_text in options %}
+            {% if opt_text %}
             <div class="col-12 col-sm-6">
               <div class="p-2 rounded-3 border small
-                {% if opt == q.correct_option %}bg-success-subtle border-success text-success fw-semibold
-                {% elif opt == user_ans and not is_correct %}bg-danger-subtle border-danger text-danger
+                {% if opt_idx == item.correct_opt_idx %}bg-success-subtle border-success text-success fw-semibold
+                {% elif opt_idx == item.user_opt_idx and not is_correct %}bg-danger-subtle border-danger text-danger
                 {% else %}bg-light text-muted{% endif %}">
-                {% if opt == q.correct_option %}<i class="fa-solid fa-check me-1"></i>
-                {% elif opt == user_ans and not is_correct %}<i class="fa-solid fa-xmark me-1"></i>
+                {% if opt_idx == item.correct_opt_idx %}<i class="fa-solid fa-check me-1"></i> (Correct Answer)
+                {% elif opt_idx == item.user_opt_idx and not is_correct %}<i class="fa-solid fa-xmark me-1"></i> (Your Choice)
                 {% else %}<i class="fa-regular fa-circle me-1 opacity-50"></i>{% endif %}
-                {{ opt }}
+                {{ opt_text }}
               </div>
             </div>
             {% endif %}
             {% endfor %}
           </div>
           {% if not is_correct %}
-          <p class="text-muted text-xs mt-2 mb-0"><i class="fa-solid fa-lightbulb text-warning me-1"></i>
-            Your answer: <strong class="text-danger">{{ user_ans or 'No answer' }}</strong> &nbsp;&bull;&nbsp;
-            Correct answer: <strong class="text-success">{{ q.correct_option }}</strong>
+          <p class="text-muted text-xs mt-2.5 mb-0"><i class="fa-solid fa-lightbulb text-warning me-1"></i>
+            Your answer: <strong class="text-danger">{{ item.user_selected_text }}</strong> &nbsp;&bull;&nbsp;
+            Correct answer: <strong class="text-success">{{ item.correct_text }}</strong>
           </p>
           {% endif %}
         </div>
