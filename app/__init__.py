@@ -66,7 +66,6 @@ def create_app(config_class=Config):
     # Ensure Course schema contains access_type, target_department, and target_designation
     with app.app_context():
         try:
-            from app.models import db
             with db.engine.connect() as conn:
                 from sqlalchemy import text
                 for col_sql in [

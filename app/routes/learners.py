@@ -140,7 +140,7 @@ def parse_global_ids_from_input(global_ids_text, csv_file=None):
     seen = set()
 
     if global_ids_text:
-        raw_tokens = re.split(r'[\r\n,;\s]+', str(global_ids_text))
+        raw_tokens = re.split(r'[\r\n,;\t]+', str(global_ids_text))
         for token in raw_tokens:
             val = token.strip().strip('"').strip("'")
             if val.endswith('.0'):
@@ -149,26 +149,111 @@ def parse_global_ids_from_input(global_ids_text, csv_file=None):
                 seen.add(val)
                 parsed_ids.append(val)
 
-    if csv_file and getattr(csv_file, 'filename', None):
+    if csv_file and (getattr(csv_file, 'filename', None) or hasattr(csv_file, 'read')):
         try:
-            df = pd.read_csv(csv_file.stream)
-            if not df.empty:
-                col_name = df.columns[0]
-                for col in df.columns:
-                    if 'global' in str(col).lower() or 'id' in str(col).lower():
-                        col_name = col
-                        break
-                for val in df[col_name].dropna():
-                    val_str = str(val).strip().strip('"').strip("'")
-                    if val_str.endswith('.0'):
-                        val_str = val_str[:-2]
-                    if val_str and val_str not in seen:
-                        seen.add(val_str)
-                        parsed_ids.append(val_str)
+            if hasattr(csv_file, 'seek'):
+                try:
+                    csv_file.seek(0)
+                except Exception:
+                    pass
+            if hasattr(csv_file, 'stream') and hasattr(csv_file.stream, 'seek'):
+                try:
+                    csv_file.stream.seek(0)
+                except Exception:
+                    pass
+
+            file_bytes = None
+            if hasattr(csv_file, 'read'):
+                file_bytes = csv_file.read()
+            elif hasattr(csv_file, 'stream') and hasattr(csv_file.stream, 'read'):
+                file_bytes = csv_file.stream.read()
+
+            if hasattr(csv_file, 'seek'):
+                try:
+                    csv_file.seek(0)
+                except Exception:
+                    pass
+            if hasattr(csv_file, 'stream') and hasattr(csv_file.stream, 'seek'):
+                try:
+                    csv_file.stream.seek(0)
+                except Exception:
+                    pass
+
+            if file_bytes:
+                import io
+                import csv
+                import pandas as pd
+
+                filename = str(getattr(csv_file, 'filename', '') or '')
+                if filename.lower().endswith(('.xlsx', '.xls')):
+                    try:
+                        df = pd.read_excel(io.BytesIO(file_bytes))
+                        _extract_ids_from_dataframe(df, seen, parsed_ids)
+                    except Exception as ex_excel:
+                        print(f"Excel read error: {ex_excel}")
+                else:
+                    text = None
+                    for enc in ['utf-8-sig', 'utf-8', 'latin1', 'cp1252']:
+                        try:
+                            text = file_bytes.decode(enc)
+                            break
+                        except Exception:
+                            continue
+
+                    if text:
+                        try:
+                            df = pd.read_csv(io.StringIO(text))
+                            if not df.empty:
+                                _extract_ids_from_dataframe(df, seen, parsed_ids)
+                        except Exception as ex_pd:
+                            print(f"Pandas CSV parse notice: {ex_pd}")
+
+                        if not parsed_ids:
+                            reader = csv.reader(io.StringIO(text))
+                            for row in reader:
+                                for item in row:
+                                    val_str = str(item).strip().strip('"').strip("'")
+                                    if val_str.endswith('.0'):
+                                        val_str = val_str[:-2]
+                                    if val_str.lower() in ['global id', 'globalid', 'employee id', 'employeeid', 'learner id', 'learnerid', 'id', 'user id', 'name', 'email', 'department', 'role']:
+                                        continue
+                                    if val_str and val_str not in seen:
+                                        seen.add(val_str)
+                                        parsed_ids.append(val_str)
         except Exception as e:
-            pass
+            print(f"Error parsing CSV global IDs: {e}")
 
     return parsed_ids
+
+
+def _extract_ids_from_dataframe(df, seen, parsed_ids):
+    if df.empty:
+        return
+
+    target_cols = []
+    for col in df.columns:
+        col_lower = str(col).lower()
+        if any(k in col_lower for k in ['global', 'learner', 'emp', 'employee', 'id', 'user', 'email']):
+            target_cols.append(col)
+
+    if not target_cols:
+        target_cols = [df.columns[0]]
+
+    for col_name in target_cols:
+        header_str = str(col_name).strip().strip('"').strip("'")
+        if header_str.endswith('.0'):
+            header_str = header_str[:-2]
+        if header_str and header_str.isdigit() and len(header_str) >= 3 and header_str not in seen:
+            seen.add(header_str)
+            parsed_ids.append(header_str)
+
+        for val in df[col_name].dropna():
+            val_str = str(val).strip().strip('"').strip("'")
+            if val_str.endswith('.0'):
+                val_str = val_str[:-2]
+            if val_str and val_str not in seen:
+                seen.add(val_str)
+                parsed_ids.append(val_str)
 
 
 @learners_bp.route('/assign', methods=['GET', 'POST'])
@@ -234,15 +319,17 @@ def assign_learners():
         else:
             global_ids_text = request.form.get('global_ids', '').strip()
             csv_file = request.files.get('learner_csv')
-            if csv_file and csv_file.filename:
+            if csv_file and getattr(csv_file, 'filename', None):
                 try:
+                    if hasattr(csv_file, 'seek'):
+                        csv_file.seek(0)
                     from app.services.b2_service import upload_file_to_b2
                     upload_file_to_b2(csv_file, f"learners_{csv_file.filename}", folder='imports')
+                    if hasattr(csv_file, 'seek'):
+                        csv_file.seek(0)
                 except Exception:
                     pass
             parsed_global_ids = parse_global_ids_from_input(global_ids_text, csv_file)
-
-
 
         if not parsed_global_ids:
             msg = "No matching learners found or no valid Global IDs provided."
@@ -258,7 +345,9 @@ def assign_learners():
         from app.models.notification import LearnerNotification
 
         for gid in parsed_global_ids:
-            learner = Learner.query.filter_by(global_id=gid).first()
+            learner = Learner.query.filter(
+                (Learner.global_id == gid) | (Learner.email == gid)
+            ).first()
             if not learner:
                 invalid_ids.append(gid)
                 continue

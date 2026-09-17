@@ -1,8 +1,14 @@
 import os
-import boto3
-from botocore.exceptions import ClientError
-from botocore.config import Config
 from werkzeug.utils import secure_filename
+
+try:
+    import boto3
+    from botocore.exceptions import ClientError
+    from botocore.config import Config
+except ImportError:
+    boto3 = None
+    ClientError = Exception
+    Config = None
 
 def get_b2_client():
     endpoint = os.environ.get('B2_ENDPOINT_URL') or os.environ.get('S3_ENDPOINT_URL')
@@ -84,6 +90,12 @@ def upload_file_to_b2(file_obj, filename, folder='', content_type=None):
                     print(f"Successfully uploaded '{key}' to Backblaze B2 Cloud from local copy.")
                 except Exception as e2:
                     print(f"B2 Direct File Upload Error: {e2}")
+
+    try:
+        if hasattr(file_obj, 'seek'):
+            file_obj.seek(0)
+    except Exception:
+        pass
 
     return secure_name
 

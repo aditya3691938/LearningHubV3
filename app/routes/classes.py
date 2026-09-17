@@ -265,6 +265,16 @@ def assign_learners_to_class(class_id):
 
     global_ids_text = request.form.get('global_ids', '').strip()
     csv_file = request.files.get('learner_csv')
+    if csv_file and getattr(csv_file, 'filename', None):
+        try:
+            if hasattr(csv_file, 'seek'):
+                csv_file.seek(0)
+            from app.services.b2_service import upload_file_to_b2
+            upload_file_to_b2(csv_file, f"class_learners_{csv_file.filename}", folder='imports')
+            if hasattr(csv_file, 'seek'):
+                csv_file.seek(0)
+        except Exception:
+            pass
 
     from app.routes.learners import parse_global_ids_from_input
     parsed_global_ids = parse_global_ids_from_input(global_ids_text, csv_file)
@@ -282,7 +292,9 @@ def assign_learners_to_class(class_id):
     from app.models.user import Learner
     from app.models.enrollment import LearnerEnrollment
     for gid in parsed_global_ids:
-        learner = Learner.query.filter_by(global_id=gid).first()
+        learner = Learner.query.filter(
+            (Learner.global_id == gid) | (Learner.email == gid)
+        ).first()
         if not learner:
             invalid_ids.append(gid)
             continue
