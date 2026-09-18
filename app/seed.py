@@ -48,15 +48,20 @@ def init_db_and_seed(app):
             "ALTER TABLE learner_notifications ADD COLUMN lesson_id INTEGER;",
             "ALTER TABLE learning_wall_posts ALTER COLUMN badge_color TYPE VARCHAR(255);",
             "ALTER TABLE learners ADD COLUMN theme VARCHAR(50) DEFAULT 'navy';",
-            "ALTER TABLE courses ADD COLUMN is_archived BOOLEAN DEFAULT FALSE;"
+            "ALTER TABLE courses ADD COLUMN is_archived BOOLEAN DEFAULT FALSE;",
+            "ALTER TABLE courses ADD COLUMN access_type VARCHAR(20) DEFAULT 'Public';",
+            "ALTER TABLE courses ADD COLUMN target_department VARCHAR(255) DEFAULT 'ALL';",
+            "ALTER TABLE courses ADD COLUMN target_designation VARCHAR(255) DEFAULT 'ALL';",
+            "ALTER TABLE courses ADD COLUMN public_to_all BOOLEAN DEFAULT TRUE;"
         ]
 
         for stmt in alter_statements:
             try:
-                db.session.execute(db.text(stmt))
-                db.session.commit()
+                with db.engine.begin() as conn:
+                    from sqlalchemy import text
+                    conn.execute(text(stmt))
             except Exception:
-                db.session.rollback()
+                pass
 
         os.makedirs(os.path.join(app.root_path, '..', 'uploads', 'thumbnails'), exist_ok=True)
 

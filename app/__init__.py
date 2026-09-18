@@ -67,19 +67,19 @@ def create_app(config_class=Config):
     with app.app_context():
         try:
             db.create_all()
-            with db.engine.connect() as conn:
-                from sqlalchemy import text
-                for col_sql in [
-                    "ALTER TABLE courses ADD COLUMN access_type VARCHAR(20) DEFAULT 'Public'",
-                    "ALTER TABLE courses ADD COLUMN target_department VARCHAR(255) DEFAULT 'ALL'",
-                    "ALTER TABLE courses ADD COLUMN target_designation VARCHAR(255) DEFAULT 'ALL'",
-                    "ALTER TABLE courses ADD COLUMN public_to_all BOOLEAN DEFAULT 1"
-                ]:
-                    try:
-                        conn.execute(text(col_sql))
-                        conn.commit()
-                    except Exception:
-                        pass
+            alter_statements = [
+                "ALTER TABLE courses ADD COLUMN access_type VARCHAR(20) DEFAULT 'Public'",
+                "ALTER TABLE courses ADD COLUMN target_department VARCHAR(255) DEFAULT 'ALL'",
+                "ALTER TABLE courses ADD COLUMN target_designation VARCHAR(255) DEFAULT 'ALL'",
+                "ALTER TABLE courses ADD COLUMN public_to_all BOOLEAN DEFAULT TRUE"
+            ]
+            for stmt in alter_statements:
+                try:
+                    with db.engine.begin() as conn:
+                        from sqlalchemy import text
+                        conn.execute(text(stmt))
+                except Exception:
+                    pass
         except Exception as e:
             print("DB init warning:", e)
     # Custom Jinja template filters
