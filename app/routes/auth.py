@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from datetime import date, datetime, timedelta
 from app.models.user import AdminUser, Learner
 
 auth_bp = Blueprint('auth', __name__)
@@ -92,7 +93,7 @@ def learner_login():
                         branch='Madhapur',
                         points=150,
                         current_streak=5,
-                        last_active_date=datetime.date.today(),
+                        last_active_date=date.today(),
                         theme='navy'
                     )
                     db.session.add(learner)
