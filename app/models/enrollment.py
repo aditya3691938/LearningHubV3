@@ -73,3 +73,29 @@ class LessonReview(db.Model):
 
     def __repr__(self):
         return f'<LessonReview Enrollment {self.enrollment_id} - Lesson {self.lesson_id}>'
+
+
+class NextSessionRequest(db.Model):
+    __tablename__ = 'next_session_requests'
+
+    id = db.Column(db.Integer, primary_key=True)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey('learner_enrollments.id'), nullable=False, index=True)
+    learner_id = db.Column(db.Integer, db.ForeignKey('learners.id'), nullable=False, index=True)
+    course_id = db.Column(db.Integer, db.ForeignKey('courses.id'), nullable=False, index=True)
+    requested_class_id = db.Column(db.Integer, db.ForeignKey('live_classes.id'), nullable=False, index=True)
+    manager_id = db.Column(db.Integer, db.ForeignKey('learners.id'), nullable=True, index=True)
+
+    status = db.Column(db.String(30), nullable=False, default='Pending') # 'Submitted', 'Pending', 'Approved', 'Rejected'
+    rejection_reason = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    enrollment = db.relationship('LearnerEnrollment', backref=db.backref('session_requests', lazy=True, cascade='all, delete-orphan'))
+    learner = db.relationship('Learner', foreign_keys=[learner_id], backref='submitted_session_requests')
+    manager = db.relationship('Learner', foreign_keys=[manager_id], backref='assigned_session_requests')
+    course = db.relationship('Course', backref='session_requests')
+    requested_class = db.relationship('LiveClass', backref='session_requests')
+
+    def __repr__(self):
+        return f'<NextSessionRequest {self.id}: Learner {self.learner_id} for Class {self.requested_class_id} ({self.status})>'
+

@@ -71,7 +71,8 @@ def create_app(config_class=Config):
                 for col_sql in [
                     "ALTER TABLE courses ADD COLUMN access_type VARCHAR(20) DEFAULT 'Public'",
                     "ALTER TABLE courses ADD COLUMN target_department VARCHAR(255) DEFAULT 'ALL'",
-                    "ALTER TABLE courses ADD COLUMN target_designation VARCHAR(255) DEFAULT 'ALL'"
+                    "ALTER TABLE courses ADD COLUMN target_designation VARCHAR(255) DEFAULT 'ALL'",
+                    "ALTER TABLE courses ADD COLUMN public_to_all BOOLEAN DEFAULT 1"
                 ]:
                     try:
                         conn.execute(text(col_sql))

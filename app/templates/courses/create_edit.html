@@ -118,33 +118,41 @@
                             <span class="badge bg-white text-dark border font-monospace">Public / Private Targeting</span>
                         </div>
                         <div class="row g-3">
-                            <div class="col-md-4">
-                                <label for="access_type" class="form-label fw-bold">Access Type</label>
+                            <div class="col-md-3">
+                                <label for="access_type" class="form-label fw-bold">Course Visibility</label>
                                 <select class="form-select" id="access_type" name="access_type" onchange="toggleAccessTargetingFields()">
-                                    <option value="Public" {% if not course or course.access_type == 'Public' %}selected{% endif %}>Public (Open to All Learners)</option>
-                                    <option value="Private" {% if course and course.access_type == 'Private' %}selected{% endif %}>Private (Target Specific Dept / Designation)</option>
+                                    <option value="Public" {% if not course or course.access_type == 'Public' %}selected{% endif %}>Public (Appears in Catalog)</option>
+                                    <option value="Private" {% if course and course.access_type == 'Private' %}selected{% endif %}>Private (Hidden from General Catalog)</option>
                                 </select>
-                                <small class="text-muted d-block mt-1">Public courses are open to all catalog learners. Private courses restrict access to assigned target groups.</small>
+                                <small class="text-muted d-block mt-1">Public courses appear in catalog for eligible users. Private courses are accessible only to explicitly assigned/enrolled learners.</small>
                             </div>
-                            <div class="col-md-4" id="target_dept_container">
-                                <label for="target_department" class="form-label fw-bold">Target Department</label>
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold d-block">Public Target Audience</label>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="public_to_all" name="public_to_all" value="1" {% if not course or course.public_to_all or (course.target_department == 'ALL' and course.target_designation == 'ALL') %}checked{% endif %} onchange="toggleAccessTargetingFields()">
+                                    <label class="form-check-label fw-semibold" for="public_to_all">Available to All Users</label>
+                                </div>
+                                <small class="text-muted d-block mt-1">If enabled, course is visible to all users regardless of department or designation.</small>
+                            </div>
+                            <div class="col-md-3" id="target_dept_container">
+                                <label for="target_department" class="form-label fw-bold">Target Department(s)</label>
                                 <select class="form-select" id="target_department" name="target_department">
                                     <option value="ALL" {% if not course or course.target_department == 'ALL' or not course.target_department %}selected{% endif %}>All Departments</option>
                                     {% for dept in departments %}
-                                    <option value="{{ dept }}" {% if course and course.target_department == dept %}selected{% endif %}>{{ dept }}</option>
+                                    <option value="{{ dept }}" {% if course and dept in (course.target_department or '').split(',') %}selected{% endif %}>{{ dept }}</option>
                                     {% endfor %}
                                 </select>
-                                <small class="text-muted d-block mt-1">Restrict course to learners in a specific department</small>
+                                <small class="text-muted d-block mt-1">Learners in this department are eligible (OR logic with designation).</small>
                             </div>
-                            <div class="col-md-4" id="target_desg_container">
-                                <label for="target_designation" class="form-label fw-bold">Target Designation</label>
+                            <div class="col-md-3" id="target_desg_container">
+                                <label for="target_designation" class="form-label fw-bold">Target Designation(s)</label>
                                 <select class="form-select" id="target_designation" name="target_designation">
                                     <option value="ALL" {% if not course or course.target_designation == 'ALL' or not course.target_designation %}selected{% endif %}>All Designations</option>
                                     {% for desg in designations %}
-                                    <option value="{{ desg }}" {% if course and course.target_designation == desg %}selected{% endif %}>{{ desg }}</option>
+                                    <option value="{{ desg }}" {% if course and desg in (course.target_designation or '').split(',') %}selected{% endif %}>{{ desg }}</option>
                                     {% endfor %}
                                 </select>
-                                <small class="text-muted d-block mt-1">Restrict course to learners with a specific designation</small>
+                                <small class="text-muted d-block mt-1">Learners with this designation are eligible (OR logic with department).</small>
                             </div>
                         </div>
                     </div>
@@ -261,18 +269,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function toggleAccessTargetingFields() {
         const accessSelect = document.getElementById('access_type');
-        if (!accessSelect) return;
-        const isPrivate = accessSelect.value === 'Private';
+        const pubAllCheck = document.getElementById('public_to_all');
+        if (!accessSelect || !pubAllCheck) return;
+        const isPublicToAll = pubAllCheck.checked;
         const deptContainer = document.getElementById('target_dept_container');
         const desgContainer = document.getElementById('target_desg_container');
-        if (deptContainer) deptContainer.style.opacity = isPrivate ? '1' : '0.6';
-        if (desgContainer) desgContainer.style.opacity = isPrivate ? '1' : '0.6';
+        if (deptContainer) {
+            deptContainer.style.opacity = isPublicToAll ? '0.5' : '1';
+            const deptSelect = deptContainer.querySelector('select');
+            if (deptSelect) deptSelect.disabled = isPublicToAll;
+        }
+        if (desgContainer) {
+            desgContainer.style.opacity = isPublicToAll ? '0.5' : '1';
+            const desgSelect = desgContainer.querySelector('select');
+            if (desgSelect) desgSelect.disabled = isPublicToAll;
+        }
     }
 
     const accessSelect = document.getElementById('access_type');
-    if (accessSelect) {
-        accessSelect.addEventListener('change', toggleAccessTargetingFields);
-        toggleAccessTargetingFields();
+    const pubAllCheck = document.getElementById('public_to_all');
+    if (accessSelect) accessSelect.addEventListener('change', toggleAccessTargetingFields);
+    if (pubAllCheck) pubAllCheck.addEventListener('change', toggleAccessTargetingFields);
+    toggleAccessTargetingFields();
     }
 
     modeSelect.addEventListener('change', updateModeVisibility);

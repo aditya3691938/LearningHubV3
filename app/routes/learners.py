@@ -524,18 +524,24 @@ def my_portal():
         else:
             feedback_status = "Locked"
 
-        # Database Completion Status Check:
-        # Self-paced course is Completed if all lessons are completed AND feedback is submitted
-        if all_lessons_done and feedback_status == 'Submitted':
-            if en.completion_status != 'Completed':
-                en.completion_status = 'Completed'
-                en.completed_at = datetime.utcnow()
-                db.session.commit()
-
         # Live Class parameters
         from app.models.attendance import Attendance
         att = Attendance.query.filter_by(class_id=en.class_id, learner_id=learner.id).first() if en.class_id else None
         attendance_status = "Present" if (att and att.status == 'Present') else "Pending"
+
+        # Database Completion Status Check according to requirements 9, 10, 11:
+        if en.course.mode == 'Self Paced':
+            if all_lessons_done and (post_status in ["Passed", "N/A", "Optional"]) and feedback_status == 'Submitted':
+                if en.completion_status != 'Completed':
+                    en.completion_status = 'Completed'
+                    en.completion_date = datetime.utcnow()
+                    db.session.commit()
+        else:
+            if attendance_status == 'Present' and (post_status in ["Passed", "N/A"]) and feedback_status == 'Submitted':
+                if en.completion_status != 'Completed':
+                    en.completion_status = 'Completed'
+                    en.completion_date = datetime.utcnow()
+                    db.session.commit()
 
         # Determine dynamic button text and URL
         btn_text = "Continue Learning"
@@ -662,6 +668,9 @@ def my_portal():
                         if sub_en.extended_deadline and sub_en.extended_deadline.date() >= datetime.utcnow().date():
                             sub_expired = False
 
+                from app.models.enrollment import NextSessionRequest
+                pending_sess_req = NextSessionRequest.query.filter_by(enrollment_id=sub_en.id, status='Pending').order_by(NextSessionRequest.id.desc()).first()
+
                 courses_info.append({
                     'enrollment_id': sub_en.id,
                     'course_name': sub_en.course.name,
@@ -670,7 +679,8 @@ def my_portal():
                     'status': sub_en.completion_status,
                     'is_expired': sub_expired,
                     'extended_deadline': sub_en.extended_deadline,
-                    'extension_requested': sub_en.extension_requested
+                    'extension_requested': sub_en.extension_requested,
+                    'pending_session_request': pending_sess_req
                 })
             subordinate_data.append({
                 'subordinate': sub,
@@ -771,8 +781,16 @@ def class_flow(class_id_str):
     # Pre and Post attempts & Pre questions check
     has_pre_questions = CourseAssessment.query.filter((CourseAssessment.course_id == course.id) & (CourseAssessment.assessment_type.in_(['PRE', 'LESSON_PRE']))).count() > 0
     pre_attempt = AssessmentAttempt.query.filter((AssessmentAttempt.enrollment_id == enrollment.id) & (AssessmentAttempt.assessment_type.in_(['PRE', 'LESSON_PRE']))).order_by(AssessmentAttempt.id.desc()).first()
-    post_attempt = AssessmentAttempt.query.filter((AssessmentAttempt.enrollment_id == enrollment.id) & (AssessmentAttempt.assessment_type.in_(['POST', 'LESSON_POST']))).order_by(AssessmentAttempt.id.desc()).first()
-    feedback_resp = FeedbackResponse.query.filter_by(class_id=live_class.id, learner_id=learner.id).first()
+    has_post_quiz = CourseAssessment.query.filter_by(course_id=course.id, assessment_type='COURSE_END').count() > 0 or CourseAssessment.query.filter((CourseAssessment.course_id == course.id) & (CourseAssessment.assessment_type.in_(['POST', 'LESSON_POST']))).count() > 0
+    post_quiz_passed = (not has_post_quiz) or (post_attempt and post_attempt.passed)
+    is_attended = (att and att.status == 'Present')
+
+    if is_attended and post_quiz_passed and feedback_resp:
+        if enrollment.completion_status != 'Completed':
+            enrollment.completion_status = 'Completed'
+            enrollment.completion_date = datetime.utcnow()
+            db.session.commit()
+
     cert = Certificate.query.filter_by(learner_id=learner.id, course_id=course.id).first()
 
     return render_template(
@@ -857,6 +875,16 @@ def self_paced_flow(course_id_str):
     feedback_resp = None
     if feedback_repo:
         feedback_resp = FeedbackResponse.query.filter_by(repo_id=feedback_repo.id, learner_id=learner.id).first()
+
+    has_end_quiz = CourseAssessment.query.filter_by(course_id=course.id, assessment_type='COURSE_END').count() > 0
+    end_quiz_passed = (not has_end_quiz) or (course_end_attempt and course_end_attempt.passed)
+    all_lessons_done = (len(course.lessons) == 0) or (len(completed_lesson_ids) == len(course.lessons))
+
+    if all_lessons_done and end_quiz_passed and feedback_resp:
+        if enrollment.completion_status != 'Completed':
+            enrollment.completion_status = 'Completed'
+            enrollment.completion_date = datetime.utcnow()
+            db.session.commit()
 
     cert = Certificate.query.filter_by(learner_id=learner.id, course_id=course.id).first()
 
@@ -1596,28 +1624,303 @@ def catalog():
         
     courses = query.order_by(Course.name).all()
     
-    # Get active enrollments to flag "Enrolled" courses
-    from app.models.enrollment import LearnerEnrollment
+    from app.models.enrollment import LearnerEnrollment, NextSessionRequest
+    from app.models.attendance import Attendance
+    from app.models.live_class import LiveClass
+
     enrolls = LearnerEnrollment.query.filter_by(learner_id=learner_id).all()
     enrolled_course_ids = {e.course_id for e in enrolls}
+    enrollment_by_course = {e.course_id: e for e in enrolls}
 
-    # Filter by search string and access permissions
     filtered_courses = []
+    course_cards = []
+
     for c in courses:
         if search_query:
             if search_query not in c.name.lower() and (c.description and search_query not in c.description.lower()):
                 continue
-        if c.id in enrolled_course_ids or c.is_accessible_by(learner):
-            filtered_courses.append(c)
+
+        # Visibility & Audience check
+        if not (c.id in enrolled_course_ids or c.is_accessible_by(learner)):
+            continue
+
+        filtered_courses.append(c)
+
+        enrollment = enrollment_by_course.get(c.id)
+        card_info = {
+            'course': c,
+            'enrollment': enrollment,
+            'status_state': 'NOT_ENROLLED',
+            'next_session': None,
+            'upcoming_sessions': [],
+            'display_date': 'Date coming soon',
+            'display_time': 'Time coming soon',
+            'display_location': 'Location details coming soon',
+            'warning_msg': None,
+            'status_msg': None
+        }
+
+        # Upcoming sessions for live courses
+        if c.mode != 'Self Paced':
+            upcoming_classes = LiveClass.query.filter(
+                LiveClass.course_id == c.id,
+                LiveClass.is_locked == False,
+                LiveClass.class_date >= datetime.utcnow().date()
+            ).order_by(LiveClass.class_date.asc()).all()
+            
+            card_info['upcoming_sessions'] = upcoming_classes
+            if upcoming_classes:
+                next_cl = upcoming_classes[0]
+                card_info['next_session'] = next_cl
+                card_info['display_date'] = next_cl.class_date.strftime('%d %b %Y') if next_cl.class_date else 'Date coming soon'
+                card_info['display_time'] = next_cl.session_time or 'Time coming soon'
+                if next_cl.class_mode == 'Online':
+                    card_info['display_location'] = next_cl.meet_link or 'Meeting details coming soon'
+                else:
+                    loc_parts = [p for p in [next_cl.location, next_cl.branch] if p]
+                    card_info['display_location'] = ' - '.join(loc_parts) if loc_parts else 'Location details coming soon'
+            else:
+                card_info['display_date'] = 'Date coming soon'
+                card_info['display_time'] = 'Time coming soon'
+                card_info['display_location'] = 'Schedule will be announced soon'
+
+        if not enrollment:
+            card_info['status_state'] = 'NOT_ENROLLED'
+        elif enrollment.completion_status == 'Completed':
+            card_info['status_state'] = 'COMPLETED'
+            card_info['status_msg'] = 'Course completed successfully!'
+        else:
+            if c.mode != 'Self Paced':
+                assigned_class = LiveClass.query.get(enrollment.class_id) if enrollment.class_id else None
+                is_attended = False
+                if assigned_class:
+                    att = Attendance.query.filter_by(class_id=assigned_class.id, learner_id=learner.id, status='Present').first()
+                    if att:
+                        is_attended = True
+                
+                is_past_or_locked = False
+                if assigned_class:
+                    if (assigned_class.class_date < datetime.utcnow().date()) or assigned_class.is_locked:
+                        is_past_or_locked = True
+                
+                if assigned_class and is_past_or_locked and not is_attended:
+                    sess_req = NextSessionRequest.query.filter_by(enrollment_id=enrollment.id).order_by(NextSessionRequest.id.desc()).first()
+                    if sess_req:
+                        if sess_req.status in ['Pending', 'Submitted']:
+                            card_info['status_state'] = 'REQUEST_PENDING'
+                            card_info['status_msg'] = 'Learning Manager approval pending'
+                        elif sess_req.status == 'Approved':
+                            card_info['status_state'] = 'REQUEST_APPROVED'
+                            card_info['status_msg'] = 'Request Approved - Assigned to Next Session'
+                        elif sess_req.status == 'Rejected':
+                            card_info['status_state'] = 'REQUEST_REJECTED'
+                            card_info['status_msg'] = 'Request Rejected'
+                            card_info['warning_msg'] = 'You missed a required class. Request approval to attend the next available session.'
+                    else:
+                        card_info['status_state'] = 'MISSED_REQUIRED_CLASS'
+                        card_info['warning_msg'] = 'You missed a required class. Request approval to attend the next available session.'
+                else:
+                    card_info['status_state'] = 'ENROLLED'
+            else:
+                card_info['status_state'] = 'ENROLLED'
+
+        course_cards.append(card_info)
         
     return render_template(
         'learner_portal/catalog.html',
         learner=learner,
         courses=filtered_courses,
+        course_cards=course_cards,
         enrolled_course_ids=enrolled_course_ids,
         search_query=search_query,
         mode_filter=mode_filter
     )
+
+
+@learners_bp.route('/enroll/<int:course_id>', methods=['POST'])
+def enroll_course(course_id):
+    learner_id = session.get('learner_id')
+    if not learner_id:
+        flash("Please log in to enroll in courses.", "warning")
+        return redirect(url_for('auth.learner_login'))
+
+    learner = Learner.query.get_or_404(learner_id)
+    course = Course.query.get_or_404(course_id)
+
+    if not course.is_accessible_by(learner):
+        flash("You are not eligible to enroll in this course.", "danger")
+        return redirect(url_for('learners.catalog'))
+
+    existing_en = LearnerEnrollment.query.filter_by(learner_id=learner.id, course_id=course.id).first()
+    if existing_en:
+        flash(f"You are already enrolled in '{course.name}'.", "info")
+        if course.mode == 'Self Paced':
+            return redirect(url_for('learners.self_paced_flow', course_id_str=course.course_id))
+        else:
+            cls_id = existing_en.live_class.class_id if existing_en.live_class else (course.classes[0].class_id if course.classes else '')
+            return redirect(url_for('learners.class_flow', class_id_str=cls_id)) if cls_id else redirect(url_for('learners.catalog'))
+
+    assigned_class_id = None
+    if course.mode != 'Self Paced':
+        from app.models.live_class import LiveClass
+        upcoming = LiveClass.query.filter(
+            LiveClass.course_id == course.id,
+            LiveClass.is_locked == False,
+            LiveClass.class_date >= datetime.utcnow().date()
+        ).order_by(LiveClass.class_date.asc()).first()
+        if upcoming:
+            assigned_class_id = upcoming.id
+
+    new_en = LearnerEnrollment(
+        learner_id=learner.id,
+        course_id=course.id,
+        class_id=assigned_class_id,
+        completion_status='Enrolled'
+    )
+    db.session.add(new_en)
+    db.session.commit()
+    flash(f"Successfully enrolled in '{course.name}'!", "success")
+
+    if course.mode == 'Self Paced':
+        return redirect(url_for('learners.self_paced_flow', course_id_str=course.course_id))
+    else:
+        cls = LiveClass.query.get(assigned_class_id) if assigned_class_id else None
+        if cls:
+            return redirect(url_for('learners.class_flow', class_id_str=cls.class_id))
+        return redirect(url_for('learners.catalog'))
+
+
+@learners_bp.route('/request_next_session/<int:enrollment_id>', methods=['POST'])
+def request_next_session(enrollment_id):
+    learner_id = session.get('learner_id')
+    if not learner_id:
+        flash("Please log in to submit a session request.", "warning")
+        return redirect(url_for('auth.learner_login'))
+
+    learner = Learner.query.get_or_404(learner_id)
+    enrollment = LearnerEnrollment.query.get_or_404(enrollment_id)
+
+    if enrollment.learner_id != learner.id:
+        flash("Unauthorized action.", "danger")
+        return redirect(url_for('learners.catalog'))
+
+    from app.models.live_class import LiveClass
+    from app.models.enrollment import NextSessionRequest
+
+    target_class_id = request.form.get('requested_class_id', type=int)
+    if not target_class_id:
+        upcoming = LiveClass.query.filter(
+            LiveClass.course_id == enrollment.course_id,
+            LiveClass.is_locked == False,
+            LiveClass.class_date >= datetime.utcnow().date(),
+            LiveClass.id != enrollment.class_id
+        ).order_by(LiveClass.class_date.asc()).first()
+        if upcoming:
+            target_class_id = upcoming.id
+
+    if not target_class_id:
+        flash("No upcoming session is currently scheduled for request.", "warning")
+        return redirect(url_for('learners.catalog'))
+
+    existing_req = NextSessionRequest.query.filter_by(
+        enrollment_id=enrollment.id,
+        status='Pending'
+    ).first()
+
+    if existing_req:
+        flash("You already have a pending next session request submitted to your Learning Manager.", "info")
+        return redirect(url_for('learners.catalog'))
+
+    sess_req = NextSessionRequest(
+        enrollment_id=enrollment.id,
+        learner_id=learner.id,
+        course_id=enrollment.course_id,
+        requested_class_id=target_class_id,
+        manager_id=learner.manager_id,
+        status='Pending'
+    )
+    db.session.add(sess_req)
+    
+    if learner.manager_id:
+        from app.models.notification import LearnerNotification
+        notif = LearnerNotification(
+            learner_id=learner.manager_id,
+            course_id=enrollment.course_id,
+            title="Next Session Approval Request",
+            message=f"{learner.name} has requested approval for the next available session in '{enrollment.course.name}'.",
+            notification_type='SESSION_REQUEST'
+        )
+        db.session.add(notif)
+
+    db.session.commit()
+    flash("You missed a required class. Your request to attend the next available session has been sent to your Learning Manager.", "success")
+    return redirect(url_for('learners.catalog'))
+
+
+@learners_bp.route('/approve_session_request/<int:request_id>', methods=['POST'])
+def approve_session_request(request_id):
+    manager_learner_id = session.get('learner_id')
+    if not manager_learner_id:
+        flash("Please log in as a Learning Manager.", "danger")
+        return redirect(url_for('auth.learner_login'))
+
+    manager = Learner.query.get_or_404(manager_learner_id)
+    from app.models.enrollment import NextSessionRequest
+    req = NextSessionRequest.query.get_or_404(request_id)
+
+    if req.learner.manager_id != manager.id and req.manager_id != manager.id:
+        flash("You are not authorized to approve this request.", "danger")
+        return redirect(url_for('learners.view_learner_portal'))
+
+    req.status = 'Approved'
+    req.enrollment.class_id = req.requested_class_id
+    
+    from app.models.notification import LearnerNotification
+    notif = LearnerNotification(
+        learner_id=req.learner_id,
+        course_id=req.course_id,
+        title="Session Request Approved",
+        message=f"Your Learning Manager {manager.name} approved your request for class '{req.requested_class.class_name}'.",
+        notification_type='SESSION_APPROVED'
+    )
+    db.session.add(notif)
+    db.session.commit()
+
+    flash(f"Approved next session request for {req.learner.name}.", "success")
+    return redirect(url_for('learners.my_portal'))
+
+
+@learners_bp.route('/reject_session_request/<int:request_id>', methods=['POST'])
+def reject_session_request(request_id):
+    manager_learner_id = session.get('learner_id')
+    if not manager_learner_id:
+        flash("Please log in as a Learning Manager.", "danger")
+        return redirect(url_for('auth.learner_login'))
+
+    manager = Learner.query.get_or_404(manager_learner_id)
+    from app.models.enrollment import NextSessionRequest
+    req = NextSessionRequest.query.get_or_404(request_id)
+
+    if req.learner.manager_id != manager.id and req.manager_id != manager.id:
+        flash("You are not authorized to reject this request.", "danger")
+        return redirect(url_for('learners.my_portal'))
+
+    req.status = 'Rejected'
+    req.rejection_reason = request.form.get('rejection_reason', 'Request rejected by manager.')
+    
+    from app.models.notification import LearnerNotification
+    notif = LearnerNotification(
+        learner_id=req.learner_id,
+        course_id=req.course_id,
+        title="Session Request Rejected",
+        message=f"Your Learning Manager {manager.name} rejected your request for the next session.",
+        notification_type='SESSION_REJECTED'
+    )
+    db.session.add(notif)
+    db.session.commit()
+
+    flash(f"Rejected next session request for {req.learner.name}.", "info")
+    return redirect(url_for('learners.my_portal'))
 
 
 @learners_bp.route('/profile', methods=['GET', 'POST'])

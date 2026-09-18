@@ -82,8 +82,23 @@ def create_course():
             return redirect(url_for('courses.create_course'))
 
         access_type = request.form.get('access_type', 'Public').strip()
-        target_department = request.form.get('target_department', 'ALL').strip()
-        target_designation = request.form.get('target_designation', 'ALL').strip()
+        public_to_all = (request.form.get('public_to_all') in ['1', 'on', 'true', 'True']) or (request.form.get('public_to_all') is None and access_type == 'Public')
+        
+        target_depts = request.form.getlist('target_departments')
+        if not target_depts:
+            target_department = request.form.get('target_department', 'ALL').strip()
+        else:
+            target_department = ','.join([d for d in target_depts if d.strip()]) or 'ALL'
+
+        target_desgs = request.form.getlist('target_designations')
+        if not target_desgs:
+            target_designation = request.form.get('target_designation', 'ALL').strip()
+        else:
+            target_designation = ','.join([d for d in target_desgs if d.strip()]) or 'ALL'
+
+        if public_to_all:
+            target_department = 'ALL'
+            target_designation = 'ALL'
 
         course_id = Course.generate_course_id(mode)
         new_course = Course(
@@ -100,6 +115,7 @@ def create_course():
             is_sequential=is_sequential,
             completion_date=completion_date,
             access_type=access_type,
+            public_to_all=public_to_all,
             target_department=target_department,
             target_designation=target_designation
         )
@@ -1063,8 +1079,24 @@ def edit_course(course_id):
             course.completion_date = None
 
         course.access_type = request.form.get('access_type', 'Public').strip()
-        course.target_department = request.form.get('target_department', 'ALL').strip()
-        course.target_designation = request.form.get('target_designation', 'ALL').strip()
+        public_to_all = (request.form.get('public_to_all') in ['1', 'on', 'true', 'True']) or (request.form.get('public_to_all') is None and course.access_type == 'Public')
+        course.public_to_all = public_to_all
+
+        target_depts = request.form.getlist('target_departments')
+        if not target_depts:
+            course.target_department = request.form.get('target_department', 'ALL').strip()
+        else:
+            course.target_department = ','.join([d for d in target_depts if d.strip()]) or 'ALL'
+
+        target_desgs = request.form.getlist('target_designations')
+        if not target_desgs:
+            course.target_designation = request.form.get('target_designation', 'ALL').strip()
+        else:
+            course.target_designation = ','.join([d for d in target_desgs if d.strip()]) or 'ALL'
+
+        if public_to_all:
+            course.target_department = 'ALL'
+            course.target_designation = 'ALL'
 
         # Handle Thumbnail Upload (Direct B2 Upload or Server Fallback)
         b2_thumb = request.form.get('b2_uploaded_filename')

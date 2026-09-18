@@ -375,6 +375,9 @@
                                                 </div>
                                             </td>
                                             <td>
+                                                {% if c_info.pending_session_request %}
+                                                    <span class="badge bg-warning text-dark d-block mb-1 py-1"><i class="fa-solid fa-clock-rotate-left me-1"></i> Next Session Requested</span>
+                                                {% endif %}
                                                 {% if c_info.extension_requested %}
                                                     <span class="badge bg-warning text-dark d-block mb-1 py-1"><i class="fa-regular fa-bell me-1"></i> Extension Requested</span>
                                                 {% endif %}
@@ -390,6 +393,20 @@
                                                 {% endif %}
                                             </td>
                                             <td>
+                                                {% if c_info.pending_session_request %}
+                                                <div class="d-flex align-items-center gap-1 mb-1">
+                                                    <form action="{{ url_for('learners.approve_session_request', request_id=c_info.pending_session_request.id) }}" method="POST" class="d-inline">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <button type="submit" class="btn btn-success btn-xxs fw-bold text-nowrap">
+                                                            <i class="fa-solid fa-check me-1"></i> Approve Class
+                                                        </button>
+                                                    </form>
+                                                    <form action="{{ url_for('learners.reject_session_request', request_id=c_info.pending_session_request.id) }}" method="POST" class="d-inline">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <button type="submit" class="btn btn-outline-danger btn-xxs fw-bold text-nowrap">Reject</button>
+                                                    </form>
+                                                </div>
+                                                {% endif %}
                                                 {% if c_info.is_expired or c_info.status != 'Completed' %}
                                                 <button type="button" class="btn btn-outline-teal btn-xxs fw-bold" data-bs-toggle="modal" data-bs-target="#extModal-{{ c_info.enrollment_id }}">
                                                     Grant Extension
@@ -397,7 +414,7 @@
                                                 {% if c_info.extension_requested %}
                                                 <form action="{{ url_for('learners.reject_extension', enrollment_id=c_info.enrollment_id) }}" method="POST" class="d-inline ms-1">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                    <button type="submit" class="btn btn-outline-danger btn-xxs fw-bold">Reject</button>
+                                                    <button type="submit" class="btn btn-outline-danger btn-xxs fw-bold">Reject Ext</button>
                                                 </form>
                                                 {% endif %}
                                                 

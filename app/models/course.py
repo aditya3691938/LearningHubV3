@@ -20,6 +20,7 @@ class Course(db.Model):
     access_type = db.Column(db.String(20), nullable=False, default='Public') # 'Public' or 'Private'
     target_department = db.Column(db.String(255), nullable=True, default='ALL') # 'ALL' or department name
     target_designation = db.Column(db.String(255), nullable=True, default='ALL') # 'ALL' or designation name
+    public_to_all = db.Column(db.Boolean, nullable=False, default=True) # Public to all toggle
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     pre_quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=True)
@@ -37,18 +38,15 @@ class Course(db.Model):
     def is_accessible_by(self, learner):
         """
         Checks if a course is accessible by a given learner object:
-        - If access_type == 'Public' (or target_department/target_designation are 'ALL'): accessible to all.
-        - If access_type == 'Private':
-          Accessible if learner's department matches target_department (or target_department == 'ALL')
-          AND learner's designation matches target_designation (or target_designation == 'ALL'),
-          OR if learner is already enrolled in the course.
+        - Archived courses are not accessible.
+        - Enrolled learners have access.
+        - Private courses are restricted from general catalog for unassigned learners.
+        - Public courses marked Public to All Users (or target dept/desg 'ALL') are accessible to all.
+        - Department and designation matching uses OR logic:
+          learner.department matches target department OR learner.designation matches target designation.
         """
         if self.is_archived:
             return False
-
-        access = (self.access_type or 'Public').strip().title()
-        if access == 'Public':
-            return True
 
         if not learner:
             return False
@@ -58,13 +56,38 @@ class Course(db.Model):
         if is_enrolled:
             return True
 
-        target_dept = (self.target_department or 'ALL').strip()
-        target_desg = (self.target_designation or 'ALL').strip()
+        access = (self.access_type or 'Public').strip().title()
+        if access == 'Private':
+            return False
 
-        dept_match = (target_dept == 'ALL') or (learner.department and learner.department.strip().lower() == target_dept.lower())
-        desg_match = (target_desg == 'ALL') or (learner.designation and learner.designation.strip().lower() == target_desg.lower())
+        if getattr(self, 'public_to_all', True):
+            target_dept_str = (self.target_department or 'ALL').strip()
+            target_desg_str = (self.target_designation or 'ALL').strip()
+            if target_dept_str.upper() == 'ALL' and target_desg_str.upper() == 'ALL':
+                return True
 
-        return dept_match and desg_match
+        target_depts = [d.strip().lower() for d in (self.target_department or '').split(',') if d.strip() and d.strip().upper() != 'ALL']
+        target_desgs = [d.strip().lower() for d in (self.target_designation or '').split(',') if d.strip() and d.strip().upper() != 'ALL']
+
+        if not target_depts and not target_desgs:
+            return True
+
+        dept_match = False
+        if target_depts and learner.department:
+            dept_match = learner.department.strip().lower() in target_depts
+
+        desg_match = False
+        if target_desgs and learner.designation:
+            desg_match = learner.designation.strip().lower() in target_desgs
+
+        if target_depts and target_desgs:
+            return dept_match or desg_match
+        elif target_depts:
+            return dept_match
+        elif target_desgs:
+            return desg_match
+
+        return True
 
     @staticmethod
     def generate_course_id(mode='Self Paced'):
