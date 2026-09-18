@@ -63,9 +63,10 @@ def create_app(config_class=Config):
     app.register_blueprint(quizzes_bp, url_prefix='/quizzes')
     app.register_blueprint(b2_bp)
 
-    # Ensure Course schema contains access_type, target_department, and target_designation
+    # Ensure DB tables & columns exist on startup
     with app.app_context():
         try:
+            db.create_all()
             with db.engine.connect() as conn:
                 from sqlalchemy import text
                 for col_sql in [
@@ -79,8 +80,8 @@ def create_app(config_class=Config):
                         conn.commit()
                     except Exception:
                         pass
-        except Exception:
-            pass
+        except Exception as e:
+            print("DB init warning:", e)
     # Custom Jinja template filters
     @app.template_filter('format_duration')
     def format_duration_filter(hours):
