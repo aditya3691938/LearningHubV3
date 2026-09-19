@@ -85,7 +85,7 @@ def admin_profile():
 
     total_courses = Course.query.count()
     total_learners = Learner.query.count()
-    open_tickets = LmsIssue.query.filter(LmsIssue.status.in_(['Open', 'In Progress'])).count()
+    open_tickets = LmsIssue.query.filter_by(status='Open').count()
 
     admin = AdminUser.query.filter_by(username=session.get('admin_username')).first()
 
@@ -133,11 +133,21 @@ def admin_profile():
         admin=admin
     )
 
+def _ensure_admin_comment_column():
+    from app.models import db
+    from sqlalchemy import text
+    try:
+        db.session.execute(text("ALTER TABLE lms_issues ADD COLUMN admin_comment TEXT"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
 @dashboard_bp.route('/issues')
 @admin_required
 def list_issues():
     from app.models.issue import LmsIssue
     from flask import request
+    _ensure_admin_comment_column()
     
     status_filter = request.args.get('status', 'all')
     query = LmsIssue.query
@@ -146,18 +156,18 @@ def list_issues():
         query = query.filter_by(status='Open')
     elif status_filter == 'in_progress':
         query = query.filter_by(status='In Progress')
-    elif status_filter == 'reject':
-        query = query.filter(LmsIssue.status.in_(['Reject', 'Rejected']))
-    elif status_filter == 'close':
-        query = query.filter(LmsIssue.status.in_(['Close', 'Closed', 'Resolved']))
+    elif status_filter == 'deny':
+        query = query.filter(LmsIssue.status.in_(['Deny', 'Reject', 'Rejected']))
+    elif status_filter == 'resolved':
+        query = query.filter(LmsIssue.status.in_(['Resolved', 'Close', 'Closed']))
 
     issues = query.order_by(LmsIssue.created_at.desc()).all()
     
     total_count = LmsIssue.query.count()
     open_count = LmsIssue.query.filter_by(status='Open').count()
     in_progress_count = LmsIssue.query.filter_by(status='In Progress').count()
-    reject_count = LmsIssue.query.filter(LmsIssue.status.in_(['Reject', 'Rejected'])).count()
-    closed_count = LmsIssue.query.filter(LmsIssue.status.in_(['Close', 'Closed', 'Resolved'])).count()
+    deny_count = LmsIssue.query.filter(LmsIssue.status.in_(['Deny', 'Reject', 'Rejected'])).count()
+    resolved_count = LmsIssue.query.filter(LmsIssue.status.in_(['Resolved', 'Close', 'Closed'])).count()
 
     return render_template(
         'dashboard/issues.html',
@@ -166,8 +176,8 @@ def list_issues():
         total_count=total_count,
         open_count=open_count,
         in_progress_count=in_progress_count,
-        reject_count=reject_count,
-        closed_count=closed_count
+        deny_count=deny_count,
+        resolved_count=resolved_count
     )
 
 
@@ -261,19 +271,23 @@ def update_issue_status(issue_id):
     from datetime import datetime, timedelta
     from flask import flash, request, redirect, url_for
     from app.models import db
+    _ensure_admin_comment_column()
     
     issue = LmsIssue.query.get_or_404(issue_id)
-    new_status = request.form.get('status', 'Close').strip()
+    new_status = request.form.get('status', 'Resolved').strip()
+    admin_comment = request.form.get('admin_comment', '').strip()
     
-    valid_statuses = ['Open', 'In Progress', 'Reject', 'Close', 'Resolved']
+    valid_statuses = ['Open', 'In Progress', 'Deny', 'Reject', 'Resolved', 'Close']
     if new_status not in valid_statuses:
         flash("Invalid status selected.", "danger")
         return redirect(url_for('dashboard.list_issues'))
         
     issue.status = new_status
-    
+    if admin_comment:
+        issue.admin_comment = admin_comment
+        
     extension_msg = ""
-    if new_status in ['Close', 'Closed', 'Resolved']:
+    if new_status in ['Resolved', 'Close', 'Closed']:
         issue.resolved_at = datetime.utcnow()
         # Auto-grant extension if it's a manager fallback escalation ticket
         if issue.description and '[Escalation] Extension requested for course' in issue.description:
@@ -288,19 +302,21 @@ def update_issue_status(issue_id):
                     enrollment.extension_requested = False
                     extension_msg = f" Also granted a 30-day course extension for '{enrollment.course.name}'."
     
+    comment_text = f" Note: '{admin_comment}'" if admin_comment else ""
+
     # Notify learner
-    if new_status in ['Close', 'Closed', 'Resolved']:
+    if new_status in ['Resolved', 'Close', 'Closed']:
         notif_title = "Support Issue Resolved! ✅"
-        message = f"Your support ticket #{issue.id} has been resolved by the Administrator.{extension_msg}"
+        message = f"Your support ticket #{issue.id} has been resolved by the Administrator.{extension_msg}{comment_text}"
     elif new_status == 'In Progress':
         notif_title = "Support Issue Update: In Progress ⏳"
-        message = f"Your support ticket #{issue.id} is currently In Progress."
-    elif new_status in ['Reject', 'Rejected']:
-        notif_title = "Support Issue Update: Rejected ❌"
-        message = f"Your support ticket #{issue.id} has been reviewed and rejected by the Administrator."
+        message = f"Your support ticket #{issue.id} is currently In Progress.{comment_text}"
+    elif new_status in ['Deny', 'Reject', 'Rejected']:
+        notif_title = "Support Issue Update: Denied ❌"
+        message = f"Your support ticket #{issue.id} has been denied by the Administrator.{comment_text}"
     else:
         notif_title = "Support Issue Update: Open 📂"
-        message = f"Your support ticket #{issue.id} status has been updated to Open."
+        message = f"Your support ticket #{issue.id} status is now Open.{comment_text}"
 
     notif = LearnerNotification(
         learner_id=issue.learner_id,
@@ -311,6 +327,5 @@ def update_issue_status(issue_id):
     db.session.add(notif)
     db.session.commit()
     
-    display_status = 'Closed' if new_status in ['Close', 'Resolved'] else new_status
-    flash(f"Support issue #{issue.id} status updated to '{display_status}'.{extension_msg}", "success")
+    flash(f"Support issue #{issue.id} status updated to '{new_status}'.{extension_msg}", "success")
     return redirect(url_for('dashboard.list_issues'))
