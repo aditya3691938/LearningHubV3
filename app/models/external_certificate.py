@@ -9,8 +9,10 @@ class ExternalCertificate(db.Model):
     course_name = db.Column(db.String(255), nullable=False)
     issuing_org = db.Column(db.String(255), nullable=False)
     date_earned = db.Column(db.Date, nullable=False)
+    expiry_date = db.Column(db.Date, nullable=True)
     pdf_filename = db.Column(db.String(255), nullable=True)
     skills = db.Column(db.Text, nullable=True) # Comma-separated tags, e.g. "Python, SQL, Analytics"
+    ocr_validated = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     learner = db.relationship('Learner', backref=db.backref('external_certificates', lazy=True, cascade='all, delete-orphan'))

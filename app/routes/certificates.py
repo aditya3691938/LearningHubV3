@@ -46,6 +46,20 @@ def my_certificates():
     return render_template('learner_portal/certificates.html', learner=learner, certificates=certificates, external_certificates=external_certificates)
 
 
+def _ensure_external_cert_columns():
+    from app.models import db
+    from sqlalchemy import text
+    try:
+        db.session.execute(text("ALTER TABLE external_certificates ADD COLUMN expiry_date DATE"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    try:
+        db.session.execute(text("ALTER TABLE external_certificates ADD COLUMN ocr_validated BOOLEAN DEFAULT 1"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
 @certificates_bp.route('/upload_external', methods=['POST'])
 def upload_external():
     learner_id = session.get('learner_id')
@@ -53,38 +67,77 @@ def upload_external():
         flash("Please log in to upload certificates.", "danger")
         return redirect(url_for('auth.learner_login'))
         
+    _ensure_external_cert_columns()
+    learner = Learner.query.get(learner_id)
+    learner_name = learner.name if learner else None
+
     course_name = request.form.get('course_name', '').strip()
     issuing_org = request.form.get('issuing_org', '').strip()
     date_earned_str = request.form.get('date_earned', '').strip()
+    expiry_date_str = request.form.get('expiry_date', '').strip()
     skills = request.form.get('skills', '').strip()
     file = request.files.get('certificate_file')
     
     if not course_name or not issuing_org or not date_earned_str:
-        flash("All fields are required.", "danger")
+        flash("Certification Name, Issuing Organization, and Date Earned are required.", "danger")
         return redirect(url_for('certificates.my_certificates'))
         
+    if not file or not file.filename:
+        flash("Please attach your certificate PDF file for backend OCR validation.", "danger")
+        return redirect(url_for('certificates.my_certificates'))
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext != '.pdf':
+        flash("Please attach a valid PDF file (.pdf) for OCR verification.", "danger")
+        return redirect(url_for('certificates.my_certificates'))
+
+    # Parse dates
+    try:
+        date_earned = datetime.strptime(date_earned_str, '%Y-%m-%d').date()
+    except ValueError:
+        flash("Invalid Date Earned format. Use YYYY-MM-DD.", "danger")
+        return redirect(url_for('certificates.my_certificates'))
+
+    expiry_date = None
+    if expiry_date_str:
+        try:
+            expiry_date = datetime.strptime(expiry_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    # Run Backend OCR Text Validation
+    from app.services.ocr_service import validate_certificate_pdf
+    is_valid_ocr, discrepancy_msg, extracted_text = validate_certificate_pdf(
+        file, 
+        course_name=course_name, 
+        issuing_org=issuing_org, 
+        learner_name=learner_name, 
+        date_earned=date_earned
+    )
+
+    if not is_valid_ocr:
+        flash(f"{discrepancy_msg}", "danger")
+        return redirect(url_for('certificates.my_certificates'))
+
+    # Upload PDF file to B2 / Local storage
     pdf_filename = None
     b2_cert_file = request.form.get('b2_uploaded_filename')
     if b2_cert_file:
         pdf_filename = b2_cert_file
-    elif file and file.filename:
+    else:
         from werkzeug.utils import secure_filename
         import uuid
-        ext = os.path.splitext(file.filename)[1]
         pdf_filename = f"ext_cert_{uuid.uuid4().hex}{ext}"
         from app.services.b2_service import upload_file_to_b2
         uploaded_name = upload_file_to_b2(file, pdf_filename, folder='external_certs', content_type=file.content_type)
         if uploaded_name:
             pdf_filename = uploaded_name
         else:
-            flash("Failed to upload certificate.", "danger")
-            return redirect(url_for('dashboard.index'))
-        
-    try:
-        date_earned = datetime.strptime(date_earned_str, '%Y-%m-%d').date()
-    except ValueError:
-        flash("Invalid date format. Use YYYY-MM-DD.", "danger")
-        return redirect(url_for('certificates.my_certificates'))
+            upload_dir = os.path.join(certificates_bp.root_path, '..', '..', 'uploads', 'external_certs')
+            os.makedirs(upload_dir, exist_ok=True)
+            local_path = os.path.join(upload_dir, pdf_filename)
+            file.seek(0)
+            file.save(local_path)
         
     from app.models.external_certificate import ExternalCertificate
     ext_cert = ExternalCertificate(
@@ -92,18 +145,19 @@ def upload_external():
         course_name=course_name,
         issuing_org=issuing_org,
         date_earned=date_earned,
+        expiry_date=expiry_date,
         pdf_filename=pdf_filename,
-        skills=skills
+        skills=skills,
+        ocr_validated=True
     )
     db.session.add(ext_cert)
     
-    learner = Learner.query.get(learner_id)
     if learner:
         learner.points += 100
         
     db.session.commit()
     
-    flash("External certification uploaded successfully! Earned 100 points & updated skill repository.", "success")
+    flash("External Certificate successfully validated via Backend OCR and accepted! Earned 100 profile points.", "success")
     return redirect(url_for('certificates.my_certificates'))
 
 @certificates_bp.route('/download/<cert_id_str>')

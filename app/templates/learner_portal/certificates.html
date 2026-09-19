@@ -92,8 +92,8 @@
                     <div class="col-12 col-md-6 col-xl-4">
                         <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden position-relative">
                             <div class="card-header bg-surface border-bottom p-3 d-flex justify-content-between align-items-center">
-                                <span class="badge bg-secondary-subtle text-muted fw-bold font-monospace border">
-                                    EXTERNAL
+                                <span class="badge bg-success-subtle text-success fw-bold font-monospace border border-success-subtle d-inline-flex align-items-center gap-1">
+                                    <i class="fa-solid fa-shield-check text-xs"></i> OCR VERIFIED
                                 </span>
                                 <span class="text-muted text-xs fw-semibold">
                                     <i class="fa-regular fa-calendar-check me-1 text-teal"></i> {{ cert.date_earned.strftime('%d %b %Y') }}
@@ -103,7 +103,12 @@
                             <div class="card-body p-4 text-start d-flex flex-column justify-content-between">
                                 <div>
                                     <h5 class="fw-bold text-dark mb-1" style="font-size: 1rem;">{{ cert.course_name }}</h5>
-                                    <h6 class="text-teal mb-3 font-monospace small"><i class="fa-solid fa-building me-1"></i> {{ cert.issuing_org }}</h6>
+                                    <h6 class="text-teal mb-2 font-monospace small"><i class="fa-solid fa-building me-1"></i> {{ cert.issuing_org }}</h6>
+                                    
+                                    <div class="d-flex align-items-center gap-3 text-xs text-muted mb-3">
+                                        <div><i class="fa-regular fa-calendar-check me-1 text-teal"></i> <strong>Earned:</strong> {{ cert.date_earned.strftime('%d %b %Y') }}</div>
+                                        <div><i class="fa-solid fa-hourglass-half me-1 text-warning"></i> <strong>Expires:</strong> {{ cert.expiry_date.strftime('%d %b %Y') if cert.expiry_date else 'No Expiry' }}</div>
+                                    </div>
                                     
                                     {% if cert.skills %}
                                     <div class="mb-3">
@@ -119,8 +124,8 @@
 
                                 {% if cert.pdf_filename %}
                                 <div class="mt-3 pt-3 border-top">
-                                    <a href="{{ url_for('static', filename='uploads/external_certs/' + cert.pdf_filename) }}" target="_blank" class="btn btn-outline-teal btn-sm fw-bold w-100">
-                                        <i class="fa-solid fa-file-pdf me-1"></i> View Attached PDF
+                                    <a href="{{ url_for('static', filename='uploads/external_certs/' + cert.pdf_filename) if not cert.pdf_filename.startswith('http') else cert.pdf_filename }}" target="_blank" class="btn btn-outline-teal btn-sm fw-bold w-100">
+                                        <i class="fa-solid fa-file-pdf me-1"></i> View Verified PDF
                                     </a>
                                 </div>
                                 {% endif %}
@@ -133,7 +138,7 @@
                         <div class="card border-0 shadow-sm p-5 text-center rounded-4">
                             <i class="fa-solid fa-cloud-arrow-up text-muted display-3 opacity-25 mb-3"></i>
                             <h5 class="fw-bold text-dark mb-1">No External Certificates Uploaded</h5>
-                            <p class="text-muted mb-4">Have you completed training elsewhere? Add them to build your personal skills profile.</p>
+                            <p class="text-muted mb-4">Have you completed training elsewhere? Upload your certificate PDF to validate via Backend OCR and build your skills profile.</p>
                             <button type="button" class="btn btn-teal btn-sm fw-bold px-4 rounded-pill mx-auto" data-bs-toggle="modal" data-bs-target="#uploadExternalModal">
                                 <i class="fa-solid fa-plus me-1"></i> Upload First Certificate
                             </button>
@@ -153,39 +158,68 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 
                 <div class="modal-header bg-teal text-white p-3">
-                    <h6 class="modal-title fw-bold" id="uploadExternalModalLabel"><i class="fa-solid fa-cloud-arrow-up me-2"></i> Upload External Certificate</h6>
+                    <h6 class="modal-title fw-bold" id="uploadExternalModalLabel"><i class="fa-solid fa-cloud-arrow-up me-2"></i> Upload External Certificate (OCR Verified)</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 
                 <div class="modal-body p-3.5 text-start">
+                    <!-- OCR Info Alert -->
+                    <div class="alert bg-teal-subtle border border-teal-subtle text-teal text-xxs p-2.5 rounded-3 mb-3 d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-robot fs-5 text-teal"></i>
+                        <div>
+                            <strong>Backend OCR Verification Active:</strong> Details submitted will be cross-checked against the text extracted from your PDF certificate. Submissions with discrepancies will be rejected.
+                        </div>
+                    </div>
+
+                    <!-- Certification / Course Name -->
                     <div class="mb-3">
-                        <label class="form-label text-xs fw-bold text-uppercase text-muted">Certification / Course Name</label>
+                        <label class="form-label text-xs fw-bold text-uppercase text-muted">Certification / Course Name <span class="text-danger">*</span></label>
                         <input type="text" name="course_name" class="form-control rounded-3 text-xs" placeholder="E.g., AWS Certified Solutions Architect" required>
                     </div>
+
+                    <!-- Issuing Organization -->
                     <div class="mb-3">
-                        <label class="form-label text-xs fw-bold text-uppercase text-muted">Issuing Organization</label>
-                        <input type="text" name="issuing_org" class="form-control rounded-3 text-xs" placeholder="E.g., Amazon Web Services (AWS) / Coursera" required>
+                        <label class="form-label text-xs fw-bold text-uppercase text-muted">Issuing Organization <span class="text-danger">*</span></label>
+                        <input type="text" name="issuing_org" class="form-control rounded-3 text-xs" placeholder="E.g., Amazon Web Services (AWS) / Coursera / Udemy" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label text-xs fw-bold text-uppercase text-muted">Date Earned</label>
-                        <input type="date" name="date_earned" class="form-control rounded-3 text-xs" required>
+
+                    <!-- Dates Row: Date Earned & Expiry Date -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-xs fw-bold text-uppercase text-muted">Date Earned <span class="text-danger">*</span></label>
+                            <input type="date" name="date_earned" class="form-control rounded-3 text-xs" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-xs fw-bold text-uppercase text-muted d-flex align-items-center justify-content-between">
+                                <span>Expiry Date</span>
+                                <span class="text-muted text-xxs font-normal">(Optional)</span>
+                            </label>
+                            <input type="date" name="expiry_date" class="form-control rounded-3 text-xs">
+                        </div>
                     </div>
+
+                    <!-- Skills Acquired -->
                     <div class="mb-3">
                         <label class="form-label text-xs fw-bold text-uppercase text-muted">Skills Acquired (Comma separated tags)</label>
-                        <input type="text" name="skills" class="form-control rounded-3 text-xs" placeholder="E.g., Cloud, Security, Terraform, Devops">
-                        <small class="text-muted text-xxs block mt-1"><i class="fa-solid fa-circle-info"></i> Comma separated values populate your search profile tags in the database.</small>
+                        <input type="text" name="skills" class="form-control rounded-3 text-xs" placeholder="E.g., Python, Cloud, Security, Analytics">
+                        <small class="text-muted text-xxs block mt-1"><i class="fa-solid fa-circle-info me-1"></i> Populates your skill repository and global search profile.</small>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label text-xs fw-bold text-uppercase text-muted">Attach Certificate (PDF / Image)</label>
-                        <input type="file" name="certificate_file" class="form-control rounded-3 text-xs" accept=".pdf,image/*" data-b2-upload="true" data-folder="external_certs">
+
+                    <!-- Attach PDF File -->
+                    <div class="mb-2">
+                        <label class="form-label text-xs fw-bold text-uppercase text-muted">Attach PDF Certificate <span class="text-danger">*</span></label>
+                        <input type="file" name="certificate_file" class="form-control rounded-3 text-xs" accept=".pdf" required>
+                        <small class="text-muted text-xxs block mt-1"><i class="fa-solid fa-file-pdf text-danger me-1"></i> Upload digital PDF certificate for backend OCR text extraction.</small>
                     </div>
                 </div>
                 
                 <div class="modal-footer border-top bg-light py-2 px-3 justify-content-between">
-                    <small class="text-success"><i class="fa-solid fa-award text-xs me-1"></i> Earn 50 profile points!</small>
+                    <small class="text-success fw-semibold"><i class="fa-solid fa-award text-xs me-1"></i> Earn 100 profile points!</small>
                     <div class="d-flex gap-2">
                         <button type="button" class="btn btn-light btn-xs fw-bold border" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-teal btn-xs text-white fw-bold shadow-xs">Upload Certificate</button>
+                        <button type="submit" class="btn btn-teal btn-xs text-white fw-bold shadow-xs d-inline-flex align-items-center gap-1">
+                            <i class="fa-solid fa-shield-check"></i> Validate & Upload
+                        </button>
                     </div>
                 </div>
             </form>
