@@ -11,31 +11,45 @@
         </div>
         
         <!-- Status Filter Nav Pills -->
-        <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-20 p-1.5 rounded-3 text-xs border border-white border-opacity-10">
+        <div class="d-flex flex-wrap align-items-center gap-1.5 p-1 rounded-3 text-xs" style="background-color: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.15);">
+            <!-- All -->
             <a href="{{ url_for('dashboard.list_issues', status='all') }}" 
-               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all d-flex align-items-center gap-1.5 {% if status_filter == 'all' or not status_filter %}bg-white text-dark fw-bold shadow-sm{% else %}text-white bg-white bg-opacity-10 bg-opacity-20-hover{% endif %}">
-                <span>All</span>
-                <span class="badge {% if status_filter == 'all' or not status_filter %}bg-secondary text-white{% else %}bg-white bg-opacity-25 text-white{% endif %} rounded-pill px-1.5 py-0.5">{{ total_count }}</span>
+               class="btn btn-xs rounded-pill d-inline-flex align-items-center gap-1.5 transition-all text-decoration-none {% if status_filter == 'all' or not status_filter %}fw-bold{% else %}fw-semibold{% endif %}"
+               style="{% if status_filter == 'all' or not status_filter %}background-color: #ffffff !important; color: #111827 !important; border: 1px solid #ffffff;{% else %}background-color: rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; border: 1px solid rgba(255, 255, 255, 0.2);{% endif %} font-size: 0.75rem; padding: 0.25rem 0.65rem;">
+                <span style="{% if status_filter == 'all' or not status_filter %}color: #111827 !important;{% else %}color: #ffffff !important;{% endif %}">All</span>
+                <span class="badge rounded-circle px-1.5 py-0.5" style="{% if status_filter == 'all' or not status_filter %}background-color: #111827 !important; color: #ffffff !important;{% else %}background-color: rgba(255, 255, 255, 0.3) !important; color: #ffffff !important;{% endif %} font-size: 0.7rem;">{{ total_count }}</span>
             </a>
+
+            <!-- Open -->
             <a href="{{ url_for('dashboard.list_issues', status='open') }}" 
-               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all d-flex align-items-center gap-1.5 {% if status_filter == 'open' %}bg-danger text-white fw-bold shadow-sm{% else %}text-white bg-white bg-opacity-10 bg-opacity-20-hover{% endif %}">
-                <span>Open</span>
-                <span class="badge {% if status_filter == 'open' %}bg-white text-danger{% else %}bg-white bg-opacity-25 text-white{% endif %} rounded-pill px-1.5 py-0.5">{{ open_count }}</span>
+               class="btn btn-xs rounded-pill d-inline-flex align-items-center gap-1.5 transition-all text-decoration-none {% if status_filter == 'open' %}fw-bold{% else %}fw-semibold{% endif %}"
+               style="{% if status_filter == 'open' %}background-color: #dc3545 !important; color: #ffffff !important; border: 1px solid #dc3545;{% else %}background-color: rgba(220, 53, 69, 0.35) !important; color: #ffffff !important; border: 1px solid rgba(220, 53, 69, 0.6);{% endif %} font-size: 0.75rem; padding: 0.25rem 0.65rem;">
+                <span style="color: #ffffff !important;">Open</span>
+                <span class="badge rounded-circle px-1.5 py-0.5" style="{% if status_filter == 'open' %}background-color: #ffffff !important; color: #dc3545 !important;{% else %}background-color: #dc3545 !important; color: #ffffff !important;{% endif %} font-size: 0.7rem;">{{ open_count }}</span>
             </a>
+
+            <!-- In Progress -->
             <a href="{{ url_for('dashboard.list_issues', status='in_progress') }}" 
-               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all d-flex align-items-center gap-1.5 {% if status_filter == 'in_progress' %}bg-primary text-white fw-bold shadow-sm{% else %}text-white bg-white bg-opacity-10 bg-opacity-20-hover{% endif %}">
-                <span>In Progress</span>
-                <span class="badge {% if status_filter == 'in_progress' %}bg-white text-primary{% else %}bg-white bg-opacity-25 text-white{% endif %} rounded-pill px-1.5 py-0.5">{{ in_progress_count }}</span>
+               class="btn btn-xs rounded-pill d-inline-flex align-items-center gap-1.5 transition-all text-decoration-none {% if status_filter == 'in_progress' %}fw-bold{% else %}fw-semibold{% endif %}"
+               style="{% if status_filter == 'in_progress' %}background-color: #0d6efd !important; color: #ffffff !important; border: 1px solid #0d6efd;{% else %}background-color: rgba(13, 110, 253, 0.35) !important; color: #ffffff !important; border: 1px solid rgba(13, 110, 253, 0.6);{% endif %} font-size: 0.75rem; padding: 0.25rem 0.65rem;">
+                <span style="color: #ffffff !important;">In Progress</span>
+                <span class="badge rounded-circle px-1.5 py-0.5" style="{% if status_filter == 'in_progress' %}background-color: #ffffff !important; color: #0d6efd !important;{% else %}background-color: #0d6efd !important; color: #ffffff !important;{% endif %} font-size: 0.7rem;">{{ in_progress_count }}</span>
             </a>
+
+            <!-- Deny -->
             <a href="{{ url_for('dashboard.list_issues', status='deny') }}" 
-               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all d-flex align-items-center gap-1.5 {% if status_filter == 'deny' %}bg-secondary text-white fw-bold shadow-sm{% else %}text-white bg-white bg-opacity-10 bg-opacity-20-hover{% endif %}">
-                <span>Deny</span>
-                <span class="badge {% if status_filter == 'deny' %}bg-white text-dark{% else %}bg-white bg-opacity-25 text-white{% endif %} rounded-pill px-1.5 py-0.5">{{ deny_count }}</span>
+               class="btn btn-xs rounded-pill d-inline-flex align-items-center gap-1.5 transition-all text-decoration-none {% if status_filter == 'deny' %}fw-bold{% else %}fw-semibold{% endif %}"
+               style="{% if status_filter == 'deny' %}background-color: #6c757d !important; color: #ffffff !important; border: 1px solid #6c757d;{% else %}background-color: rgba(108, 117, 125, 0.35) !important; color: #ffffff !important; border: 1px solid rgba(108, 117, 125, 0.6);{% endif %} font-size: 0.75rem; padding: 0.25rem 0.65rem;">
+                <span style="color: #ffffff !important;">Deny</span>
+                <span class="badge rounded-circle px-1.5 py-0.5" style="{% if status_filter == 'deny' %}background-color: #ffffff !important; color: #495057 !important;{% else %}background-color: #6c757d !important; color: #ffffff !important;{% endif %} font-size: 0.7rem;">{{ deny_count }}</span>
             </a>
+
+            <!-- Resolved -->
             <a href="{{ url_for('dashboard.list_issues', status='resolved') }}" 
-               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all d-flex align-items-center gap-1.5 {% if status_filter == 'resolved' %}bg-success text-white fw-bold shadow-sm{% else %}text-white bg-white bg-opacity-10 bg-opacity-20-hover{% endif %}">
-                <span>Resolved</span>
-                <span class="badge {% if status_filter == 'resolved' %}bg-white text-success{% else %}bg-white bg-opacity-25 text-white{% endif %} rounded-pill px-1.5 py-0.5">{{ resolved_count }}</span>
+               class="btn btn-xs rounded-pill d-inline-flex align-items-center gap-1.5 transition-all text-decoration-none {% if status_filter == 'resolved' %}fw-bold{% else %}fw-semibold{% endif %}"
+               style="{% if status_filter == 'resolved' %}background-color: #198754 !important; color: #ffffff !important; border: 1px solid #198754;{% else %}background-color: rgba(25, 135, 84, 0.35) !important; color: #ffffff !important; border: 1px solid rgba(25, 135, 84, 0.6);{% endif %} font-size: 0.75rem; padding: 0.25rem 0.65rem;">
+                <span style="color: #ffffff !important;">Resolved</span>
+                <span class="badge rounded-circle px-1.5 py-0.5" style="{% if status_filter == 'resolved' %}background-color: #ffffff !important; color: #198754 !important;{% else %}background-color: #198754 !important; color: #ffffff !important;{% endif %} font-size: 0.7rem;">{{ resolved_count }}</span>
             </a>
         </div>
     </div>
