@@ -340,69 +340,82 @@
             color: var(--primary-accent, #0D9488) !important;
         }
 
-        /* High Contrast Dark Mode Component Overrides across ALL Dark Themes */
-        .theme-dark, .theme-cyberpunk, .theme-synthwave, .theme-matrix, .theme-dracula {
-            color: var(--text-primary) !important;
-        }
-
-        .theme-dark .form-check-label, .theme-cyberpunk .form-check-label, .theme-synthwave .form-check-label, .theme-matrix .form-check-label, .theme-dracula .form-check-label,
-        .theme-dark .form-label, .theme-cyberpunk .form-label, .theme-synthwave .form-label, .theme-matrix .form-label, .theme-dracula .form-label,
-        .theme-dark .text-secondary, .theme-cyberpunk .text-secondary, .theme-synthwave .text-secondary, .theme-matrix .text-secondary, .theme-dracula .text-secondary,
-        .theme-dark label, .theme-cyberpunk label, .theme-synthwave label, .theme-matrix label, .theme-dracula label {
-            color: var(--text-secondary, #E2E8F0) !important;
-        }
-
-        .theme-dark .text-muted, .theme-cyberpunk .text-muted, .theme-synthwave .text-muted, .theme-matrix .text-muted, .theme-dracula .text-muted {
-            color: var(--text-muted, #94A3B8) !important;
-        }
-
-        .theme-dark .text-dark, .theme-cyberpunk .text-dark, .theme-synthwave .text-dark, .theme-matrix .text-dark, .theme-dracula .text-dark,
-        .theme-dark .text-black, .theme-cyberpunk .text-black, .theme-synthwave .text-black, .theme-matrix .text-black, .theme-dracula .text-black,
-        .theme-dark h1, .theme-cyberpunk h1, .theme-synthwave h1, .theme-matrix h1, .theme-dracula h1,
-        .theme-dark h2, .theme-cyberpunk h2, .theme-synthwave h2, .theme-matrix h2, .theme-dracula h2,
-        .theme-dark h3, .theme-cyberpunk h3, .theme-synthwave h3, .theme-matrix h3, .theme-dracula h3,
-        .theme-dark h4, .theme-cyberpunk h4, .theme-synthwave h4, .theme-matrix h4, .theme-dracula h4,
-        .theme-dark h5, .theme-cyberpunk h5, .theme-synthwave h5, .theme-matrix h5, .theme-dracula h5,
-        .theme-dark h6, .theme-cyberpunk h6, .theme-synthwave h6, .theme-matrix h6, .theme-dracula h6 {
+        /* High Contrast Dark Mode Component Overrides for .theme-dark */
+        body.theme-dark {
             color: var(--text-primary, #FAFAF9) !important;
         }
 
-        .theme-dark .bg-light, .theme-cyberpunk .bg-light, .theme-synthwave .bg-light, .theme-matrix .bg-light, .theme-dracula .bg-light,
-        .theme-dark .bg-white, .theme-cyberpunk .bg-white, .theme-synthwave .bg-white, .theme-matrix .bg-white, .theme-dracula .bg-white,
-        .theme-dark .bg-body, .theme-cyberpunk .bg-body, .theme-synthwave .bg-body, .theme-matrix .bg-body, .theme-dracula .bg-body {
+        body.theme-dark .text-dark,
+        body.theme-dark .text-black,
+        body.theme-dark .text-body,
+        body.theme-dark [class*="text-dark"],
+        body.theme-dark h1,
+        body.theme-dark h2,
+        body.theme-dark h3,
+        body.theme-dark h4,
+        body.theme-dark h5,
+        body.theme-dark h6,
+        body.theme-dark strong,
+        body.theme-dark b {
+            color: var(--text-primary, #FAFAF9) !important;
+        }
+
+        body.theme-dark .text-secondary,
+        body.theme-dark .text-muted,
+        body.theme-dark small.text-muted,
+        body.theme-dark .form-label,
+        body.theme-dark label,
+        body.theme-dark .form-check-label {
+            color: var(--text-muted, #94A3B8) !important;
+        }
+
+        body.theme-dark .bg-white,
+        body.theme-dark .bg-light,
+        body.theme-dark .bg-body,
+        body.theme-dark .bg-surface-elevated {
             background-color: var(--bg-surface-elevated, #162030) !important;
             color: var(--text-primary, #FAFAF9) !important;
         }
 
-        .theme-dark .border, .theme-cyberpunk .border, .theme-synthwave .border, .theme-matrix .border, .theme-dracula .border,
-        .theme-dark .border-bottom, .theme-cyberpunk .border-bottom, .theme-synthwave .border-bottom, .theme-matrix .border-bottom, .theme-dracula .border-bottom,
-        .theme-dark .border-top, .theme-cyberpunk .border-top, .theme-synthwave .border-top, .theme-matrix .border-top, .theme-dracula .border-top,
-        .theme-dark .border-start, .theme-cyberpunk .border-start, .theme-synthwave .border-start, .theme-matrix .border-start, .theme-dracula .border-start,
-        .theme-dark .border-end, .theme-cyberpunk .border-end, .theme-synthwave .border-end, .theme-matrix .border-end, .theme-dracula .border-end {
+        body.theme-dark .card,
+        body.theme-dark .card-body,
+        body.theme-dark .card-header,
+        body.theme-dark .card-footer {
+            background-color: var(--bg-surface, #101622) !important;
+            color: var(--text-primary, #FAFAF9) !important;
             border-color: var(--border-color, #1F293D) !important;
         }
 
-        .theme-dark .form-control, .theme-cyberpunk .form-control, .theme-synthwave .form-control, .theme-matrix .form-control, .theme-dracula .form-control,
-        .theme-dark .form-select, .theme-cyberpunk .form-select, .theme-synthwave .form-select, .theme-matrix .form-select, .theme-dracula .form-select {
-            color: var(--text-primary, #FAFAF9) !important;
+        body.theme-dark .form-control,
+        body.theme-dark .form-select {
             background-color: var(--input-bg, #0B0F19) !important;
+            color: var(--text-primary, #FAFAF9) !important;
             border-color: var(--input-border, #23354F) !important;
         }
 
-        .theme-dark .dropdown-menu, .theme-cyberpunk .dropdown-menu, .theme-synthwave .dropdown-menu, .theme-matrix .dropdown-menu, .theme-dracula .dropdown-menu,
-        .theme-dark .offcanvas, .theme-cyberpunk .offcanvas, .theme-synthwave .offcanvas, .theme-matrix .offcanvas, .theme-dracula .offcanvas,
-        .theme-dark .modal-content, .theme-cyberpunk .modal-content, .theme-synthwave .modal-content, .theme-matrix .modal-content, .theme-dracula .modal-content {
-            background-color: var(--bg-surface-elevated) !important;
-            color: var(--text-primary) !important;
-            border-color: var(--border-color) !important;
+        body.theme-dark .dropdown-menu,
+        body.theme-dark .modal-content,
+        body.theme-dark .offcanvas {
+            background-color: var(--bg-surface-elevated, #162030) !important;
+            color: var(--text-primary, #FAFAF9) !important;
+            border-color: var(--border-color, #1F293D) !important;
         }
 
-        .theme-dark .table, .theme-cyberpunk .table, .theme-synthwave .table, .theme-matrix .table, .theme-dracula .table,
-        .theme-dark th, .theme-cyberpunk th, .theme-synthwave th, .theme-matrix th, .theme-dracula th,
-        .theme-dark td, .theme-cyberpunk td, .theme-synthwave td, .theme-matrix td, .theme-dracula td {
-            color: var(--text-primary) !important;
+        body.theme-dark .dropdown-item {
+            color: var(--text-primary, #FAFAF9) !important;
+        }
+
+        body.theme-dark .dropdown-item:hover {
+            background-color: var(--bg-surface, #101622) !important;
+            color: var(--primary-accent, #ff6b6b) !important;
+        }
+
+        body.theme-dark table,
+        body.theme-dark th,
+        body.theme-dark td {
+            color: var(--text-primary, #FAFAF9) !important;
             background-color: transparent !important;
-            border-color: var(--border-color) !important;
+            border-color: var(--border-color, #1F293D) !important;
         }
 
         /* Enforce exact symmetry on rounded/circle components across the application */
