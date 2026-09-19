@@ -1516,13 +1516,13 @@ def set_theme():
     """
     Learner Portal: Route to save layout theme choice.
     """
-    data = request.get_json(silent=True) or {}
-    theme = data.get('theme', 'light').strip().lower()
-    valid_themes = ['light', 'dark', 'cyberpunk', 'synthwave', 'emerald-dark', 'navy', 'emerald', 'sunset', 'purple']
+    theme = request.json.get('theme', 'navy').strip()
+    valid_themes = ['navy', 'emerald', 'sunset', 'purple', 'dark', 'cyberpunk', 'synthwave', 'matrix', 'dracula']
     if theme not in valid_themes:
         return jsonify({'status': 'error', 'message': 'Invalid theme selection'}), 400
         
     session['learner_theme'] = theme
+    session['theme'] = theme
     
     learner_id = session.get('learner_id')
     if learner_id:

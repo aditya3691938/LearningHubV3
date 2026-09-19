@@ -1,40 +1,48 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="{% if learner_theme == 'dark' %}dark{% else %}light{% endif %}">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no, viewport-fit=cover">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no, viewport-fit=cover">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    
+
     <!-- Primary SEO & Portal Meta Tags -->
     <title>{% block title %}Learning Hub{% endblock %}</title>
     <meta name="title" content="Learning Hub - LMS Portal">
-    <meta name="description" content="Aditya Learning & Development Portal - Enterprise LMS for interactive courses, live classes, learner tracking, certifications, and attendance analytics. Laptop compatible and mobile optimized.">
-    <meta name="keywords" content="Learning Hub, L&D Portal, Learning Management System, Courses, Live Classes, Learner Portal, Certifications, Attendance Tracking, Interactive Learning">
+    <meta name="description"
+        content="Aditya Learning & Development Portal - Enterprise LMS for interactive courses, live classes, learner tracking, certifications, and attendance analytics. Laptop compatible and mobile optimized.">
+    <meta name="keywords"
+        content="Learning Hub, L&D Portal, Learning Management System, Courses, Live Classes, Learner Portal, Certifications, Attendance Tracking, Interactive Learning">
     <meta name="author" content="Aditya Learning & Development Team">
     <meta name="application-name" content="Learning Hub">
     <meta name="theme-color" content="#0D9488">
-    
+
     <!-- Open Graph / Social Media Sharing Meta Tags -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Learning Hub">
     <meta property="og:title" content="Learning Hub - LMS Portal">
-    <meta property="og:description" content="Enterprise Learning & Development Portal for interactive courses, live classes, certificates, and performance tracking.">
-    <meta property="og:image" content="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80">
+    <meta property="og:description"
+        content="Enterprise Learning & Development Portal for interactive courses, live classes, certificates, and performance tracking.">
+    <meta property="og:image"
+        content="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80">
     <meta property="og:locale" content="en_US">
-    
+
     <!-- Mobile Web App & iOS Compatibility Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Learning Hub">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="format-detection" content="telephone=no">
-    
+
     {% block meta %}{% endblock %}
 
     <!-- Google Fonts Plus Jakarta Sans, Manrope & Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"
+        rel="stylesheet">
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome 6 -->
@@ -44,10 +52,19 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
-        (function() {
-            const savedTheme = localStorage.getItem('theme');
+        (function () {
+            var savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
-                document.documentElement.setAttribute('data-theme', savedTheme);
+                var applyTheme = function() {
+                    if (document.body) {
+                        document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim() + ' theme-' + savedTheme;
+                    }
+                };
+                if (document.body) {
+                    applyTheme();
+                } else {
+                    document.addEventListener('DOMContentLoaded', applyTheme);
+                }
             }
         })();
     </script>
@@ -58,52 +75,56 @@
             --primary-accent: #00A896;
             --primary-accent-rgb: 0, 168, 150;
             --bg-app: radial-gradient(at 10% 10%, rgba(10, 75, 92, 0.12) 0px, transparent 55%),
-                      radial-gradient(at 90% 10%, rgba(0, 168, 150, 0.12) 0px, transparent 55%),
-                      #F2F8F8;
+                radial-gradient(at 90% 10%, rgba(0, 168, 150, 0.12) 0px, transparent 55%),
+                #F2F8F8;
             --bg-surface: #FFFFFF;
             --bg-surface-elevated: #F8FAFC;
         }
+
         .theme-emerald {
             --primary-color: #1b4d3e;
             --primary-gradient: linear-gradient(135deg, #1b4d3e, #2ecc71);
             --primary-accent: #2ecc71;
             --primary-accent-rgb: 46, 204, 113;
             --bg-app: radial-gradient(at 10% 10%, rgba(27, 77, 62, 0.12) 0px, transparent 55%),
-                      radial-gradient(at 90% 10%, rgba(46, 204, 113, 0.12) 0px, transparent 55%),
-                      #F0F7F4;
+                radial-gradient(at 90% 10%, rgba(46, 204, 113, 0.12) 0px, transparent 55%),
+                #F0F7F4;
             --bg-surface: #FFFFFF;
             --bg-surface-elevated: #F4FAF7;
         }
+
         .theme-sunset {
             --primary-color: #d35400;
             --primary-gradient: linear-gradient(135deg, #d35400, #f1c40f);
             --primary-accent: #e67e22;
             --primary-accent-rgb: 230, 126, 34;
             --bg-app: radial-gradient(at 10% 10%, rgba(211, 84, 0, 0.1) 0px, transparent 55%),
-                      radial-gradient(at 90% 10%, rgba(241, 196, 15, 0.1) 0px, transparent 55%),
-                      #FAF6F0;
+                radial-gradient(at 90% 10%, rgba(241, 196, 15, 0.1) 0px, transparent 55%),
+                #FAF6F0;
             --bg-surface: #FFFFFF;
             --bg-surface-elevated: #FDFBF7;
         }
+
         .theme-purple {
             --primary-color: #4a2c6d;
             --primary-gradient: linear-gradient(135deg, #4a2c6d, #9b59b6);
             --primary-accent: #8e44ad;
             --primary-accent-rgb: 142, 68, 173;
             --bg-app: radial-gradient(at 10% 10%, rgba(74, 44, 109, 0.1) 0px, transparent 55%),
-                      radial-gradient(at 90% 10%, rgba(155, 89, 182, 0.1) 0px, transparent 55%),
-                      #FAF5FC;
+                radial-gradient(at 90% 10%, rgba(155, 89, 182, 0.1) 0px, transparent 55%),
+                #FAF5FC;
             --bg-surface: #FFFFFF;
             --bg-surface-elevated: #FAF8FD;
         }
+
         .theme-dark {
             --primary-color: #ff6b6b;
             --primary-gradient: linear-gradient(135deg, #e74c3c, #c0392b);
             --primary-accent: #e74c3c;
             --primary-accent-rgb: 231, 76, 60;
             --bg-app: radial-gradient(at 10% 10%, rgba(231, 76, 60, 0.25) 0px, transparent 55%),
-                      radial-gradient(at 90% 10%, rgba(192, 41, 43, 0.2) 0px, transparent 55%),
-                      #0A0E17;
+                radial-gradient(at 90% 10%, rgba(192, 41, 43, 0.2) 0px, transparent 55%),
+                #0A0E17;
             --bg-surface: #101622;
             --bg-surface-elevated: #162030;
             --bg-capsule: rgba(16, 22, 34, 0.95);
@@ -115,15 +136,96 @@
             --input-bg: #0B0F19;
             --input-border: #23354F;
         }
-        
-        body[class*="theme-"] .text-teal, 
+
+        .theme-cyberpunk {
+            --primary-color: #ff007f;
+            --primary-gradient: linear-gradient(135deg, #ff007f, #00f0ff);
+            --primary-accent: #00f0ff;
+            --primary-accent-rgb: 0, 240, 255;
+            --bg-app: radial-gradient(at 10% 10%, rgba(255, 0, 127, 0.25) 0px, transparent 55%),
+                radial-gradient(at 90% 10%, rgba(0, 240, 255, 0.25) 0px, transparent 55%),
+                #090214;
+            --bg-surface: #120626;
+            --bg-surface-elevated: #1a0b36;
+            --bg-capsule: rgba(18, 6, 38, 0.95);
+            --text-primary: #FAFAF9;
+            --text-secondary: #E2E8F0;
+            --text-muted: #A392C9;
+            --border-color: #2D1754;
+            --border-subtle: #1F0E3D;
+            --input-bg: #0D041C;
+            --input-border: #3D1C73;
+        }
+
+        .theme-synthwave {
+            --primary-color: #8b5cf6;
+            --primary-gradient: linear-gradient(135deg, #8b5cf6, #f43f5e, #ff7b00);
+            --primary-accent: #f43f5e;
+            --primary-accent-rgb: 244, 63, 94;
+            --bg-app: radial-gradient(at 10% 10%, rgba(139, 92, 246, 0.25) 0px, transparent 55%),
+                radial-gradient(at 90% 10%, rgba(244, 63, 94, 0.25) 0px, transparent 55%),
+                #120726;
+            --bg-surface: #1c0b3b;
+            --bg-surface-elevated: #26104f;
+            --bg-capsule: rgba(28, 11, 59, 0.95);
+            --text-primary: #FAF5FF;
+            --text-secondary: #E9D5FF;
+            --text-muted: #A855F7;
+            --border-color: #3B166B;
+            --border-subtle: #2A0E4F;
+            --input-bg: #14072B;
+            --input-border: #4C1D95;
+        }
+
+        .theme-matrix {
+            --primary-color: #00ff9d;
+            --primary-gradient: linear-gradient(135deg, #052e16, #00ff9d);
+            --primary-accent: #00ff9d;
+            --primary-accent-rgb: 0, 255, 157;
+            --bg-app: radial-gradient(at 10% 10%, rgba(0, 255, 157, 0.2) 0px, transparent 55%),
+                radial-gradient(at 90% 10%, rgba(5, 46, 22, 0.3) 0px, transparent 55%),
+                #020b06;
+            --bg-surface: #07170e;
+            --bg-surface-elevated: #0c2417;
+            --bg-capsule: rgba(7, 23, 14, 0.95);
+            --text-primary: #F0FDF4;
+            --text-secondary: #BBF7D0;
+            --text-muted: #4ADE80;
+            --border-color: #14532D;
+            --border-subtle: #09381C;
+            --input-bg: #041009;
+            --input-border: #166534;
+        }
+
+        .theme-dracula {
+            --primary-color: #cba6f7;
+            --primary-gradient: linear-gradient(135deg, #89b4fa, #cba6f7);
+            --primary-accent: #cba6f7;
+            --primary-accent-rgb: 203, 166, 247;
+            --bg-app: radial-gradient(at 10% 10%, rgba(203, 166, 247, 0.2) 0px, transparent 55%),
+                radial-gradient(at 90% 10%, rgba(137, 180, 250, 0.2) 0px, transparent 55%),
+                #11111b;
+            --bg-surface: #181825;
+            --bg-surface-elevated: #1e1e2e;
+            --bg-capsule: rgba(24, 24, 37, 0.95);
+            --text-primary: #CDD6F4;
+            --text-secondary: #BAC2DE;
+            --text-muted: #A6ADC8;
+            --border-color: #313244;
+            --border-subtle: #242538;
+            --input-bg: #141421;
+            --input-border: #45475A;
+        }
+
+        body[class*="theme-"] .text-teal,
         body[class*="theme-"] .brand-icon,
         body[class*="theme-"] .brand-icon i,
         body[class*="theme-"] .text-primary,
         body[class*="theme-"] .fa-graduation-cap {
             color: var(--primary-accent) !important;
         }
-        body[class*="theme-"] .btn-teal, 
+
+        body[class*="theme-"] .btn-teal,
         body[class*="theme-"] .bg-teal,
         body[class*="theme-"] .btn-primary,
         body[class*="theme-"] .btn-navy,
@@ -140,115 +242,179 @@
             border-color: var(--primary-color) !important;
             color: #ffffff !important;
         }
+
         body[class*="theme-"] .card-gradient-primary *:not(a):not(button):not(.btn):not(.badge),
         body[class*="theme-"] .card-gradient-teal *:not(a):not(button):not(.btn):not(.badge),
         body[class*="theme-"] .card-gradient-gold *:not(a):not(button):not(.btn):not(.badge),
         body[class*="theme-"] .bg-navy *:not(a):not(button):not(.btn):not(.badge) {
             color: #ffffff !important;
         }
+
         body[class*="theme-"] .card-gradient-primary .text-white-50,
         body[class*="theme-"] .card-gradient-teal .text-white-50,
         body[class*="theme-"] .card-gradient-gold .text-white-50,
         body[class*="theme-"] .bg-navy .text-white-50 {
             color: rgba(255, 255, 255, 0.5) !important;
         }
+
         body[class*="theme-"] .text-gradient-primary {
             background: var(--primary-gradient) !important;
             -webkit-background-clip: text !important;
             -webkit-text-fill-color: transparent !important;
         }
+
         body[class*="theme-"] .btn-outline-teal,
         body[class*="theme-"] .btn-outline-primary {
             color: var(--primary-color) !important;
             border-color: var(--primary-color) !important;
             background: transparent !important;
         }
+
         body[class*="theme-"] .btn-outline-teal:hover,
         body[class*="theme-"] .btn-outline-primary:hover {
             background: var(--primary-gradient) !important;
             color: #ffffff !important;
         }
+
         body[class*="theme-"] .text-navy {
             color: var(--primary-color) !important;
         }
+
         body[class*="theme-"] .badge.bg-teal-subtle,
         body[class*="theme-"] .badge.bg-warning-subtle {
             background-color: rgba(var(--primary-accent-rgb), 0.15) !important;
             color: var(--primary-accent) !important;
             border-color: rgba(var(--primary-accent-rgb), 0.3) !important;
         }
+
         body[class*="theme-"] .badge.bg-teal,
         body[class*="theme-"] .badge.bg-primary {
             background: var(--primary-gradient) !important;
             color: #ffffff !important;
         }
+
         body[class*="theme-"] .badge.text-teal {
             color: var(--primary-accent) !important;
         }
+
         body[class*="theme-"] .navbar,
         body[class*="theme-"] .nav-tabs .nav-link.active {
             border-bottom-color: var(--primary-accent) !important;
         }
+
         body[class*="theme-"] .ls-navbar-capsule {
             border: 1px solid rgba(var(--primary-accent-rgb), 0.2) !important;
         }
+
         body[class*="theme-"] .text-teal-emphasis {
             color: var(--primary-color) !important;
         }
+
         body[class*="theme-"] .border-teal-subtle {
             border-color: rgba(var(--primary-accent-rgb), 0.3) !important;
         }
+
         body[class*="theme-"] .card {
             background-color: var(--bg-surface) !important;
             color: var(--text-primary) !important;
         }
+
         body[class*="theme-"] .form-control,
         body[class*="theme-"] .form-select {
             background-color: var(--input-bg, #FFFFFF) !important;
             border-color: var(--input-border, #CBD5E1) !important;
             color: var(--text-primary, #0F172A) !important;
         }
+
         body[class*="theme-"] .dropdown-menu {
             background-color: var(--bg-surface-elevated, #FFFFFF) !important;
             border-color: var(--border-color, #CBD5E1) !important;
         }
+
         body[class*="theme-"] .dropdown-item {
             color: var(--text-primary, #0F172A) !important;
         }
+
         body[class*="theme-"] .dropdown-item:hover {
             background-color: var(--bg-surface, #F8FAFC) !important;
             color: var(--primary-accent, #0D9488) !important;
         }
-        
-        /* High Contrast Dark Mode overrides for form labels and generic elements */
-        [data-theme="dark"] .form-check-label,
-        [data-theme="dark"] .form-label,
-        [data-theme="dark"] .text-secondary,
-        [data-theme="dark"] label {
+
+        /* High Contrast Dark Mode Component Overrides across ALL Dark Themes */
+        .theme-dark, .theme-cyberpunk, .theme-synthwave, .theme-matrix, .theme-dracula {
+            color: var(--text-primary) !important;
+        }
+
+        .theme-dark .form-check-label, .theme-cyberpunk .form-check-label, .theme-synthwave .form-check-label, .theme-matrix .form-check-label, .theme-dracula .form-check-label,
+        .theme-dark .form-label, .theme-cyberpunk .form-label, .theme-synthwave .form-label, .theme-matrix .form-label, .theme-dracula .form-label,
+        .theme-dark .text-secondary, .theme-cyberpunk .text-secondary, .theme-synthwave .text-secondary, .theme-matrix .text-secondary, .theme-dracula .text-secondary,
+        .theme-dark label, .theme-cyberpunk label, .theme-synthwave label, .theme-matrix label, .theme-dracula label {
             color: var(--text-secondary, #E2E8F0) !important;
         }
-        [data-theme="dark"] .text-muted {
+
+        .theme-dark .text-muted, .theme-cyberpunk .text-muted, .theme-synthwave .text-muted, .theme-matrix .text-muted, .theme-dracula .text-muted {
             color: var(--text-muted, #94A3B8) !important;
         }
-        [data-theme="dark"] .text-dark {
+
+        .theme-dark .text-dark, .theme-cyberpunk .text-dark, .theme-synthwave .text-dark, .theme-matrix .text-dark, .theme-dracula .text-dark,
+        .theme-dark .text-black, .theme-cyberpunk .text-black, .theme-synthwave .text-black, .theme-matrix .text-black, .theme-dracula .text-black,
+        .theme-dark h1, .theme-cyberpunk h1, .theme-synthwave h1, .theme-matrix h1, .theme-dracula h1,
+        .theme-dark h2, .theme-cyberpunk h2, .theme-synthwave h2, .theme-matrix h2, .theme-dracula h2,
+        .theme-dark h3, .theme-cyberpunk h3, .theme-synthwave h3, .theme-matrix h3, .theme-dracula h3,
+        .theme-dark h4, .theme-cyberpunk h4, .theme-synthwave h4, .theme-matrix h4, .theme-dracula h4,
+        .theme-dark h5, .theme-cyberpunk h5, .theme-synthwave h5, .theme-matrix h5, .theme-dracula h5,
+        .theme-dark h6, .theme-cyberpunk h6, .theme-synthwave h6, .theme-matrix h6, .theme-dracula h6 {
             color: var(--text-primary, #FAFAF9) !important;
         }
-        [data-theme="dark"] .bg-light {
+
+        .theme-dark .bg-light, .theme-cyberpunk .bg-light, .theme-synthwave .bg-light, .theme-matrix .bg-light, .theme-dracula .bg-light,
+        .theme-dark .bg-white, .theme-cyberpunk .bg-white, .theme-synthwave .bg-white, .theme-matrix .bg-white, .theme-dracula .bg-white,
+        .theme-dark .bg-body, .theme-cyberpunk .bg-body, .theme-synthwave .bg-body, .theme-matrix .bg-body, .theme-dracula .bg-body {
             background-color: var(--bg-surface-elevated, #162030) !important;
             color: var(--text-primary, #FAFAF9) !important;
         }
-        [data-theme="dark"] .border {
+
+        .theme-dark .border, .theme-cyberpunk .border, .theme-synthwave .border, .theme-matrix .border, .theme-dracula .border,
+        .theme-dark .border-bottom, .theme-cyberpunk .border-bottom, .theme-synthwave .border-bottom, .theme-matrix .border-bottom, .theme-dracula .border-bottom,
+        .theme-dark .border-top, .theme-cyberpunk .border-top, .theme-synthwave .border-top, .theme-matrix .border-top, .theme-dracula .border-top,
+        .theme-dark .border-start, .theme-cyberpunk .border-start, .theme-synthwave .border-start, .theme-matrix .border-start, .theme-dracula .border-start,
+        .theme-dark .border-end, .theme-cyberpunk .border-end, .theme-synthwave .border-end, .theme-matrix .border-end, .theme-dracula .border-end {
             border-color: var(--border-color, #1F293D) !important;
         }
-        [data-theme="dark"] .form-control,
-        [data-theme="dark"] .form-select {
+
+        .theme-dark .form-control, .theme-cyberpunk .form-control, .theme-synthwave .form-control, .theme-matrix .form-control, .theme-dracula .form-control,
+        .theme-dark .form-select, .theme-cyberpunk .form-select, .theme-synthwave .form-select, .theme-matrix .form-select, .theme-dracula .form-select {
             color: var(--text-primary, #FAFAF9) !important;
-            background-color: var(--input-bg, #091214) !important;
-            border-color: var(--input-border, #23464B) !important;
+            background-color: var(--input-bg, #0B0F19) !important;
+            border-color: var(--input-border, #23354F) !important;
+        }
+
+        .theme-dark .dropdown-menu, .theme-cyberpunk .dropdown-menu, .theme-synthwave .dropdown-menu, .theme-matrix .dropdown-menu, .theme-dracula .dropdown-menu,
+        .theme-dark .offcanvas, .theme-cyberpunk .offcanvas, .theme-synthwave .offcanvas, .theme-matrix .offcanvas, .theme-dracula .offcanvas,
+        .theme-dark .modal-content, .theme-cyberpunk .modal-content, .theme-synthwave .modal-content, .theme-matrix .modal-content, .theme-dracula .modal-content {
+            background-color: var(--bg-surface-elevated) !important;
+            color: var(--text-primary) !important;
+            border-color: var(--border-color) !important;
+        }
+
+        .theme-dark .table, .theme-cyberpunk .table, .theme-synthwave .table, .theme-matrix .table, .theme-dracula .table,
+        .theme-dark th, .theme-cyberpunk th, .theme-synthwave th, .theme-matrix th, .theme-dracula th,
+        .theme-dark td, .theme-cyberpunk td, .theme-synthwave td, .theme-matrix td, .theme-dracula td {
+            color: var(--text-primary) !important;
+            background-color: transparent !important;
+            border-color: var(--border-color) !important;
         }
 
         /* Enforce exact symmetry on rounded/circle components across the application */
-        .avatar-sm, .avatar-md, .avatar-lg, .rounded-circle, .theme-swatch, .profile-avatar, .admin-profile-btn, .admin-profile-avatar, [style*="border-radius: 50%"] {
+        .avatar-sm,
+        .avatar-md,
+        .avatar-lg,
+        .rounded-circle,
+        .theme-swatch,
+        .profile-avatar,
+        .admin-profile-btn,
+        .admin-profile-avatar,
+        [style*="border-radius: 50%"] {
             aspect-ratio: 1 / 1 !important;
             display: inline-flex !important;
             align-items: center !important;
@@ -274,13 +440,13 @@
         body[class*="theme-"] .border-end {
             border-color: var(--border-color, #E2E8F0) !important;
         }
-        
+
         /* Ensure specific components don't have hardcoded black borders */
         body[class*="theme-"] .border-dark,
         body[class*="theme-"] .border-black {
             border-color: var(--border-color, #E2E8F0) !important;
         }
-        
+
         .tag-autocomplete-dropdown {
             position: absolute;
             z-index: 1060;
@@ -292,6 +458,7 @@
             overflow-y: auto;
             width: 250px;
         }
+
         .tag-autocomplete-item {
             padding: 0.5rem 0.75rem;
             cursor: pointer;
@@ -299,25 +466,32 @@
             border-bottom: 1px solid rgba(0, 0, 0, 0.05);
             transition: background 0.15s ease;
         }
+
         .tag-autocomplete-item:last-child {
             border-bottom: none;
         }
-        .tag-autocomplete-item:hover, .tag-autocomplete-item.active {
+
+        .tag-autocomplete-item:hover,
+        .tag-autocomplete-item.active {
             background-color: var(--primary-color, #0A4B5C) !important;
             color: #ffffff !important;
         }
-        .tag-autocomplete-item:hover .text-muted, .tag-autocomplete-item.active .text-muted {
+
+        .tag-autocomplete-item:hover .text-muted,
+        .tag-autocomplete-item.active .text-muted {
             color: rgba(255, 255, 255, 0.7) !important;
         }
-        
+
         @media (max-width: 1440px) {
             .brand-title {
                 display: none !important;
             }
+
             .ls-nav-tab {
                 font-size: 12px !important;
                 padding: 0.35rem 0.65rem !important;
             }
+
             .ls-navbar-capsule {
                 padding: 0.4rem 0.75rem !important;
             }
@@ -325,6 +499,7 @@
     </style>
     {% block extra_head %}{% endblock %}
 </head>
+
 <body class="theme-{{ learner_theme or 'navy' }}">
 
     <!-- SVG Teal & Cyan Donut Ring Gradient Definitions -->
@@ -348,73 +523,106 @@
                 <div class="d-flex align-items-center gap-2 gap-md-4">
                     <!-- Mobile Hamburger Button -->
                     {% if is_user_logged_in and not is_auth_page %}
-                    <button class="btn btn-link text-dark d-xl-none p-1 border-0 text-decoration-none me-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNavDrawer" aria-controls="mobileNavDrawer" aria-label="Toggle navigation">
+                    <button class="btn btn-link text-dark d-xl-none p-1 border-0 text-decoration-none me-1"
+                        type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileNavDrawer"
+                        aria-controls="mobileNavDrawer" aria-label="Toggle navigation">
                         <i class="fa-solid fa-bars fs-4 text-teal"></i>
                     </button>
                     {% endif %}
 
-                    <a href="{{ url_for('dashboard.index') if admin_logged_in else url_for('learners.my_portal') }}" class="d-flex align-items-center text-decoration-none min-w-0 me-1">
-                        <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Learning Hub Logo" class="me-1 me-md-2 flex-shrink-0 brand-icon" style="height: 40px; width: auto;">
-                        <span class="fw-bold tracking-tight text-dark brand-title text-nowrap" style="font-family: 'Plus Jakarta Sans', sans-serif;">Learning Hub</span>
+                    <a href="{{ url_for('dashboard.index') if admin_logged_in else url_for('learners.my_portal') }}"
+                        class="d-flex align-items-center text-decoration-none min-w-0 me-1">
+                        <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Learning Hub Logo"
+                            class="me-1 me-md-2 flex-shrink-0 brand-icon" style="height: 40px; width: auto;">
+                        <span class="fw-bold tracking-tight text-dark brand-title text-nowrap"
+                            style="font-family: 'Plus Jakarta Sans', sans-serif;">Learning Hub</span>
                     </a>
 
                     <!-- Desktop Capsule Nav Tabs -->
                     {% if is_user_logged_in and not is_auth_page %}
                     <div class="d-none d-xl-flex align-items-center gap-1">
                         {% if admin_logged_in %}
-                        <a href="{{ url_for('dashboard.index') }}" class="ls-nav-tab {% if safe_endpoint == 'dashboard.index' %}active{% endif %}">
+                        <a href="{{ url_for('dashboard.index') }}"
+                            class="ls-nav-tab {% if safe_endpoint == 'dashboard.index' %}active{% endif %}">
                             Home
                         </a>
-                        
+
                         <!-- Courses Hover Dropdown -->
                         <div class="dropdown d-inline-block">
-                            <a href="#" class="ls-nav-tab dropdown-toggle {% if 'courses' in safe_endpoint or 'classes' in safe_endpoint or 'quizzes' in safe_endpoint or 'feedback' in safe_endpoint %}active{% endif %}" data-bs-toggle="dropdown" aria-expanded="false">
+                            <a href="#"
+                                class="ls-nav-tab dropdown-toggle {% if 'courses' in safe_endpoint or 'classes' in safe_endpoint or 'quizzes' in safe_endpoint or 'feedback' in safe_endpoint %}active{% endif %}"
+                                data-bs-toggle="dropdown" aria-expanded="false">
                                 Courses & Quizzes
                             </a>
                             <ul class="dropdown-menu shadow-lg border-0 mt-2 p-1.5" style="font-size: 0.8rem;">
-                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold" href="{{ url_for('courses.list_courses') }}"><i class="fa-solid fa-book-open me-2 text-teal"></i> All Courses</a></li>
-                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold" href="{{ url_for('quizzes.list_quizzes') }}"><i class="fa-solid fa-question-circle me-2 text-teal"></i> Quizzes Bank</a></li>
-                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold" href="{{ url_for('feedback.list_repositories') }}"><i class="fa-solid fa-clipboard-list me-2 text-teal"></i> Forms</a></li>
+                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold"
+                                        href="{{ url_for('courses.list_courses') }}"><i
+                                            class="fa-solid fa-book-open me-2 text-teal"></i> All Courses</a></li>
+                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold"
+                                        href="{{ url_for('quizzes.list_quizzes') }}"><i
+                                            class="fa-solid fa-question-circle me-2 text-teal"></i> Quizzes Bank</a>
+                                </li>
+                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold"
+                                        href="{{ url_for('feedback.list_repositories') }}"><i
+                                            class="fa-solid fa-clipboard-list me-2 text-teal"></i> Forms</a></li>
                             </ul>
                         </div>
-                        
+
                         <!-- Learners Hover Dropdown -->
                         <div class="dropdown d-inline-block">
-                            <a href="#" class="ls-nav-tab dropdown-toggle {% if 'learners' in safe_endpoint or 'attendance' in safe_endpoint or 'certificates' in safe_endpoint %}active{% endif %}" data-bs-toggle="dropdown" aria-expanded="false">
+                            <a href="#"
+                                class="ls-nav-tab dropdown-toggle {% if 'learners' in safe_endpoint or 'attendance' in safe_endpoint or 'certificates' in safe_endpoint %}active{% endif %}"
+                                data-bs-toggle="dropdown" aria-expanded="false">
                                 Learners
                             </a>
                             <ul class="dropdown-menu shadow-lg border-0 mt-2 p-1.5" style="font-size: 0.8rem;">
-                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold" href="{{ url_for('learners.list_learners') }}"><i class="fa-solid fa-users me-2 text-teal"></i> Learners Directory</a></li>
-                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold" href="{{ url_for('attendance.list_attendance') }}"><i class="fa-solid fa-calendar-check me-2 text-teal"></i> Attendance Logs</a></li>
-                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold" href="{{ url_for('certificates.list_certificates') }}"><i class="fa-solid fa-award me-2 text-teal"></i> Certificates Registry</a></li>
+                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold"
+                                        href="{{ url_for('learners.list_learners') }}"><i
+                                            class="fa-solid fa-users me-2 text-teal"></i> Learners Directory</a></li>
+                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold"
+                                        href="{{ url_for('attendance.list_attendance') }}"><i
+                                            class="fa-solid fa-calendar-check me-2 text-teal"></i> Attendance Logs</a>
+                                </li>
+                                <li><a class="dropdown-item rounded-3 py-2 fw-semibold"
+                                        href="{{ url_for('certificates.list_certificates') }}"><i
+                                            class="fa-solid fa-award me-2 text-teal"></i> Certificates Registry</a></li>
                             </ul>
                         </div>
-                        
-                        <a href="{{ url_for('reports.index') }}" class="ls-nav-tab {% if 'reports' in safe_endpoint %}active{% endif %}">
+
+                        <a href="{{ url_for('reports.index') }}"
+                            class="ls-nav-tab {% if 'reports' in safe_endpoint %}active{% endif %}">
                             Reports
                         </a>
-                        <a href="{{ url_for('learning_wall.index') }}" class="ls-nav-tab {% if 'learning_wall' in safe_endpoint %}active{% endif %}">
+                        <a href="{{ url_for('learning_wall.index') }}"
+                            class="ls-nav-tab {% if 'learning_wall' in safe_endpoint %}active{% endif %}">
                             Learning Wall
                         </a>
-                        <a href="{{ url_for('dashboard.list_issues') }}" class="ls-nav-tab {% if 'issues' in safe_endpoint %}active{% endif %} position-relative pe-3">
+                        <a href="{{ url_for('dashboard.list_issues') }}"
+                            class="ls-nav-tab {% if 'issues' in safe_endpoint %}active{% endif %} position-relative pe-3">
                             Tickets
                             {% if open_tickets_count > 0 %}
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm" style="font-size: 0.65rem; padding: 0.35em 0.55em; margin-left: -5px; margin-top: 10px;">
+                            <span
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm"
+                                style="font-size: 0.65rem; padding: 0.35em 0.55em; margin-left: -5px; margin-top: 10px;">
                                 {{ open_tickets_count }}
                             </span>
                             {% endif %}
                         </a>
                         {% else %}
-                        <a href="{{ url_for('learners.my_portal') }}" class="ls-nav-tab {% if safe_endpoint == 'learners.my_portal' %}active{% endif %}">
+                        <a href="{{ url_for('learners.my_portal') }}"
+                            class="ls-nav-tab {% if safe_endpoint == 'learners.my_portal' %}active{% endif %}">
                             My Programs
                         </a>
-                        <a href="{{ url_for('learning_wall.index') }}" class="ls-nav-tab {% if 'learning_wall' in safe_endpoint %}active{% endif %}">
+                        <a href="{{ url_for('learning_wall.index') }}"
+                            class="ls-nav-tab {% if 'learning_wall' in safe_endpoint %}active{% endif %}">
                             <i class="fa-solid fa-bullhorn me-1 text-warning"></i> Learning Wall
                         </a>
-                        <a href="{{ url_for('learners.catalog') }}" class="ls-nav-tab {% if safe_endpoint == 'learners.catalog' %}active{% endif %}">
+                        <a href="{{ url_for('learners.catalog') }}"
+                            class="ls-nav-tab {% if safe_endpoint == 'learners.catalog' %}active{% endif %}">
                             Catalog
                         </a>
-                        <a href="{{ url_for('certificates.my_certificates') }}" class="ls-nav-tab {% if 'certificates' in safe_endpoint %}active{% endif %}">
+                        <a href="{{ url_for('certificates.my_certificates') }}"
+                            class="ls-nav-tab {% if 'certificates' in safe_endpoint %}active{% endif %}">
                             Certificates
                         </a>
                         {% endif %}
@@ -423,41 +631,14 @@
                 </div>
 
                 <!-- Right Utility Bar -->
-                    <!-- Theme Palette Selector Dropdown -->
-                    <div class="dropdown d-inline-flex align-items-center">
-                        <button type="button" class="btn btn-link text-muted p-1 text-decoration-none dropdown-toggle hide-arrow d-inline-flex align-items-center justify-content-center" id="themeSelectorDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Switch Theme Palette" style="height: 38px; width: 38px; border-radius: 50%;">
-                            <i class="fa-solid fa-palette fs-5 text-teal"></i>
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-2 rounded-4 overflow-hidden" aria-labelledby="themeSelectorDropdown" style="min-width: 220px;">
-                            <div class="px-2 py-1.5 text-xs font-monospace text-uppercase text-muted fw-bold border-bottom mb-1">
-                                <i class="fa-solid fa-paintbrush me-1 text-teal"></i> Select Theme Palette
-                            </div>
-                            <button type="button" class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between text-xs fw-semibold" onclick="setAppTheme('light')">
-                                <span><i class="fa-solid fa-sun text-warning me-2"></i> Pristine Light</span>
-                                <span style="background: linear-gradient(135deg, #0D9488, #F2F8F8); width: 14px; height: 14px; border-radius: 50%; border: 1px solid #CBD5E1;"></span>
-                            </button>
-                            <button type="button" class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between text-xs fw-semibold" onclick="setAppTheme('dark')">
-                                <span><i class="fa-solid fa-moon text-info me-2"></i> Midnight Slate</span>
-                                <span style="background: linear-gradient(135deg, #14B8A6, #071214); width: 14px; height: 14px; border-radius: 50%; border: 1px solid #1E3A3E;"></span>
-                            </button>
-                            <button type="button" class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between text-xs fw-semibold" onclick="setAppTheme('cyberpunk')">
-                                <span><i class="fa-solid fa-bolt text-danger me-2"></i> Cyberpunk Neon</span>
-                                <span style="background: linear-gradient(135deg, #FF007F, #00F0FF); width: 14px; height: 14px; border-radius: 50%; border: 1px solid #FF007F;"></span>
-                            </button>
-                            <button type="button" class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between text-xs fw-semibold" onclick="setAppTheme('synthwave')">
-                                <span><i class="fa-solid fa-gem me-2" style="color: #A855F7;"></i> Synthwave Purple</span>
-                                <span style="background: linear-gradient(135deg, #8B5CF6, #F43F5E); width: 14px; height: 14px; border-radius: 50%; border: 1px solid #8B5CF6;"></span>
-                            </button>
-                            <button type="button" class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between text-xs fw-semibold" onclick="setAppTheme('emerald-dark')">
-                                <span><i class="fa-solid fa-tree me-2" style="color: #10B981;"></i> Dark Emerald</span>
-                                <span style="background: linear-gradient(135deg, #10B981, #041210); width: 14px; height: 14px; border-radius: 50%; border: 1px solid #10B981;"></span>
-                            </button>
-                        </div>
-                    </div>
+                <div class="d-flex align-items-center gap-2 gap-md-3 flex-shrink-0 ms-auto me-0">
+
+                    {% if is_user_logged_in and not is_auth_page %}
 
                     {% if learner_id and not admin_logged_in %}
                     <!-- Gamification Points Badge -->
-                    <div class="d-none d-md-flex align-items-center bg-warning-subtle text-warning-emphasis px-3 py-1 rounded-pill fw-bold border border-warning shadow-sm" title="Your Learning Points">
+                    <div class="d-none d-md-flex align-items-center bg-warning-subtle text-warning-emphasis px-3 py-1 rounded-pill fw-bold border border-warning shadow-sm"
+                        title="Your Learning Points">
                         <i class="fa-solid fa-star me-2 text-warning"></i>
                         <span>{{ learner_points }} pts</span>
                     </div>
@@ -466,16 +647,24 @@
                     {% if learner_id and not admin_logged_in %}
                     <!-- Notifications Bell Dropdown -->
                     <div class="dropdown position-relative d-inline-flex align-items-center">
-                        <button type="button" class="btn btn-link text-muted p-1 text-decoration-none dropdown-toggle hide-arrow d-inline-flex align-items-center justify-content-center" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications" style="height: 38px; width: 38px; border-radius: 50%; transition: background-color 0.2s;">
+                        <button type="button"
+                            class="btn btn-link text-muted p-1 text-decoration-none dropdown-toggle hide-arrow d-inline-flex align-items-center justify-content-center"
+                            id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                            title="Notifications"
+                            style="height: 38px; width: 38px; border-radius: 50%; transition: background-color 0.2s;">
                             <i class="fa-regular fa-bell fs-5 text-teal"></i>
                             {% if unread_notif_count > 0 %}
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-circle text-white shadow-xs" id="navBellBadge" style="background-color: var(--teal-primary); font-size: 0.65rem; padding: 0.35em 0.55em;">
+                            <span
+                                class="position-absolute top-0 start-100 translate-middle badge rounded-circle text-white shadow-xs"
+                                id="navBellBadge"
+                                style="background-color: var(--teal-primary); font-size: 0.65rem; padding: 0.35em 0.55em;">
                                 {{ unread_notif_count }}
                             </span>
                             {% endif %}
                         </button>
 
-                        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-0 rounded-4 overflow-hidden" aria-labelledby="notificationDropdown" style="width: 340px; max-width: 90vw;">
+                        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-0 rounded-4 overflow-hidden"
+                            aria-labelledby="notificationDropdown" style="width: 340px; max-width: 90vw;">
                             <div class="p-3 bg-navy text-white d-flex align-items-center justify-content-between">
                                 <div class="d-flex align-items-center gap-2">
                                     <i class="fa-solid fa-bell text-gold"></i>
@@ -483,8 +672,11 @@
                                 </div>
                                 <div class="d-flex align-items-center gap-2">
                                     {% if unread_notif_count > 0 %}
-                                    <span class="badge bg-gold text-dark font-monospace" id="navUnreadBadge">{{ unread_notif_count }} new</span>
-                                    <button type="button" class="btn btn-link text-gold p-0 text-xs fw-bold text-decoration-none" onclick="markAllReadNav()" id="navMarkAllBtn" title="Mark all as read">
+                                    <span class="badge bg-gold text-dark font-monospace" id="navUnreadBadge">{{
+                                        unread_notif_count }} new</span>
+                                    <button type="button"
+                                        class="btn btn-link text-gold p-0 text-xs fw-bold text-decoration-none"
+                                        onclick="markAllReadNav()" id="navMarkAllBtn" title="Mark all as read">
                                         <i class="fa-solid fa-check-double me-1"></i> Read All
                                     </button>
                                     {% endif %}
@@ -494,25 +686,28 @@
                             <div class="p-2" style="max-height: 320px; overflow-y: auto;" id="navNotifList">
                                 {% for n in user_notifications %}
                                 <div class="p-2.5 mb-1 rounded-3 {% if not n.is_read %}bg-teal-subtle border-start border-3 border-teal{% else %}bg-light{% endif %} d-flex align-items-start gap-2 notification-item"
-                                     style="cursor: pointer; transition: background-color 0.2s;"
-                                     data-bs-toggle="modal" data-bs-target="#notificationModal"
-                                     data-id="{{ n.id }}"
-                                     data-read="{{ 'true' if n.is_read else 'false' }}"
-                                     data-title="{{ n.title }}"
-                                     data-message="{{ n.message }}"
-                                     data-date="{{ n.created_at.strftime('%d %b, %H:%M') if n.created_at else '' }}"
-                                     data-image="{% if n.image_path %}{{ get_b2_url(n.image_path) }}{% endif %}">
-                                     
-                                     {% if n.image_path %}
-                                         <img src="{{ get_b2_url(n.image_path) }}" alt="Notification Image" class="rounded mt-1 shadow-sm" style="width: 32px; height: 32px; object-fit: cover;">
+                                    style="cursor: pointer; transition: background-color 0.2s;" data-bs-toggle="modal"
+                                    data-bs-target="#notificationModal" data-id="{{ n.id }}"
+                                    data-read="{{ 'true' if n.is_read else 'false' }}" data-title="{{ n.title }}"
+                                    data-message="{{ n.message }}"
+                                    data-date="{{ n.created_at.strftime('%d %b, %H:%M') if n.created_at else '' }}"
+                                    data-image="{% if n.image_path %}{{ get_b2_url(n.image_path) }}{% endif %}">
+
+                                    {% if n.image_path %}
+                                    <img src="{{ get_b2_url(n.image_path) }}" alt="Notification Image"
+                                        class="rounded mt-1 shadow-sm"
+                                        style="width: 32px; height: 32px; object-fit: cover;">
                                     {% else %}
-                                        <i class="fa-solid {% if n.notification_type == 'COURSE_ASSIGNED' %}fa-book-open text-teal{% elif n.notification_type == 'LESSON_UPDATED' %}fa-pen-to-square text-warning{% else %}fa-circle-info text-info{% endif %} mt-1"></i>
+                                    <i
+                                        class="fa-solid {% if n.notification_type == 'COURSE_ASSIGNED' %}fa-book-open text-teal{% elif n.notification_type == 'LESSON_UPDATED' %}fa-pen-to-square text-warning{% else %}fa-circle-info text-info{% endif %} mt-1"></i>
                                     {% endif %}
-                                    
+
                                     <div class="flex-grow-1" style="overflow: hidden;">
                                         <strong class="d-block text-dark small text-truncate">{{ n.title }}</strong>
                                         <span class="text-muted text-xs d-block text-truncate">{{ n.message }}</span>
-                                        <small class="text-muted text-xxs mt-1 d-block"><i class="fa-regular fa-clock me-1"></i>{{ n.created_at.strftime('%d %b, %H:%M') if n.created_at else '' }}</small>
+                                        <small class="text-muted text-xxs mt-1 d-block"><i
+                                                class="fa-regular fa-clock me-1"></i>{{ n.created_at.strftime('%d %b,
+                                            %H:%M') if n.created_at else '' }}</small>
                                     </div>
                                 </div>
                                 {% else %}
@@ -525,7 +720,8 @@
 
                             {% if learner_id %}
                             <div class="p-2 bg-light border-top text-center">
-                                <a href="{{ url_for('learners.my_portal') }}" class="text-teal small fw-bold text-decoration-none">
+                                <a href="{{ url_for('learners.my_portal') }}"
+                                    class="text-teal small fw-bold text-decoration-none">
                                     <i class="fa-solid fa-graduation-cap me-1"></i> View My Learning Portal
                                 </a>
                             </div>
@@ -533,101 +729,174 @@
                         </div>
 
                         <script>
-                        function clearAllUnreadNotifBadges() {
-                            ['navUnreadBadge', 'navBellBadge', 'unreadBadge'].forEach(function(id) {
-                                var el = document.getElementById(id);
-                                if (el) el.remove();
-                            });
-                            var navMarkBtn = document.getElementById('navMarkAllBtn');
-                            if (navMarkBtn) navMarkBtn.remove();
-                            var portalMarkBtn = document.querySelector('button[onclick="markAllRead()"]');
-                            if (portalMarkBtn) portalMarkBtn.remove();
-                        }
-
-                        function decrementUnreadNotifCounts() {
-                            ['navUnreadBadge', 'navBellBadge', 'unreadBadge'].forEach(function(badgeId) {
-                                var badge = document.getElementById(badgeId);
-                                if (badge) {
-                                    var rawText = badge.textContent.trim().replace(/\D+/g, '');
-                                    var currentCount = parseInt(rawText, 10);
-                                    if (!isNaN(currentCount) && currentCount > 1) {
-                                        var newCount = currentCount - 1;
-                                        if (badgeId === 'navUnreadBadge') {
-                                            badge.textContent = newCount + ' new';
-                                        } else {
-                                            badge.textContent = newCount;
-                                        }
-                                    } else {
-                                        badge.remove();
-                                    }
-                                }
-                            });
-
-                            var remainingUnread = document.querySelectorAll('.notification-item[data-read="false"]').length;
-                            if (remainingUnread === 0) {
+                            function clearAllUnreadNotifBadges() {
+                                ['navUnreadBadge', 'navBellBadge', 'unreadBadge'].forEach(function (id) {
+                                    var el = document.getElementById(id);
+                                    if (el) el.remove();
+                                });
                                 var navMarkBtn = document.getElementById('navMarkAllBtn');
                                 if (navMarkBtn) navMarkBtn.remove();
                                 var portalMarkBtn = document.querySelector('button[onclick="markAllRead()"]');
                                 if (portalMarkBtn) portalMarkBtn.remove();
                             }
-                        }
 
-                        function markAllReadNav() {
-                            fetch('/learners/notifications/mark_read/0', {
-                                method: 'POST',
-                                headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
-                            })
-                            .then(r => r.json())
-                            .then(d => {
-                                if (d.status === 'success') {
-                                    clearAllUnreadNotifBadges();
-                                    document.querySelectorAll('#navNotifList .bg-teal-subtle, .notification-list .border-teal-subtle').forEach(el => {
-                                        el.classList.remove('bg-teal-subtle', 'border-start', 'border-3', 'border-teal', 'bg-light', 'border-teal-subtle');
-                                        el.classList.add('bg-light');
-                                        el.setAttribute('data-read', 'true');
-                                    });
+                            function decrementUnreadNotifCounts() {
+                                ['navUnreadBadge', 'navBellBadge', 'unreadBadge'].forEach(function (badgeId) {
+                                    var badge = document.getElementById(badgeId);
+                                    if (badge) {
+                                        var rawText = badge.textContent.trim().replace(/\D+/g, '');
+                                        var currentCount = parseInt(rawText, 10);
+                                        if (!isNaN(currentCount) && currentCount > 1) {
+                                            var newCount = currentCount - 1;
+                                            if (badgeId === 'navUnreadBadge') {
+                                                badge.textContent = newCount + ' new';
+                                            } else {
+                                                badge.textContent = newCount;
+                                            }
+                                        } else {
+                                            badge.remove();
+                                        }
+                                    }
+                                });
+
+                                var remainingUnread = document.querySelectorAll('.notification-item[data-read="false"]').length;
+                                if (remainingUnread === 0) {
+                                    var navMarkBtn = document.getElementById('navMarkAllBtn');
+                                    if (navMarkBtn) navMarkBtn.remove();
+                                    var portalMarkBtn = document.querySelector('button[onclick="markAllRead()"]');
+                                    if (portalMarkBtn) portalMarkBtn.remove();
                                 }
-                            });
-                        }
+                            }
 
-                        // Global Theme Switcher Engine
-                        window.setAppTheme = function(themeName) {
-                            document.documentElement.setAttribute('data-theme', themeName);
-                            localStorage.setItem('theme', themeName);
-                            fetch('/learners/set_theme', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-CSRFToken': '{{ csrf_token() }}'
-                                },
-                                body: JSON.stringify({ theme: themeName })
-                            }).catch(function(err) {
-                                console.log("Theme saved locally.");
-                            });
-                        };
-                        window.changeGlobalTheme = window.setAppTheme;
+                            function markAllReadNav() {
+                                fetch('/learners/notifications/mark_read/0', {
+                                    method: 'POST',
+                                    headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
+                                })
+                                    .then(r => r.json())
+                                    .then(d => {
+                                        if (d.status === 'success') {
+                                            clearAllUnreadNotifBadges();
+                                            document.querySelectorAll('#navNotifList .bg-teal-subtle, .notification-list .border-teal-subtle').forEach(el => {
+                                                el.classList.remove('bg-teal-subtle', 'border-start', 'border-3', 'border-teal', 'bg-light', 'border-teal-subtle');
+                                                el.classList.add('bg-light');
+                                                el.setAttribute('data-read', 'true');
+                                            });
+                                        }
+                                    });
+                            }
                         </script>
                     </div>
                     {% endif %}
+                    {% endif %}
+
+                    <!-- Themes Switcher Dropdown -->
+                    <div class="dropdown d-inline-flex align-items-center ms-1">
+                        <button
+                            class="btn btn-outline-teal btn-sm dropdown-toggle rounded-pill fw-bold d-flex align-items-center px-3"
+                            type="button" id="themeDropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false"
+                            style="height: 36px;">
+                            <i class="fa-solid fa-palette me-1.5 text-teal"></i> <span
+                                class="d-none d-md-inline">Themes</span>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-2"
+                            aria-labelledby="themeDropdownMenuButton" style="min-width: 200px;">
+                            <li class="px-2 py-1 text-xxs font-monospace text-uppercase text-muted fw-bold border-bottom mb-1">
+                                <i class="fa-solid fa-sun text-warning me-1"></i> Light Themes
+                            </li>
+                            <li><button
+                                    class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2"
+                                    onclick="changeGlobalTheme('navy')"><span
+                                        style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #0A4B5C, #00A896); display: inline-block;"></span>
+                                    Midnight Navy</button></li>
+                            <li><button
+                                    class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2"
+                                    onclick="changeGlobalTheme('emerald')"><span
+                                        style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #1b4d3e, #2ecc71); display: inline-block;"></span>
+                                    Forest Emerald</button></li>
+                            <li><button
+                                    class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2"
+                                    onclick="changeGlobalTheme('sunset')"><span
+                                        style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #d35400, #f1c40f); display: inline-block;"></span>
+                                    Sunset Crimson</button></li>
+                            <li><button
+                                    class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2"
+                                    onclick="changeGlobalTheme('purple')"><span
+                                        style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #4a2c6d, #9b59b6); display: inline-block;"></span>
+                                    Royal Violet</button></li>
+
+                            <li class="px-2 py-1 text-xxs font-monospace text-uppercase text-muted fw-bold border-bottom my-1">
+                                <i class="fa-solid fa-moon text-info me-1"></i> Dark Themes
+                            </li>
+                            <li><button
+                                    class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2"
+                                    onclick="changeGlobalTheme('dark')"><span
+                                        style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #e74c3c, #c0392b); display: inline-block;"></span>
+                                    Classic Dark</button></li>
+                            <li><button
+                                    class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2"
+                                    onclick="changeGlobalTheme('cyberpunk')"><span
+                                        style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #ff007f, #00f0ff); display: inline-block;"></span>
+                                    Cyberpunk Neon</button></li>
+                            <li><button
+                                    class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2"
+                                    onclick="changeGlobalTheme('synthwave')"><span
+                                        style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6, #f43f5e); display: inline-block;"></span>
+                                    Midnight Synthwave</button></li>
+                            <li><button
+                                    class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2"
+                                    onclick="changeGlobalTheme('matrix')"><span
+                                        style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #052e16, #00ff9d); display: inline-block;"></span>
+                                    Matrix Emerald</button></li>
+                            <li><button
+                                    class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2"
+                                    onclick="changeGlobalTheme('dracula')"><span
+                                        style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #1e1e2e, #cba6f7); display: inline-block;"></span>
+                                    Dracula Gothic</button></li>
+                        </ul>
+                    </div>
 
                     {% if is_user_logged_in and not is_auth_page %}
                     <!-- Account Dropdown -->
                     <div class="dropdown flex-shrink-0 d-inline-flex align-items-center">
-                        <button class="btn border d-flex align-items-center justify-content-center rounded-circle bg-white shadow-xs p-0 flex-shrink-0 admin-profile-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="{% if admin_logged_in %}Account: {{ admin_username }}{% else %}Account: {{ session.get('learner_name', 'Learner') }}{% endif %}" style="height: 36px; width: 36px;">
-                            <img src="{% if global_profile_picture %}{{ get_b2_url(global_profile_picture, folder='profile_pics') }}{% else %}https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120{% endif %}" alt="Profile Avatar" class="rounded-circle border border-2 border-teal shadow-xs flex-shrink-0 admin-profile-avatar" style="width: 28px; height: 28px; object-fit: cover;">
+                        <button
+                            class="btn border d-flex align-items-center justify-content-center rounded-circle bg-white shadow-xs p-0 flex-shrink-0 admin-profile-btn"
+                            type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                            title="{% if admin_logged_in %}Account: {{ admin_username }}{% else %}Account: {{ session.get('learner_name', 'Learner') }}{% endif %}"
+                            style="height: 36px; width: 36px;">
+                            <img src="{% if global_profile_picture %}{{ get_b2_url(global_profile_picture, folder='profile_pics') }}{% else %}https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120{% endif %}"
+                                alt="Profile Avatar"
+                                class="rounded-circle border border-2 border-teal shadow-xs flex-shrink-0 admin-profile-avatar"
+                                style="width: 28px; height: 28px; object-fit: cover;">
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-2" style="min-width: 220px;">
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-2"
+                            style="min-width: 220px;">
                             <li class="px-3 py-2.5 border-bottom mb-1 bg-light rounded-3">
-                                <span class="d-block fw-bold text-dark fs-6">{% if admin_logged_in %}{{ admin_username }}{% elif session.get('learner_name') %}{{ session.get('learner_name') }}{% else %}Learner Portal{% endif %}</span>
-                                <span class="badge bg-teal-light text-teal border border-teal-subtle mt-1">{% if admin_logged_in %}L&D Administrator{% elif session.get('learner_global_id') %}Learner ID: {{ session.get('learner_global_id') }}{% else %}Learner Portal{% endif %}</span>
+                                <span class="d-block fw-bold text-dark fs-6">{% if admin_logged_in %}{{ admin_username
+                                    }}{% elif session.get('learner_name') %}{{ session.get('learner_name') }}{% else
+                                    %}Learner Portal{% endif %}</span>
+                                <span class="badge bg-teal-light text-teal border border-teal-subtle mt-1">{% if
+                                    admin_logged_in %}L&D Administrator{% elif session.get('learner_global_id')
+                                    %}Learner ID: {{ session.get('learner_global_id') }}{% else %}Learner Portal{% endif
+                                    %}</span>
                             </li>
                             {% if not admin_logged_in %}
-                            <li><a class="dropdown-item fw-semibold py-2" href="{{ url_for('learners.view_learner_profile') }}"><i class="fa-solid fa-id-badge me-2 text-teal fs-6"></i> My Profile & Portal</a></li>
+                            <li><a class="dropdown-item fw-semibold py-2"
+                                    href="{{ url_for('learners.view_learner_profile') }}"><i
+                                        class="fa-solid fa-id-badge me-2 text-teal fs-6"></i> My Profile & Portal</a>
+                            </li>
                             {% else %}
-                            <li><a class="dropdown-item fw-semibold py-2" href="{{ url_for('dashboard.admin_profile') }}"><i class="fa-solid fa-user-shield me-2 text-teal fs-6"></i> Admin Profile</a></li>
+                            <li><a class="dropdown-item fw-semibold py-2"
+                                    href="{{ url_for('dashboard.admin_profile') }}"><i
+                                        class="fa-solid fa-user-shield me-2 text-teal fs-6"></i> Admin Profile</a></li>
                             {% endif %}
-                            <li><hr class="dropdown-divider my-1"></li>
-                            <li><a class="dropdown-item text-danger fw-semibold py-2" href="{{ url_for('auth.logout') }}"><i class="fa-solid fa-right-from-bracket me-2 text-danger fs-6"></i> Logout</a></li>
+                            <li>
+                                <hr class="dropdown-divider my-1">
+                            </li>
+                            <li><a class="dropdown-item text-danger fw-semibold py-2"
+                                    href="{{ url_for('auth.logout') }}"><i
+                                        class="fa-solid fa-right-from-bracket me-2 text-danger fs-6"></i> Logout</a>
+                            </li>
                         </ul>
                     </div>
                     {% endif %}
@@ -638,69 +907,91 @@
 
     {% if is_user_logged_in and not is_auth_page %}
     <!-- Responsive Mobile Offcanvas Drawer -->
-    <div class="offcanvas offcanvas-start mobile-nav-offcanvas d-xl-none" tabindex="-1" id="mobileNavDrawer" aria-labelledby="mobileNavDrawerLabel">
+    <div class="offcanvas offcanvas-start mobile-nav-offcanvas d-xl-none" tabindex="-1" id="mobileNavDrawer"
+        aria-labelledby="mobileNavDrawerLabel">
         <div class="offcanvas-header border-bottom py-3">
             <div class="d-flex align-items-center">
-                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Learning Hub Logo" class="me-2" style="height: 35px; width: auto;">
+                <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Learning Hub Logo" class="me-2"
+                    style="height: 35px; width: auto;">
                 <h5 class="offcanvas-title fw-bold text-dark" id="mobileNavDrawerLabel">Learning Hub</h5>
             </div>
             <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body py-3 px-3">
             <div class="mobile-nav-user-badge p-3 rounded-4 mb-3 border d-flex align-items-center gap-3">
-                <img src="{% if global_profile_picture %}{{ get_b2_url(global_profile_picture, folder='profile_pics') }}{% else %}https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120{% endif %}" alt="Avatar" class="rounded-circle border border-2 border-teal" style="width: 44px; height: 44px; object-fit: cover;">
+                <img src="{% if global_profile_picture %}{{ get_b2_url(global_profile_picture, folder='profile_pics') }}{% else %}https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120{% endif %}"
+                    alt="Avatar" class="rounded-circle border border-2 border-teal"
+                    style="width: 44px; height: 44px; object-fit: cover;">
                 <div>
-                    <div class="fw-bold text-dark">{% if admin_logged_in %}{{ admin_username }}{% elif session.get('learner_name') %}{{ session.get('learner_name') }}{% else %}Learner Portal{% endif %}</div>
-                    <span class="badge bg-teal-light text-teal">{% if admin_logged_in %}L&D Admin{% elif session.get('learner_global_id') %}Learner ID: {{ session.get('learner_global_id') }}{% else %}Learner{% endif %}</span>
+                    <div class="fw-bold text-dark">{% if admin_logged_in %}{{ admin_username }}{% elif
+                        session.get('learner_name') %}{{ session.get('learner_name') }}{% else %}Learner Portal{% endif
+                        %}</div>
+                    <span class="badge bg-teal-light text-teal">{% if admin_logged_in %}L&D Admin{% elif
+                        session.get('learner_global_id') %}Learner ID: {{ session.get('learner_global_id') }}{% else
+                        %}Learner{% endif %}</span>
                 </div>
             </div>
 
             <div class="mobile-nav-links d-flex flex-column gap-2">
                 {% if admin_logged_in %}
-                <a href="{{ url_for('dashboard.index') }}" class="mobile-nav-item {% if safe_endpoint == 'dashboard.index' %}active{% endif %}">
+                <a href="{{ url_for('dashboard.index') }}"
+                    class="mobile-nav-item {% if safe_endpoint == 'dashboard.index' %}active{% endif %}">
                     <i class="fa-solid fa-house me-3 text-teal"></i> Home Dashboard
                 </a>
-                <a href="{{ url_for('courses.list_courses') }}" class="mobile-nav-item {% if 'courses' in safe_endpoint or 'classes' in safe_endpoint %}active{% endif %}">
+                <a href="{{ url_for('courses.list_courses') }}"
+                    class="mobile-nav-item {% if 'courses' in safe_endpoint or 'classes' in safe_endpoint %}active{% endif %}">
                     <i class="fa-solid fa-book-open me-3 text-teal"></i> All Courses
                 </a>
-                <a href="{{ url_for('quizzes.list_quizzes') }}" class="mobile-nav-item {% if 'quizzes' in safe_endpoint %}active{% endif %}">
+                <a href="{{ url_for('quizzes.list_quizzes') }}"
+                    class="mobile-nav-item {% if 'quizzes' in safe_endpoint %}active{% endif %}">
                     <i class="fa-solid fa-question-circle me-3 text-teal"></i> Quizzes Bank
                 </a>
-                <a href="{{ url_for('feedback.list_repositories') }}" class="mobile-nav-item {% if 'feedback' in safe_endpoint %}active{% endif %}">
+                <a href="{{ url_for('feedback.list_repositories') }}"
+                    class="mobile-nav-item {% if 'feedback' in safe_endpoint %}active{% endif %}">
                     <i class="fa-solid fa-clipboard-list me-3 text-teal"></i> Forms
                 </a>
-                <a href="{{ url_for('learners.list_learners') }}" class="mobile-nav-item {% if 'learners' in safe_endpoint and safe_endpoint != 'learners.my_portal' %}active{% endif %}">
+                <a href="{{ url_for('learners.list_learners') }}"
+                    class="mobile-nav-item {% if 'learners' in safe_endpoint and safe_endpoint != 'learners.my_portal' %}active{% endif %}">
                     <i class="fa-solid fa-users me-3 text-teal"></i> Learners Directory
                 </a>
-                <a href="{{ url_for('attendance.list_attendance') }}" class="mobile-nav-item {% if 'attendance' in safe_endpoint %}active{% endif %}">
+                <a href="{{ url_for('attendance.list_attendance') }}"
+                    class="mobile-nav-item {% if 'attendance' in safe_endpoint %}active{% endif %}">
                     <i class="fa-solid fa-clipboard-user me-3 text-teal"></i> Attendance Logs
                 </a>
-                <a href="{{ url_for('certificates.list_certificates') }}" class="mobile-nav-item {% if 'certificates' in safe_endpoint %}active{% endif %}">
+                <a href="{{ url_for('certificates.list_certificates') }}"
+                    class="mobile-nav-item {% if 'certificates' in safe_endpoint %}active{% endif %}">
                     <i class="fa-solid fa-award me-3 text-teal"></i> Certificates
                 </a>
-                <a href="{{ url_for('reports.index') }}" class="mobile-nav-item {% if 'reports' in safe_endpoint %}active{% endif %}">
+                <a href="{{ url_for('reports.index') }}"
+                    class="mobile-nav-item {% if 'reports' in safe_endpoint %}active{% endif %}">
                     <i class="fa-solid fa-chart-pie me-3 text-teal"></i> Reports & Analytics
                 </a>
-                <a href="{{ url_for('learning_wall.index') }}" class="mobile-nav-item {% if 'learning_wall' in safe_endpoint %}active{% endif %}">
+                <a href="{{ url_for('learning_wall.index') }}"
+                    class="mobile-nav-item {% if 'learning_wall' in safe_endpoint %}active{% endif %}">
                     <i class="fa-solid fa-bullhorn me-3 text-warning"></i> Learning Wall Feed
                 </a>
-                <a href="{{ url_for('dashboard.list_issues') }}" class="mobile-nav-item d-flex justify-content-between align-items-center {% if 'issues' in safe_endpoint %}active{% endif %}">
+                <a href="{{ url_for('dashboard.list_issues') }}"
+                    class="mobile-nav-item d-flex justify-content-between align-items-center {% if 'issues' in safe_endpoint %}active{% endif %}">
                     <span><i class="fa-solid fa-headset me-3 text-danger"></i> Tickets Helpdesk</span>
                     {% if open_tickets_count > 0 %}
                     <span class="badge bg-danger rounded-pill">{{ open_tickets_count }}</span>
                     {% endif %}
                 </a>
                 {% else %}
-                <a href="{{ url_for('learners.my_portal') }}" class="mobile-nav-item {% if safe_endpoint == 'learners.my_portal' %}active{% endif %}">
+                <a href="{{ url_for('learners.my_portal') }}"
+                    class="mobile-nav-item {% if safe_endpoint == 'learners.my_portal' %}active{% endif %}">
                     <i class="fa-solid fa-graduation-cap me-3 text-teal"></i> My Programs
                 </a>
-                <a href="{{ url_for('learning_wall.index') }}" class="mobile-nav-item {% if 'learning_wall' in safe_endpoint %}active{% endif %}">
+                <a href="{{ url_for('learning_wall.index') }}"
+                    class="mobile-nav-item {% if 'learning_wall' in safe_endpoint %}active{% endif %}">
                     <i class="fa-solid fa-bullhorn me-3 text-warning"></i> Learning Wall Feed
                 </a>
-                <a href="{{ url_for('learners.catalog') }}" class="mobile-nav-item {% if safe_endpoint == 'learners.catalog' %}active{% endif %}">
+                <a href="{{ url_for('learners.catalog') }}"
+                    class="mobile-nav-item {% if safe_endpoint == 'learners.catalog' %}active{% endif %}">
                     <i class="fa-solid fa-layer-group me-3 text-teal"></i> Course Catalog
                 </a>
-                <a href="{{ url_for('certificates.my_certificates') }}" class="mobile-nav-item {% if 'certificates' in safe_endpoint %}active{% endif %}">
+                <a href="{{ url_for('certificates.my_certificates') }}"
+                    class="mobile-nav-item {% if 'certificates' in safe_endpoint %}active{% endif %}">
                     <i class="fa-solid fa-certificate me-3 text-teal"></i> Certificates
                 </a>
                 {% endif %}
@@ -719,37 +1010,43 @@
         <!-- Toast Container -->
         <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
             {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                    <div class="toast show align-items-center text-white bg-{{ category if category != 'error' else 'danger' }} border-0 shadow-lg mb-2" role="alert" aria-live="assertive" aria-atomic="true">
-                        <div class="d-flex">
-                            <div class="toast-body fs-6">
-                                <i class="fa-solid fa-circle-info me-2"></i> {{ message }}
-                            </div>
-                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                        </div>
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="toast show align-items-center text-white bg-{{ category if category != 'error' else 'danger' }} border-0 shadow-lg mb-2"
+                role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body fs-6">
+                        <i class="fa-solid fa-circle-info me-2"></i> {{ message }}
                     </div>
-                    {% endfor %}
-                {% endif %}
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                        aria-label="Close"></button>
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
             {% endwith %}
         </div>
 
         {% if admin_logged_in %}
-            {% block content %}{% endblock %}
+        {% block content %}{% endblock %}
         {% else %}
-            {% block public_content %}{% endblock %}
+        {% block public_content %}{% endblock %}
         {% endif %}
     </main>
 
     <!-- Global Portal Search Modal -->
-    <div class="modal fade" id="globalSearchModal" tabindex="-1" aria-labelledby="globalSearchModalLabel" aria-hidden="true">
+    <div class="modal fade" id="globalSearchModal" tabindex="-1" aria-labelledby="globalSearchModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden" style="background: var(--bg-surface);">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden"
+                style="background: var(--bg-surface);">
                 <div class="modal-header border-bottom p-3">
                     <div class="ls-search-box w-100 me-2">
                         <i class="fa-solid fa-magnifying-glass ls-search-icon"></i>
-                        <input type="text" id="globalSearchInput" class="ls-search-input" placeholder="Search courses, live classes, learners, certificates, reports..." autofocus>
-                        <button type="button" class="ls-search-clear" id="globalSearchClear" title="Clear Search" style="display:none;"><i class="fa-solid fa-xmark"></i></button>
+                        <input type="text" id="globalSearchInput" class="ls-search-input"
+                            placeholder="Search courses, live classes, learners, certificates, reports..." autofocus>
+                        <button type="button" class="ls-search-clear" id="globalSearchClear" title="Clear Search"
+                            style="display:none;"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
@@ -757,12 +1054,15 @@
                     <div class="text-center py-4 text-muted">
                         <i class="fa-solid fa-graduation-cap display-4 text-teal opacity-50 mb-2"></i>
                         <h6 class="fw-bold text-dark mb-1">Instant Portal Search</h6>
-                        <p class="small text-muted mb-0">Type keywords above to search across Courses, Classes, Learners, and Certificates...</p>
+                        <p class="small text-muted mb-0">Type keywords above to search across Courses, Classes,
+                            Learners, and Certificates...</p>
                     </div>
                 </div>
                 <div class="modal-footer border-top py-2 px-3 justify-content-between">
-                    <small class="text-muted"><i class="fa-solid fa-bolt text-teal me-1"></i> Real-time Portal Filter</small>
-                    <small class="text-muted"><kbd class="bg-light text-dark px-2 py-1 rounded border">ESC</kbd> to close</small>
+                    <small class="text-muted"><i class="fa-solid fa-bolt text-teal me-1"></i> Real-time Portal
+                        Filter</small>
+                    <small class="text-muted"><kbd class="bg-light text-dark px-2 py-1 rounded border">ESC</kbd> to
+                        close</small>
                 </div>
             </div>
         </div>
@@ -771,288 +1071,292 @@
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    
+
     <!-- Global Tag Autocomplete Controller -->
     <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        let activeTextarea = null;
-        let dropdown = null;
-        let tagStartPos = -1;
+        document.addEventListener("DOMContentLoaded", function () {
+            let activeTextarea = null;
+            let dropdown = null;
+            let tagStartPos = -1;
 
-        // Create global dropdown container
-        dropdown = document.createElement('div');
-        dropdown.className = 'tag-autocomplete-dropdown d-none';
-        document.body.appendChild(dropdown);
+            // Create global dropdown container
+            dropdown = document.createElement('div');
+            dropdown.className = 'tag-autocomplete-dropdown d-none';
+            document.body.appendChild(dropdown);
 
-        function initAutocomplete(textarea) {
-            textarea.addEventListener('input', function(e) {
-                const val = textarea.value;
-                const selectionStart = textarea.selectionStart;
-                const textBeforeCursor = val.slice(0, selectionStart);
-                const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+            function initAutocomplete(textarea) {
+                textarea.addEventListener('input', function (e) {
+                    const val = textarea.value;
+                    const selectionStart = textarea.selectionStart;
+                    const textBeforeCursor = val.slice(0, selectionStart);
+                    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
 
-                if (lastAtIndex !== -1 && lastAtIndex >= textBeforeCursor.lastIndexOf(' ')) {
-                    const searchStr = textBeforeCursor.slice(lastAtIndex + 1);
-                    if (!searchStr.includes(' ')) {
-                        activeTextarea = textarea;
-                        tagStartPos = lastAtIndex;
-                        fetchSuggestions(searchStr);
-                        return;
+                    if (lastAtIndex !== -1 && lastAtIndex >= textBeforeCursor.lastIndexOf(' ')) {
+                        const searchStr = textBeforeCursor.slice(lastAtIndex + 1);
+                        if (!searchStr.includes(' ')) {
+                            activeTextarea = textarea;
+                            tagStartPos = lastAtIndex;
+                            fetchSuggestions(searchStr);
+                            return;
+                        }
                     }
-                }
-                hideDropdown();
-            });
-
-            textarea.addEventListener('keydown', function(e) {
-                if (dropdown.classList.contains('d-none')) return;
-
-                const items = dropdown.querySelectorAll('.tag-autocomplete-item');
-                if (!items.length) return;
-
-                let activeItemIndex = -1;
-                items.forEach((item, index) => {
-                    if (item.classList.contains('active')) activeItemIndex = index;
+                    hideDropdown();
                 });
 
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    if (activeItemIndex !== -1) items[activeItemIndex].classList.remove('active');
-                    const nextIndex = (activeItemIndex + 1) % items.length;
-                    items[nextIndex].classList.add('active');
-                    items[nextIndex].scrollIntoView({ block: 'nearest' });
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    if (activeItemIndex !== -1) items[activeItemIndex].classList.remove('active');
-                    const prevIndex = (activeItemIndex - 1 + items.length) % items.length;
-                    items[prevIndex].classList.add('active');
-                    items[prevIndex].scrollIntoView({ block: 'nearest' });
-                } else if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const activeItem = dropdown.querySelector('.tag-autocomplete-item.active') || items[0];
-                    if (activeItem) activeItem.click();
-                } else if (e.key === 'Escape') {
+                textarea.addEventListener('keydown', function (e) {
+                    if (dropdown.classList.contains('d-none')) return;
+
+                    const items = dropdown.querySelectorAll('.tag-autocomplete-item');
+                    if (!items.length) return;
+
+                    let activeItemIndex = -1;
+                    items.forEach((item, index) => {
+                        if (item.classList.contains('active')) activeItemIndex = index;
+                    });
+
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (activeItemIndex !== -1) items[activeItemIndex].classList.remove('active');
+                        const nextIndex = (activeItemIndex + 1) % items.length;
+                        items[nextIndex].classList.add('active');
+                        items[nextIndex].scrollIntoView({ block: 'nearest' });
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (activeItemIndex !== -1) items[activeItemIndex].classList.remove('active');
+                        const prevIndex = (activeItemIndex - 1 + items.length) % items.length;
+                        items[prevIndex].classList.add('active');
+                        items[prevIndex].scrollIntoView({ block: 'nearest' });
+                    } else if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const activeItem = dropdown.querySelector('.tag-autocomplete-item.active') || items[0];
+                        if (activeItem) activeItem.click();
+                    } else if (e.key === 'Escape') {
+                        hideDropdown();
+                    }
+                });
+            }
+
+            function fetchSuggestions(query) {
+                fetch(`/learners/tag_suggestions?q=${encodeURIComponent(query)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data.length) {
+                            hideDropdown();
+                            return;
+                        }
+                        renderDropdown(data);
+                    })
+                    .catch(() => hideDropdown());
+            }
+
+            function renderDropdown(suggestions) {
+                dropdown.innerHTML = '';
+                suggestions.forEach((s, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'tag-autocomplete-item';
+                    if (index === 0) item.className += ' active';
+                    item.innerHTML = `<strong>${s.name}</strong> <span class="text-muted text-xxs block">(${s.department})</span>`;
+                    item.addEventListener('click', function () {
+                        insertTag(s.global_id);
+                    });
+                    dropdown.appendChild(item);
+                });
+
+                const rect = activeTextarea.getBoundingClientRect();
+                dropdown.style.left = `${window.scrollX + rect.left}px`;
+                dropdown.style.top = `${window.scrollY + rect.top + activeTextarea.offsetHeight}px`;
+                dropdown.classList.remove('d-none');
+            }
+
+            function insertTag(globalId) {
+                const val = activeTextarea.value;
+                const cursor = activeTextarea.selectionStart;
+                const before = val.slice(0, tagStartPos);
+                const after = val.slice(cursor);
+
+                activeTextarea.value = `${before}@${globalId} ${after}`;
+                activeTextarea.focus();
+                const newCursorPos = tagStartPos + globalId.length + 2;
+                activeTextarea.setSelectionRange(newCursorPos, newCursorPos);
+                hideDropdown();
+            }
+
+            function hideDropdown() {
+                dropdown.classList.add('d-none');
+            }
+
+            document.addEventListener('click', function (e) {
+                if (dropdown && !dropdown.contains(e.target) && e.target !== activeTextarea) {
                     hideDropdown();
                 }
             });
-        }
 
-        function fetchSuggestions(query) {
-            fetch(`/learners/tag_suggestions?q=${encodeURIComponent(query)}`)
-                .then(res => res.json())
-                .then(data => {
-                    if (!data.length) {
-                        hideDropdown();
-                        return;
-                    }
-                    renderDropdown(data);
-                })
-                .catch(() => hideDropdown());
-        }
+            // JS-based exclusive hover dropdown management for desktop viewports
+            if (window.innerWidth >= 1200) {
+                let hideTimeout = null;
 
-        function renderDropdown(suggestions) {
-            dropdown.innerHTML = '';
-            suggestions.forEach((s, index) => {
-                const item = document.createElement('div');
-                item.className = 'tag-autocomplete-item';
-                if (index === 0) item.className += ' active';
-                item.innerHTML = `<strong>${s.name}</strong> <span class="text-muted text-xxs block">(${s.department})</span>`;
-                item.addEventListener('click', function() {
-                    insertTag(s.global_id);
-                });
-                dropdown.appendChild(item);
-            });
+                document.querySelectorAll('.dropdown').forEach(dropdown => {
+                    dropdown.addEventListener('mouseenter', () => {
+                        clearTimeout(hideTimeout);
 
-            const rect = activeTextarea.getBoundingClientRect();
-            dropdown.style.left = `${window.scrollX + rect.left}px`;
-            dropdown.style.top = `${window.scrollY + rect.top + activeTextarea.offsetHeight}px`;
-            dropdown.classList.remove('d-none');
-        }
-
-        function insertTag(globalId) {
-            const val = activeTextarea.value;
-            const cursor = activeTextarea.selectionStart;
-            const before = val.slice(0, tagStartPos);
-            const after = val.slice(cursor);
-            
-            activeTextarea.value = `${before}@${globalId} ${after}`;
-            activeTextarea.focus();
-            const newCursorPos = tagStartPos + globalId.length + 2; 
-            activeTextarea.setSelectionRange(newCursorPos, newCursorPos);
-            hideDropdown();
-        }
-
-        function hideDropdown() {
-            dropdown.classList.add('d-none');
-        }
-
-        document.addEventListener('click', function(e) {
-            if (dropdown && !dropdown.contains(e.target) && e.target !== activeTextarea) {
-                hideDropdown();
-            }
-        });
-
-        // JS-based exclusive hover dropdown management for desktop viewports
-        if (window.innerWidth >= 1200) {
-            let hideTimeout = null;
-
-            document.querySelectorAll('.dropdown').forEach(dropdown => {
-                dropdown.addEventListener('mouseenter', () => {
-                    clearTimeout(hideTimeout);
-                    
-                    // Close all other dropdowns immediately
-                    document.querySelectorAll('.dropdown').forEach(other => {
-                        if (other !== dropdown) {
-                            const otherToggle = other.querySelector('[data-bs-toggle="dropdown"]');
-                            if (otherToggle) {
-                                const instance = bootstrap.Dropdown.getInstance(otherToggle);
-                                if (instance) instance.hide();
+                        // Close all other dropdowns immediately
+                        document.querySelectorAll('.dropdown').forEach(other => {
+                            if (other !== dropdown) {
+                                const otherToggle = other.querySelector('[data-bs-toggle="dropdown"]');
+                                if (otherToggle) {
+                                    const instance = bootstrap.Dropdown.getInstance(otherToggle);
+                                    if (instance) instance.hide();
+                                }
                             }
+                        });
+
+                        const toggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+                        if (toggle) {
+                            const instance = bootstrap.Dropdown.getOrCreateInstance(toggle);
+                            instance.show();
                         }
                     });
+                    dropdown.addEventListener('mouseleave', () => {
+                        const toggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+                        if (toggle) {
+                            hideTimeout = setTimeout(() => {
+                                const instance = bootstrap.Dropdown.getInstance(toggle);
+                                if (instance) instance.hide();
+                            }, 200); // 200ms debounce buffer lets vertical mouse movement cross spacing gap
+                        }
+                    });
+                });
 
-                    const toggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
-                    if (toggle) {
-                        const instance = bootstrap.Dropdown.getOrCreateInstance(toggle);
-                        instance.show();
+                // Prevent clicks from toggling the menu state on desktop
+                document.querySelectorAll('.dropdown [data-bs-toggle="dropdown"]').forEach(toggle => {
+                    toggle.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+            }
+
+            document.addEventListener('focusin', function (e) {
+                if (e.target.tagName === 'TEXTAREA' && !e.target.dataset.tagAutocompleted) {
+                    e.target.dataset.tagAutocompleted = 'true';
+                    initAutocomplete(e.target);
+                }
+            });
+        });
+
+        function changeGlobalTheme(themeName) {
+            localStorage.setItem('theme', themeName);
+            fetch('/learners/set_theme', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ theme: themeName })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.body.className = document.body.className.replace(/\btheme-\S+/g, '').trim() + ' theme-' + themeName;
+                        window.location.reload();
                     }
                 });
-                dropdown.addEventListener('mouseleave', () => {
-                    const toggle = dropdown.querySelector('[data-bs-toggle="dropdown"]');
-                    if (toggle) {
-                        hideTimeout = setTimeout(() => {
-                            const instance = bootstrap.Dropdown.getInstance(toggle);
-                            if (instance) instance.hide();
-                        }, 200); // 200ms debounce buffer lets vertical mouse movement cross spacing gap
-                    }
-                });
-            });
-
-            // Prevent clicks from toggling the menu state on desktop
-            document.querySelectorAll('.dropdown [data-bs-toggle="dropdown"]').forEach(toggle => {
-                toggle.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
-            });
         }
-
-        document.addEventListener('focusin', function(e) {
-            if (e.target.tagName === 'TEXTAREA' && !e.target.dataset.tagAutocompleted) {
-                e.target.dataset.tagAutocompleted = 'true';
-                initAutocomplete(e.target);
-            }
-        });
-    });
-
-    function changeGlobalTheme(themeName) {
-        localStorage.setItem('theme', themeName === 'dark' ? 'dark' : 'light');
-        fetch('/learners/set_theme', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({ theme: themeName })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                document.body.className = document.body.className.replace(/\btheme-\S+/g, '');
-                document.body.classList.add('theme-' + themeName);
-                window.location.reload();
-            }
-        });
-    }
     </script>
 
     <!-- Notification Details Modal -->
-    <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-          <div class="modal-header bg-navy text-white border-0 py-3">
-            <h5 class="modal-title fw-bold" id="notificationModalLabel">
-                <i class="fa-solid fa-bell text-gold me-2"></i> <span id="notifModalTitle">Notification</span>
-            </h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body p-4 text-dark">
-            <small class="text-muted text-xs d-block mb-3 border-bottom pb-2" id="notifModalDate"></small>
-            <div id="notifModalImageContainer" class="mb-3 d-none text-center">
-                <img src="" id="notifModalImage" class="img-fluid rounded-3 border" style="max-height: 250px; object-fit: contain;" alt="Notification Image">
+    <div class="modal fade" id="notificationModal" tabindex="-1" aria-labelledby="notificationModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-navy text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold" id="notificationModalLabel">
+                        <i class="fa-solid fa-bell text-gold me-2"></i> <span id="notifModalTitle">Notification</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 text-dark">
+                    <small class="text-muted text-xs d-block mb-3 border-bottom pb-2" id="notifModalDate"></small>
+                    <div id="notifModalImageContainer" class="mb-3 d-none text-center">
+                        <img src="" id="notifModalImage" class="img-fluid rounded-3 border"
+                            style="max-height: 250px; object-fit: contain;" alt="Notification Image">
+                    </div>
+                    <div class="fs-6 fw-medium text-secondary" style="white-space: pre-wrap;" id="notifModalMessage">
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 bg-light">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4 btn-sm"
+                        data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
-            <div class="fs-6 fw-medium text-secondary" style="white-space: pre-wrap;" id="notifModalMessage"></div>
-          </div>
-          <div class="modal-footer border-top-0 bg-light">
-            <button type="button" class="btn btn-secondary rounded-pill px-4 btn-sm" data-bs-dismiss="modal">Close</button>
-          </div>
         </div>
-      </div>
     </div>
 
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var notificationModal = document.getElementById('notificationModal');
-        if (notificationModal) {
-            notificationModal.addEventListener('show.bs.modal', function (event) {
-                var button = event.relatedTarget;
-                var title = button.getAttribute('data-title');
-                var message = button.getAttribute('data-message');
-                var date = button.getAttribute('data-date');
-                var image = button.getAttribute('data-image');
+        document.addEventListener('DOMContentLoaded', function () {
+            var notificationModal = document.getElementById('notificationModal');
+            if (notificationModal) {
+                notificationModal.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    var title = button.getAttribute('data-title');
+                    var message = button.getAttribute('data-message');
+                    var date = button.getAttribute('data-date');
+                    var image = button.getAttribute('data-image');
 
-                var modalTitle = notificationModal.querySelector('#notifModalTitle');
-                var modalMessage = notificationModal.querySelector('#notifModalMessage');
-                var modalDate = notificationModal.querySelector('#notifModalDate');
-                var imgContainer = notificationModal.querySelector('#notifModalImageContainer');
-                var imgElement = notificationModal.querySelector('#notifModalImage');
+                    var modalTitle = notificationModal.querySelector('#notifModalTitle');
+                    var modalMessage = notificationModal.querySelector('#notifModalMessage');
+                    var modalDate = notificationModal.querySelector('#notifModalDate');
+                    var imgContainer = notificationModal.querySelector('#notifModalImageContainer');
+                    var imgElement = notificationModal.querySelector('#notifModalImage');
 
-                modalTitle.textContent = title;
-                modalMessage.textContent = message;
-                modalDate.innerHTML = '<i class="fa-regular fa-clock me-1"></i>' + date;
-                
-                if (image && image.trim() !== '') {
-                    imgElement.src = image;
-                    imgContainer.classList.remove('d-none');
-                } else {
-                    imgElement.src = '';
-                    imgContainer.classList.add('d-none');
-                }
+                    modalTitle.textContent = title;
+                    modalMessage.textContent = message;
+                    modalDate.innerHTML = '<i class="fa-regular fa-clock me-1"></i>' + date;
 
-                // Mark as read if unread
-                var isRead = button.getAttribute('data-read');
-                var notifId = button.getAttribute('data-id');
-                if (isRead === 'false' && notifId) {
-                    fetch('/learners/notifications/mark_read/' + notifId, {
-                        method: 'POST',
-                        headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
-                    })
-                    .then(r => r.json())
-                    .then(d => {
-                        if (d.status === 'success') {
-                            button.setAttribute('data-read', 'true');
-                            button.classList.remove('bg-teal-subtle', 'border-start', 'border-3', 'border-teal', 'bg-light');
-                            button.classList.add('bg-light');
-                            
-                            // Also update matching item in portal page list if present
-                            if (notifId) {
-                                var portalItem = document.getElementById('notif-' + notifId);
-                                if (portalItem) {
-                                    portalItem.setAttribute('data-read', 'true');
-                                    portalItem.classList.remove('bg-light', 'border-teal-subtle');
-                                    portalItem.classList.add('bg-white');
+                    if (image && image.trim() !== '') {
+                        imgElement.src = image;
+                        imgContainer.classList.remove('d-none');
+                    } else {
+                        imgElement.src = '';
+                        imgContainer.classList.add('d-none');
+                    }
+
+                    // Mark as read if unread
+                    var isRead = button.getAttribute('data-read');
+                    var notifId = button.getAttribute('data-id');
+                    if (isRead === 'false' && notifId) {
+                        fetch('/learners/notifications/mark_read/' + notifId, {
+                            method: 'POST',
+                            headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
+                        })
+                            .then(r => r.json())
+                            .then(d => {
+                                if (d.status === 'success') {
+                                    button.setAttribute('data-read', 'true');
+                                    button.classList.remove('bg-teal-subtle', 'border-start', 'border-3', 'border-teal', 'bg-light');
+                                    button.classList.add('bg-light');
+
+                                    // Also update matching item in portal page list if present
+                                    if (notifId) {
+                                        var portalItem = document.getElementById('notif-' + notifId);
+                                        if (portalItem) {
+                                            portalItem.setAttribute('data-read', 'true');
+                                            portalItem.classList.remove('bg-light', 'border-teal-subtle');
+                                            portalItem.classList.add('bg-white');
+                                        }
+                                    }
+
+                                    decrementUnreadNotifCounts();
                                 }
-                            }
-
-                            decrementUnreadNotifCounts();
-                        }
-                    });
-                }
-            });
-        }
-    });
+                            });
+                    }
+                });
+            }
+        });
     </script>
     <script src="{{ url_for('static', filename='js/b2-upload.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
-</html>
 
+</html>
