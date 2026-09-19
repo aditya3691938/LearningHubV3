@@ -67,6 +67,8 @@ def create_app(config_class=Config):
     with app.app_context():
         try:
             db.create_all()
+            from app.models import ensure_db_schema_integrity
+            ensure_db_schema_integrity()
             alter_statements = [
                 "ALTER TABLE courses ADD COLUMN access_type VARCHAR(20) DEFAULT 'Public'",
                 "ALTER TABLE courses ADD COLUMN target_department VARCHAR(255) DEFAULT 'ALL'",

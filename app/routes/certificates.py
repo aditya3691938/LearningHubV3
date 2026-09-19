@@ -37,6 +37,7 @@ def my_certificates():
         flash("Please log in to view your certificates.", "info")
         return redirect(url_for('auth.learner_login'))
         
+    _ensure_external_cert_columns()
     learner = Learner.query.get_or_404(learner_id)
     certificates = Certificate.query.filter_by(learner_id=learner.id).order_by(Certificate.issue_date.desc()).all()
     
