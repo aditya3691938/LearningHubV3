@@ -8,7 +8,7 @@
     <div class="col-12 col-lg-3 col-xl-3 sidebar-col" id="sidebarCol">
         <div class="profile-sidebar card border-0 shadow-sm text-center position-relative h-100 p-3" id="learnerSidebar">
             <!-- Desktop / Mobile Profile Header Card -->
-            <a href="{{ url_for('certificates.learner_certificates') }}" class="desktop-profile-header text-center d-block text-decoration-none p-2 rounded-3 hover-elevate transition-all border-bottom border-light cursor-pointer mb-2" title="View My Profile & Certifications">
+            <a href="{{ url_for('certificates.my_certificates') }}" class="desktop-profile-header text-center d-block text-decoration-none p-2 rounded-3 hover-elevate transition-all border-bottom border-light cursor-pointer mb-2" title="View My Profile & Certifications">
                 <div class="position-relative d-inline-block mt-2 mb-2 mx-auto">
                     <div class="avatar-profile bg-teal text-white rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 72px; height: 72px; font-size: 1.8rem; font-weight: bold;">
                         {{ learner.name[0] | upper if learner.name else 'L' }}
@@ -45,7 +45,7 @@
 
                 <!-- AWARDS CARD -->
                 <div class="col-4">
-                    <a href="{{ url_for('certificates.learner_certificates') }}" 
+                    <a href="{{ url_for('certificates.my_certificates') }}" 
                        class="p-2.5 rounded-3 bg-light border text-center d-block text-decoration-none hover-elevate shadow-hover-xs transition-all h-100 cursor-pointer" 
                        title="Click to view certificates & awards">
                         <div class="text-teal text-xxs font-bold text-uppercase mb-1" style="font-size: 0.62rem;"><i class="fa-solid fa-award text-teal"></i> Awards</div>
@@ -57,7 +57,7 @@
             <!-- Sidebar Items Container -->
             <div class="sidebar-stats-container d-flex flex-column gap-2 mb-2 text-start" id="sidebarStatsContainer">
                 <!-- Clickable Badges Card -->
-                <a href="{{ url_for('certificates.learner_certificates') }}" class="p-2.5 rounded-3 bg-light border text-start d-block text-decoration-none hover-elevate shadow-hover-xs transition-all cursor-pointer" title="Click to view unlocked badges & certificates">
+                <a href="{{ url_for('certificates.my_certificates') }}" class="p-2.5 rounded-3 bg-light border text-start d-block text-decoration-none hover-elevate shadow-hover-xs transition-all cursor-pointer" title="Click to view unlocked badges & certificates">
                     <div class="fw-bold text-dark text-xs text-uppercase mb-2 d-flex align-items-center justify-content-between">
                         <span><i class="fa-solid fa-medal text-teal me-1"></i> Unlocked Badges ({{ learner.badges|length }})</span>
                         <i class="fa-solid fa-chevron-right text-muted text-xxs"></i>
