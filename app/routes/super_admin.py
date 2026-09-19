@@ -478,7 +478,7 @@ def admin_profile():
 
     total_courses = Course.query.count()
     total_learners = Learner.query.count()
-    open_tickets = LmsIssue.query.filter_by(status='Open').count()
+    open_tickets = LmsIssue.query.filter(LmsIssue.status.in_(['Open', 'In Progress'])).count()
 
     return render_template(
         'super_admin/profile.html',

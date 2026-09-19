@@ -8,7 +8,7 @@ class LmsIssue(db.Model):
     learner_id = db.Column(db.Integer, db.ForeignKey('learners.id'), nullable=False)
     category = db.Column(db.String(50), nullable=False, default='Technical') # 'Technical', 'Content', 'Certificate', 'Other'
     description = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(20), nullable=False, default='Open') # 'Open', 'Resolved'
+    status = db.Column(db.String(20), nullable=False, default='Open') # 'Open', 'In Progress', 'Reject', 'Close', 'Resolved'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     resolved_at = db.Column(db.DateTime, nullable=True)
 

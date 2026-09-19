@@ -85,7 +85,7 @@ def admin_profile():
 
     total_courses = Course.query.count()
     total_learners = Learner.query.count()
-    open_tickets = LmsIssue.query.filter_by(status='Open').count()
+    open_tickets = LmsIssue.query.filter(LmsIssue.status.in_(['Open', 'In Progress'])).count()
 
     admin = AdminUser.query.filter_by(username=session.get('admin_username')).first()
 
@@ -137,8 +137,38 @@ def admin_profile():
 @admin_required
 def list_issues():
     from app.models.issue import LmsIssue
-    issues = LmsIssue.query.order_by(LmsIssue.created_at.desc()).all()
-    return render_template('dashboard/issues.html', issues=issues)
+    from flask import request
+    
+    status_filter = request.args.get('status', 'all')
+    query = LmsIssue.query
+
+    if status_filter == 'open':
+        query = query.filter_by(status='Open')
+    elif status_filter == 'in_progress':
+        query = query.filter_by(status='In Progress')
+    elif status_filter == 'reject':
+        query = query.filter(LmsIssue.status.in_(['Reject', 'Rejected']))
+    elif status_filter == 'close':
+        query = query.filter(LmsIssue.status.in_(['Close', 'Closed', 'Resolved']))
+
+    issues = query.order_by(LmsIssue.created_at.desc()).all()
+    
+    total_count = LmsIssue.query.count()
+    open_count = LmsIssue.query.filter_by(status='Open').count()
+    in_progress_count = LmsIssue.query.filter_by(status='In Progress').count()
+    reject_count = LmsIssue.query.filter(LmsIssue.status.in_(['Reject', 'Rejected'])).count()
+    closed_count = LmsIssue.query.filter(LmsIssue.status.in_(['Close', 'Closed', 'Resolved'])).count()
+
+    return render_template(
+        'dashboard/issues.html',
+        issues=issues,
+        status_filter=status_filter,
+        total_count=total_count,
+        open_count=open_count,
+        in_progress_count=in_progress_count,
+        reject_count=reject_count,
+        closed_count=closed_count
+    )
 
 
 @dashboard_bp.route('/broadcast_notification', methods=['POST'])
@@ -222,41 +252,65 @@ def broadcast_notification():
         
     return redirect(url_for('dashboard.index'))
 
-@dashboard_bp.route('/issues/resolve/<int:issue_id>', methods=['POST'])
+@dashboard_bp.route('/issues/update_status/<int:issue_id>', methods=['POST'], endpoint='update_issue_status')
+@dashboard_bp.route('/issues/resolve/<int:issue_id>', methods=['POST'], endpoint='resolve_issue')
 @admin_required
-def resolve_issue(issue_id):
+def update_issue_status(issue_id):
     from app.models.issue import LmsIssue
     from app.models.notification import LearnerNotification
     from datetime import datetime, timedelta
-    from flask import flash
+    from flask import flash, request, redirect, url_for
+    from app.models import db
     
     issue = LmsIssue.query.get_or_404(issue_id)
-    issue.status = 'Resolved'
-    issue.resolved_at = datetime.utcnow()
+    new_status = request.form.get('status', 'Close').strip()
     
-    # Auto-grant extension if it's a manager fallback escalation ticket
+    valid_statuses = ['Open', 'In Progress', 'Reject', 'Close', 'Resolved']
+    if new_status not in valid_statuses:
+        flash("Invalid status selected.", "danger")
+        return redirect(url_for('dashboard.list_issues'))
+        
+    issue.status = new_status
+    
     extension_msg = ""
-    if issue.description and '[Escalation] Extension requested for course' in issue.description:
-        import re
-        match = re.search(r'Enrollment ID:\s*(\d+)', issue.description)
-        if match:
-            enrollment_id = int(match.group(1))
-            from app.models.enrollment import LearnerEnrollment
-            enrollment = LearnerEnrollment.query.get(enrollment_id)
-            if enrollment:
-                enrollment.extended_deadline = datetime.utcnow() + timedelta(days=30)
-                enrollment.extension_requested = False
-                extension_msg = f" Also granted a 30-day course extension for '{enrollment.course.name}'."
+    if new_status in ['Close', 'Closed', 'Resolved']:
+        issue.resolved_at = datetime.utcnow()
+        # Auto-grant extension if it's a manager fallback escalation ticket
+        if issue.description and '[Escalation] Extension requested for course' in issue.description:
+            import re
+            match = re.search(r'Enrollment ID:\s*(\d+)', issue.description)
+            if match:
+                enrollment_id = int(match.group(1))
+                from app.models.enrollment import LearnerEnrollment
+                enrollment = LearnerEnrollment.query.get(enrollment_id)
+                if enrollment:
+                    enrollment.extended_deadline = datetime.utcnow() + timedelta(days=30)
+                    enrollment.extension_requested = False
+                    extension_msg = f" Also granted a 30-day course extension for '{enrollment.course.name}'."
     
     # Notify learner
+    if new_status in ['Close', 'Closed', 'Resolved']:
+        notif_title = "Support Issue Resolved! ✅"
+        message = f"Your support ticket #{issue.id} has been resolved by the Administrator.{extension_msg}"
+    elif new_status == 'In Progress':
+        notif_title = "Support Issue Update: In Progress ⏳"
+        message = f"Your support ticket #{issue.id} is currently In Progress."
+    elif new_status in ['Reject', 'Rejected']:
+        notif_title = "Support Issue Update: Rejected ❌"
+        message = f"Your support ticket #{issue.id} has been reviewed and rejected by the Administrator."
+    else:
+        notif_title = "Support Issue Update: Open 📂"
+        message = f"Your support ticket #{issue.id} status has been updated to Open."
+
     notif = LearnerNotification(
         learner_id=issue.learner_id,
-        title="Support Issue Resolved! ✅",
-        message=f"Your issue has been resolved by the Administrator.{extension_msg}",
+        title=notif_title,
+        message=message,
         notification_type='SYSTEM_UPDATE'
     )
     db.session.add(notif)
     db.session.commit()
     
-    flash(f"Support issue #{issue.id} marked as resolved, and learner notified.{extension_msg}", "success")
+    display_status = 'Closed' if new_status in ['Close', 'Resolved'] else new_status
+    flash(f"Support issue #{issue.id} status updated to '{display_status}'.{extension_msg}", "success")
     return redirect(url_for('dashboard.list_issues'))

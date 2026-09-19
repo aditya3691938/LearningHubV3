@@ -140,7 +140,7 @@ def create_app(config_class=Config):
         if session.get('admin_logged_in', False):
             try:
                 from app.models.issue import LmsIssue
-                open_tickets_count = LmsIssue.query.filter_by(status='Open').count()
+                open_tickets_count = LmsIssue.query.filter(LmsIssue.status.in_(['Open', 'In Progress'])).count()
                 
                 from app.models.user import AdminUser
                 admin = AdminUser.query.filter_by(username=session.get('admin_username')).first()

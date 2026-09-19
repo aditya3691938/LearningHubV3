@@ -4,12 +4,35 @@
 
 {% block content %}
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-    <div class="card-header bg-navy text-white py-3 px-4 d-flex align-items-center justify-content-between">
+    <div class="card-header bg-navy text-white py-3 px-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div class="d-flex align-items-center gap-2">
             <i class="fa-solid fa-headset fs-5 text-teal"></i>
             <h5 class="mb-0 fw-bold">Support Tickets & Issues Queue</h5>
         </div>
-        <span class="badge bg-teal-subtle text-teal border border-teal-subtle">{{ issues|length }} Tickets Logged</span>
+        
+        <!-- Status Filter Nav Pills -->
+        <div class="d-flex align-items-center gap-1 bg-white bg-opacity-10 p-1 rounded-3 text-xs">
+            <a href="{{ url_for('dashboard.list_issues', status='all') }}" 
+               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all {% if status_filter == 'all' or not status_filter %}bg-teal text-white fw-bold shadow-xs{% else %}text-white-50 text-white-hover{% endif %}">
+                All <span class="badge bg-white bg-opacity-20 text-white ms-1">{{ total_count }}</span>
+            </a>
+            <a href="{{ url_for('dashboard.list_issues', status='open') }}" 
+               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all {% if status_filter == 'open' %}bg-danger text-white fw-bold shadow-xs{% else %}text-white-50 text-white-hover{% endif %}">
+                Open <span class="badge bg-white bg-opacity-20 text-white ms-1">{{ open_count }}</span>
+            </a>
+            <a href="{{ url_for('dashboard.list_issues', status='in_progress') }}" 
+               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all {% if status_filter == 'in_progress' %}bg-primary text-white fw-bold shadow-xs{% else %}text-white-50 text-white-hover{% endif %}">
+                In Progress <span class="badge bg-white bg-opacity-20 text-white ms-1">{{ in_progress_count }}</span>
+            </a>
+            <a href="{{ url_for('dashboard.list_issues', status='reject') }}" 
+               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all {% if status_filter == 'reject' %}bg-secondary text-white fw-bold shadow-xs{% else %}text-white-50 text-white-hover{% endif %}">
+                Reject <span class="badge bg-white bg-opacity-20 text-white ms-1">{{ reject_count }}</span>
+            </a>
+            <a href="{{ url_for('dashboard.list_issues', status='close') }}" 
+               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all {% if status_filter == 'close' %}bg-success text-white fw-bold shadow-xs{% else %}text-white-50 text-white-hover{% endif %}">
+                Close <span class="badge bg-white bg-opacity-20 text-white ms-1">{{ closed_count }}</span>
+            </a>
+        </div>
     </div>
     
     <div class="card-body p-4">
@@ -22,9 +45,9 @@
                         <th class="border-0 px-3 py-3">Learner</th>
                         <th class="border-0 px-3 py-3">Category</th>
                         <th class="border-0 px-3 py-3">Description</th>
-                        <th class="border-0 px-3 py-3" style="width: 120px;">Status</th>
+                        <th class="border-0 px-3 py-3" style="width: 140px;">Status</th>
                         <th class="border-0 px-3 py-3">Logged Date</th>
-                        <th class="border-0 px-3 py-3 text-end" style="width: 150px;">Action</th>
+                        <th class="border-0 px-3 py-3 text-end" style="width: 240px;">Action</th>
                     </tr>
                 </thead>
                 <tbody class="text-xs">
@@ -51,30 +74,99 @@
                                 {{ issue.category }}
                             </span>
                         </td>
-                        <td class="px-3 py-3 text-wrap" style="max-width: 300px;">
+                        <td class="px-3 py-3 text-wrap" style="max-width: 280px;">
                             {{ issue.description }}
                         </td>
                         <td class="px-3 py-3">
                             {% if issue.status == 'Open' %}
-                            <span class="badge bg-danger text-white fw-bold">Open</span>
+                                <span class="badge bg-danger text-white fw-bold px-2.5 py-1 rounded-pill">
+                                    <i class="fa-regular fa-folder-open me-1"></i> Open
+                                </span>
+                            {% elif issue.status == 'In Progress' %}
+                                <span class="badge bg-primary text-white fw-bold px-2.5 py-1 rounded-pill">
+                                    <i class="fa-solid fa-spinner fa-spin-pulse me-1"></i> In Progress
+                                </span>
+                            {% elif issue.status in ['Reject', 'Rejected'] %}
+                                <span class="badge bg-secondary text-white fw-bold px-2.5 py-1 rounded-pill">
+                                    <i class="fa-solid fa-ban me-1"></i> Reject
+                                </span>
+                            {% elif issue.status in ['Close', 'Closed', 'Resolved'] %}
+                                <span class="badge bg-success text-white fw-bold px-2.5 py-1 rounded-pill">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Close
+                                </span>
                             {% else %}
-                            <span class="badge bg-success text-white fw-bold"><i class="fa-solid fa-circle-check me-1"></i> Resolved</span>
+                                <span class="badge bg-dark text-white fw-bold px-2.5 py-1 rounded-pill">
+                                    {{ issue.status }}
+                                </span>
                             {% endif %}
                         </td>
                         <td class="px-3 py-3 text-muted">
                             {{ issue.created_at.strftime('%d-%b-%Y %I:%M %p') }}
                         </td>
                         <td class="px-3 py-3 text-end">
-                            {% if issue.status == 'Open' %}
-                            <form action="{{ url_for('dashboard.resolve_issue', issue_id=issue.id) }}" method="POST" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-xs btn-success fw-bold py-1 px-2.5 rounded-3 shadow-xs">
-                                    <i class="fa-solid fa-check me-1"></i> Close Ticket
-                                </button>
-                            </form>
-                            {% else %}
-                            <span class="text-success text-xs fw-bold"><i class="fa-solid fa-circle-check"></i> Cleared</span>
-                            {% endif %}
+                            <div class="d-inline-flex align-items-center justify-content-end gap-1.5">
+                                <!-- Ticket Resolved Button -->
+                                {% if issue.status not in ['Close', 'Closed', 'Resolved'] %}
+                                <form action="{{ url_for('dashboard.update_issue_status', issue_id=issue.id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="status" value="Close">
+                                    <button type="submit" class="btn btn-xs btn-success fw-bold py-1 px-2.5 rounded-3 shadow-xs d-inline-flex align-items-center gap-1">
+                                        <i class="fa-solid fa-circle-check"></i> Ticket Resolved
+                                    </button>
+                                </form>
+                                {% else %}
+                                <span class="text-success text-xs fw-bold me-1 d-inline-flex align-items-center gap-1">
+                                    <i class="fa-solid fa-circle-check"></i> Ticket Resolved
+                                </span>
+                                {% endif %}
+
+                                <!-- Status Dropdown Selector -->
+                                <div class="dropdown d-inline">
+                                    <button class="btn btn-xs btn-outline-secondary dropdown-toggle py-1 px-2 rounded-3 text-xs fw-semibold" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Change Status">
+                                        <i class="fa-solid fa-sliders me-1"></i> Status
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 text-xs py-2 rounded-3">
+                                        <li><h6 class="dropdown-header text-uppercase text-xxs fw-bold text-muted mb-1">Set Ticket Status</h6></li>
+                                        <li>
+                                            <form action="{{ url_for('dashboard.update_issue_status', issue_id=issue.id) }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="status" value="Open">
+                                                <button type="submit" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2 {% if issue.status == 'Open' %}active fw-bold{% endif %}">
+                                                    <span class="badge bg-danger rounded-circle p-1" style="width:8px; height:8px;"> </span> Open
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form action="{{ url_for('dashboard.update_issue_status', issue_id=issue.id) }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="status" value="In Progress">
+                                                <button type="submit" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2 {% if issue.status == 'In Progress' %}active fw-bold{% endif %}">
+                                                    <span class="badge bg-primary rounded-circle p-1" style="width:8px; height:8px;"> </span> In Progress
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li>
+                                            <form action="{{ url_for('dashboard.update_issue_status', issue_id=issue.id) }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="status" value="Reject">
+                                                <button type="submit" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2 {% if issue.status in ['Reject', 'Rejected'] %}active fw-bold{% endif %}">
+                                                    <span class="badge bg-secondary rounded-circle p-1" style="width:8px; height:8px;"> </span> Reject
+                                                </button>
+                                            </form>
+                                        </li>
+                                        <li><hr class="dropdown-divider my-1"></li>
+                                        <li>
+                                            <form action="{{ url_for('dashboard.update_issue_status', issue_id=issue.id) }}" method="POST">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <input type="hidden" name="status" value="Close">
+                                                <button type="submit" class="dropdown-item py-1.5 px-3 d-flex align-items-center gap-2 {% if issue.status in ['Close', 'Closed', 'Resolved'] %}active fw-bold text-success{% endif %}">
+                                                    <span class="badge bg-success rounded-circle p-1" style="width:8px; height:8px;"> </span> Close
+                                                </button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -87,7 +179,7 @@
                 <i class="fa-solid fa-circle-check fs-3"></i>
             </div>
             <h6 class="fw-bold text-dark">No support tickets found</h6>
-            <p class="text-muted text-xs mb-0">All clear! Learners have not logged any support tickets.</p>
+            <p class="text-muted text-xs mb-0">No tickets match the selected status filter.</p>
         </div>
         {% endif %}
     </div>
