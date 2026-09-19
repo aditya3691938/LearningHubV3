@@ -7,8 +7,8 @@
     <!-- Learner Profile Sidebar (Left) -->
     <div class="col-12 col-lg-3 col-xl-3 sidebar-col" id="sidebarCol">
         <div class="profile-sidebar card border-0 shadow-sm text-center position-relative h-100 p-3" id="learnerSidebar">
-            <!-- Desktop / Mobile Profile Header -->
-            <div class="desktop-profile-header text-center">
+            <!-- Desktop / Mobile Profile Header Card -->
+            <a href="{{ url_for('certificates.learner_certificates') }}" class="desktop-profile-header text-center d-block text-decoration-none p-2 rounded-3 hover-elevate transition-all border-bottom border-light cursor-pointer mb-2" title="View My Profile & Certifications">
                 <div class="position-relative d-inline-block mt-2 mb-2 mx-auto">
                     <div class="avatar-profile bg-teal text-white rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 72px; height: 72px; font-size: 1.8rem; font-weight: bold;">
                         {{ learner.name[0] | upper if learner.name else 'L' }}
@@ -16,40 +16,51 @@
                     <span class="online-dot"></span>
                 </div>
                 
-                <h5 class="fw-bold text-dark mb-1 fs-6">{{ learner.name }}</h5>
+                <h5 class="fw-bold text-dark mb-1 fs-6 hover-teal">{{ learner.name }}</h5>
                 <span class="badge bg-teal-subtle text-teal border border-teal-subtle mb-2 text-xs">ID: {{ learner.global_id }}</span>
-                <p class="text-muted text-xs mb-3"><i class="fa-solid fa-building me-1 text-teal"></i> {{ learner.department or 'L&D Department' }}</p>
-                <hr class="my-2 text-muted opacity-25">
-            </div>
+                <p class="text-muted text-xs mb-2"><i class="fa-solid fa-building me-1 text-teal"></i> {{ learner.department or 'L&D Department' }}</p>
+            </a>
             
-            <!-- Combined Stats Row -->
+            <!-- Combined Stats Row (Clickable Cards) -->
             <div class="row g-2 mb-3 text-center">
+                <!-- COURSES CARD -->
                 <div class="col-4">
-                    <div class="p-2 rounded-3 bg-light border">
-                        <div class="text-muted text-xxs font-bold text-uppercase mb-1" style="font-size: 0.62rem;"><i class="fa-solid fa-book text-teal"></i> Courses</div>
-                        <div class="fw-extrabold text-dark fs-6">{{ enrollments|length }}</div>
-                    </div>
+                    <a href="#enrolledPrograms" onclick="document.getElementById('enrolledPrograms').scrollIntoView({behavior: 'smooth'}); return false;" 
+                       class="p-2.5 rounded-3 bg-light border text-center d-block text-decoration-none hover-elevate shadow-hover-xs transition-all h-100 cursor-pointer" 
+                       title="Click to view enrolled courses">
+                        <div class="text-teal text-xxs font-bold text-uppercase mb-1" style="font-size: 0.62rem;"><i class="fa-solid fa-book text-teal"></i> Courses</div>
+                        <div class="fw-extrabold text-navy fs-6">{{ enrollments|length }}</div>
+                    </a>
                 </div>
+
+                <!-- SESSIONS CARD -->
                 <div class="col-4">
-                    <div class="p-2 rounded-3 bg-light border">
-                        <div class="text-muted text-xxs font-bold text-uppercase mb-1" style="font-size: 0.62rem;"><i class="fa-solid fa-user-check text-teal"></i> Sessions</div>
-                        <div class="fw-extrabold text-dark fs-6">{{ learner.attendances|length }}</div>
-                    </div>
+                    <a href="#enrolledPrograms" onclick="document.getElementById('enrolledPrograms').scrollIntoView({behavior: 'smooth'}); return false;" 
+                       class="p-2.5 rounded-3 bg-light border text-center d-block text-decoration-none hover-elevate shadow-hover-xs transition-all h-100 cursor-pointer" 
+                       title="Click to view course sessions">
+                        <div class="text-teal text-xxs font-bold text-uppercase mb-1" style="font-size: 0.62rem;"><i class="fa-solid fa-user-check text-teal"></i> Sessions</div>
+                        <div class="fw-extrabold text-navy fs-6">{{ learner.attendances|length }}</div>
+                    </a>
                 </div>
+
+                <!-- AWARDS CARD -->
                 <div class="col-4">
-                    <div class="p-2 rounded-3 bg-light border">
-                        <div class="text-muted text-xxs font-bold text-uppercase mb-1" style="font-size: 0.62rem;"><i class="fa-solid fa-award text-teal"></i> Awards</div>
-                        <div class="fw-extrabold text-dark fs-6">{{ learner.certificates|length }}</div>
-                    </div>
+                    <a href="{{ url_for('certificates.learner_certificates') }}" 
+                       class="p-2.5 rounded-3 bg-light border text-center d-block text-decoration-none hover-elevate shadow-hover-xs transition-all h-100 cursor-pointer" 
+                       title="Click to view certificates & awards">
+                        <div class="text-teal text-xxs font-bold text-uppercase mb-1" style="font-size: 0.62rem;"><i class="fa-solid fa-award text-teal"></i> Awards</div>
+                        <div class="fw-extrabold text-navy fs-6">{{ learner.certificates|length }}</div>
+                    </a>
                 </div>
             </div>
 
             <!-- Sidebar Items Container -->
             <div class="sidebar-stats-container d-flex flex-column gap-2 mb-2 text-start" id="sidebarStatsContainer">
-                <!-- Badges -->
-                <div class="p-2.5 rounded-3 bg-light border text-start">
-                    <div class="fw-bold text-dark text-xs text-uppercase mb-2">
-                        <i class="fa-solid fa-medal text-teal me-1"></i> Unlocked Badges ({{ learner.badges|length }})
+                <!-- Clickable Badges Card -->
+                <a href="{{ url_for('certificates.learner_certificates') }}" class="p-2.5 rounded-3 bg-light border text-start d-block text-decoration-none hover-elevate shadow-hover-xs transition-all cursor-pointer" title="Click to view unlocked badges & certificates">
+                    <div class="fw-bold text-dark text-xs text-uppercase mb-2 d-flex align-items-center justify-content-between">
+                        <span><i class="fa-solid fa-medal text-teal me-1"></i> Unlocked Badges ({{ learner.badges|length }})</span>
+                        <i class="fa-solid fa-chevron-right text-muted text-xxs"></i>
                     </div>
                     <div class="d-flex flex-wrap gap-1.5 badge-container">
                         {% for badge in learner.badges %}
@@ -60,14 +71,12 @@
                         <small class="text-muted text-xxs">No badges unlocked yet. Keep learning!</small>
                         {% endfor %}
                     </div>
-                </div>
+                </a>
 
-
-
-                <!-- Support Issue Button -->
-                <div class="mt-3 d-grid">
-                    <button class="btn btn-outline-danger btn-sm rounded-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#raiseIssueModal">
-                        <i class="fa-solid fa-circle-exclamation me-1"></i> Raise an Issue
+                <!-- Support Issue Button Card -->
+                <div class="mt-2 d-grid">
+                    <button class="btn btn-outline-danger btn-sm rounded-3 fw-bold shadow-sm hover-elevate py-2 text-xs d-flex align-items-center justify-content-center gap-1.5" data-bs-toggle="modal" data-bs-target="#raiseIssueModal">
+                        <i class="fa-solid fa-circle-exclamation me-1 fs-6"></i> Raise an Issue
                     </button>
                 </div>
             </div>
@@ -665,14 +674,14 @@
 <!-- Raise support ticket modal -->
 <div class="modal fade" id="raiseIssueModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header bg-danger text-white py-3 px-4">
                 <h6 class="modal-title fw-extrabold" id="raiseIssueModalLabel">
                     <i class="fa-solid fa-circle-exclamation me-1"></i> Raise a Support Issue
                 </h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('learners.raise_issue') }}" method="POST">
+            <form action="{{ url_for('learners.raise_issue') }}" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body p-4">
                     <div class="mb-3">
@@ -688,10 +697,19 @@
                         <label for="issue_description" class="form-label fw-bold text-xs text-uppercase text-muted">Describe your issue</label>
                         <textarea class="form-control rounded-3 text-xs" id="issue_description" name="description" rows="4" placeholder="Please provide clear details so the administrator can resolve this..." required></textarea>
                     </div>
+                    <!-- Upload Media Picture Input -->
+                    <div class="mb-3">
+                        <label for="issue_image" class="form-label fw-bold text-xs text-uppercase text-muted d-flex align-items-center justify-content-between">
+                            <span><i class="fa-solid fa-paperclip me-1 text-teal"></i> Attach Screenshot / Picture</span>
+                            <span class="text-muted text-xxs font-normal">(Optional)</span>
+                        </label>
+                        <input type="file" class="form-control rounded-3 text-xs" id="issue_image" name="image" accept="image/*">
+                        <div class="form-text text-xxs text-muted mt-1">Upload a picture/screenshot (PNG, JPG, WEBP) to help explain your issue.</div>
+                    </div>
                 </div>
-                <div class="modal-footer border-top py-2 px-3">
-                    <button type="button" class="btn btn-sm btn-light border" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-sm btn-danger text-white fw-bold px-3"><i class="fa-solid fa-paper-plane me-1"></i> Submit Ticket</button>
+                <div class="modal-footer border-top py-2 px-3 bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-sm btn-light border rounded-3 text-xs" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-sm btn-danger text-white fw-bold px-3 rounded-3 text-xs shadow-xs"><i class="fa-solid fa-paper-plane me-1"></i> Submit Ticket</button>
                 </div>
             </form>
         </div>

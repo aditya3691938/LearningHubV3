@@ -10,6 +10,7 @@ class LmsIssue(db.Model):
     description = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), nullable=False, default='Open') # 'Open', 'In Progress', 'Deny', 'Resolved'
     admin_comment = db.Column(db.Text, nullable=True)
+    image_path = db.Column(db.String(255), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     resolved_at = db.Column(db.DateTime, nullable=True)
 

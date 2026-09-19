@@ -95,6 +95,14 @@
                         </td>
                         <td class="px-3 py-3 text-wrap" style="max-width: 280px;">
                             <div class="text-dark">{{ issue.description }}</div>
+                            {% if issue.image_path %}
+                            <div class="mt-2">
+                                <small class="text-muted text-xxs fw-bold text-uppercase d-block mb-1"><i class="fa-solid fa-paperclip me-1 text-teal"></i> Attached Media:</small>
+                                <a href="{{ url_for('static', filename=issue.image_path) if not issue.image_path.startswith('http') else issue.image_path }}" target="_blank" class="d-inline-block position-relative rounded-3 overflow-hidden border shadow-xs" title="Click to view full media attachment">
+                                    <img src="{{ url_for('static', filename=issue.image_path) if not issue.image_path.startswith('http') else issue.image_path }}" alt="Attachment" style="max-height: 75px; max-width: 150px; object-fit: cover;" class="rounded-3 hover-zoom">
+                                </a>
+                            </div>
+                            {% endif %}
                             {% if issue.admin_comment %}
                             <div class="mt-1.5 text-xxs text-primary bg-primary-subtle p-2 rounded-3 border border-primary-subtle d-flex align-items-start gap-1">
                                 <i class="fa-solid fa-comment-dots mt-0.5"></i>
@@ -160,6 +168,14 @@
                                                         <span class="badge bg-secondary-subtle text-secondary border px-2 py-0.5 rounded-pill">{{ issue.category }}</span>
                                                     </div>
                                                     <p class="text-muted mb-0 small text-wrap">{{ issue.description }}</p>
+                                                    {% if issue.image_path %}
+                                                    <div class="mt-2.5 pt-2 border-top">
+                                                        <small class="text-muted text-xxs fw-bold text-uppercase d-block mb-1"><i class="fa-solid fa-image me-1 text-teal"></i> Attached Media Screenshot:</small>
+                                                        <a href="{{ url_for('static', filename=issue.image_path) if not issue.image_path.startswith('http') else issue.image_path }}" target="_blank">
+                                                            <img src="{{ url_for('static', filename=issue.image_path) if not issue.image_path.startswith('http') else issue.image_path }}" alt="Attachment" class="img-fluid rounded-3 border shadow-xs" style="max-height: 140px; object-fit: contain;">
+                                                        </a>
+                                                    </div>
+                                                    {% endif %}
                                                 </div>
 
                                                 <!-- Status Selection Radios -->

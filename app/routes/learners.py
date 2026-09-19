@@ -1552,12 +1552,36 @@ def raise_issue():
         flash("Description is required.", "danger")
         return redirect(url_for('learners.my_portal'))
         
+    image_path = None
+    b2_uploaded = request.form.get('b2_uploaded_filename')
+    if b2_uploaded:
+        image_path = f"issues/{b2_uploaded}"
+    else:
+        file = request.files.get('image') or request.files.get('issue_image') or request.files.get('media')
+        if file and file.filename:
+            from app.services.b2_service import upload_file_to_b2
+            from werkzeug.utils import secure_filename
+            import os, uuid
+            filename = secure_filename(file.filename)
+            unique_filename = f"issue_{uuid.uuid4().hex[:8]}_{filename}"
+            uploaded_name = upload_file_to_b2(file, unique_filename, folder='issues', content_type=file.content_type)
+            if uploaded_name:
+                image_path = f"issues/{uploaded_name}"
+            else:
+                from flask import current_app
+                upload_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'issues')
+                os.makedirs(upload_dir, exist_ok=True)
+                local_path = os.path.join(upload_dir, unique_filename)
+                file.save(local_path)
+                image_path = f"uploads/issues/{unique_filename}"
+
     from app.models.issue import LmsIssue
     issue = LmsIssue(
         learner_id=learner_id,
         category=category,
         description=description,
-        status='Open'
+        status='Open',
+        image_path=image_path
     )
     db.session.add(issue)
     db.session.commit()
