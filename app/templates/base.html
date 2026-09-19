@@ -45,16 +45,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
         (function() {
-            if (document.documentElement.hasAttribute('data-theme') && document.documentElement.getAttribute('data-theme')) {
-                return;
-            }
             const savedTheme = localStorage.getItem('theme');
             if (savedTheme) {
                 document.documentElement.setAttribute('data-theme', savedTheme);
-            } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            } else {
-                document.documentElement.setAttribute('data-theme', 'light');
             }
         })();
     </script>
@@ -430,9 +423,37 @@
                 </div>
 
                 <!-- Right Utility Bar -->
-                <div class="d-flex align-items-center gap-2 gap-md-3 flex-shrink-0 ms-auto me-0">
-                    
-                    {% if is_user_logged_in and not is_auth_page %}
+                    <!-- Theme Palette Selector Dropdown -->
+                    <div class="dropdown d-inline-flex align-items-center">
+                        <button type="button" class="btn btn-link text-muted p-1 text-decoration-none dropdown-toggle hide-arrow d-inline-flex align-items-center justify-content-center" id="themeSelectorDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Switch Theme Palette" style="height: 38px; width: 38px; border-radius: 50%;">
+                            <i class="fa-solid fa-palette fs-5 text-teal"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-2 rounded-4 overflow-hidden" aria-labelledby="themeSelectorDropdown" style="min-width: 220px;">
+                            <div class="px-2 py-1.5 text-xs font-monospace text-uppercase text-muted fw-bold border-bottom mb-1">
+                                <i class="fa-solid fa-paintbrush me-1 text-teal"></i> Select Theme Palette
+                            </div>
+                            <button type="button" class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between text-xs fw-semibold" onclick="setAppTheme('light')">
+                                <span><i class="fa-solid fa-sun text-warning me-2"></i> Pristine Light</span>
+                                <span style="background: linear-gradient(135deg, #0D9488, #F2F8F8); width: 14px; height: 14px; border-radius: 50%; border: 1px solid #CBD5E1;"></span>
+                            </button>
+                            <button type="button" class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between text-xs fw-semibold" onclick="setAppTheme('dark')">
+                                <span><i class="fa-solid fa-moon text-info me-2"></i> Midnight Slate</span>
+                                <span style="background: linear-gradient(135deg, #14B8A6, #071214); width: 14px; height: 14px; border-radius: 50%; border: 1px solid #1E3A3E;"></span>
+                            </button>
+                            <button type="button" class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between text-xs fw-semibold" onclick="setAppTheme('cyberpunk')">
+                                <span><i class="fa-solid fa-bolt text-danger me-2"></i> Cyberpunk Neon</span>
+                                <span style="background: linear-gradient(135deg, #FF007F, #00F0FF); width: 14px; height: 14px; border-radius: 50%; border: 1px solid #FF007F;"></span>
+                            </button>
+                            <button type="button" class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between text-xs fw-semibold" onclick="setAppTheme('synthwave')">
+                                <span><i class="fa-solid fa-gem me-2" style="color: #A855F7;"></i> Synthwave Purple</span>
+                                <span style="background: linear-gradient(135deg, #8B5CF6, #F43F5E); width: 14px; height: 14px; border-radius: 50%; border: 1px solid #8B5CF6;"></span>
+                            </button>
+                            <button type="button" class="dropdown-item rounded-3 py-2 px-3 d-flex align-items-center justify-content-between text-xs fw-semibold" onclick="setAppTheme('emerald-dark')">
+                                <span><i class="fa-solid fa-tree me-2" style="color: #10B981;"></i> Dark Emerald</span>
+                                <span style="background: linear-gradient(135deg, #10B981, #041210); width: 14px; height: 14px; border-radius: 50%; border: 1px solid #10B981;"></span>
+                            </button>
+                        </div>
+                    </div>
 
                     {% if learner_id and not admin_logged_in %}
                     <!-- Gamification Points Badge -->
@@ -568,24 +589,26 @@
                                 }
                             });
                         }
+
+                        // Global Theme Switcher Engine
+                        window.setAppTheme = function(themeName) {
+                            document.documentElement.setAttribute('data-theme', themeName);
+                            localStorage.setItem('theme', themeName);
+                            fetch('/learners/set_theme', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRFToken': '{{ csrf_token() }}'
+                                },
+                                body: JSON.stringify({ theme: themeName })
+                            }).catch(function(err) {
+                                console.log("Theme saved locally.");
+                            });
+                        };
+                        window.changeGlobalTheme = window.setAppTheme;
                         </script>
                     </div>
                     {% endif %}
-                    {% endif %}
-
-                    <!-- Themes Switcher Dropdown -->
-                    <div class="dropdown d-inline-flex align-items-center ms-1">
-                        <button class="btn btn-outline-teal btn-sm dropdown-toggle rounded-pill fw-bold d-flex align-items-center px-3" type="button" id="themeDropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false" style="height: 36px;">
-                            <i class="fa-solid fa-palette me-1.5 text-teal"></i> <span class="d-none d-md-inline">Themes</span>
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-1.5" aria-labelledby="themeDropdownMenuButton" style="min-width: 170px;">
-                            <li><button class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2" onclick="changeGlobalTheme('navy')"><span style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #0A4B5C, #00A896); display: inline-block;"></span> Midnight Navy</button></li>
-                            <li><button class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2" onclick="changeGlobalTheme('emerald')"><span style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #1b4d3e, #2ecc71); display: inline-block;"></span> Forest Emerald</button></li>
-                            <li><button class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2" onclick="changeGlobalTheme('sunset')"><span style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #d35400, #f1c40f); display: inline-block;"></span> Sunset Crimson</button></li>
-                            <li><button class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2" onclick="changeGlobalTheme('purple')"><span style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #4a2c6d, #9b59b6); display: inline-block;"></span> Royal Violet</button></li>
-                            <li><button class="dropdown-item rounded-3 py-1.5 text-xs fw-semibold d-flex align-items-center gap-2" onclick="changeGlobalTheme('dark')"><span style="width: 12px; height: 12px; border-radius: 50%; background: linear-gradient(135deg, #212529, #111111); display: inline-block;"></span> Cyberpunk Dark</button></li>
-                        </ul>
-                    </div>
 
                     {% if is_user_logged_in and not is_auth_page %}
                     <!-- Account Dropdown -->
