@@ -157,14 +157,11 @@ def generate_report_dataframe(
     date_from=None, 
     date_to=None, 
     class_id_filter=None, 
-    course_id_filter=None,
-    department_filter=None,
-    status_filter=None,
-    assessment_type_filter=None
+    course_id_filter=None
 ):
     """
     Queries DB based on report_type, builds flat data records,
-    and returns a Pandas DataFrame with selected columns and filters.
+    and returns a Pandas DataFrame with selected columns.
     """
     column_map = get_report_columns(report_type)
     if not selected_columns:
@@ -173,18 +170,18 @@ def generate_report_dataframe(
     sq = (search_query or '').strip().lower()
 
     if report_type == 'lesson':
-        return _generate_lesson_report(selected_columns, sq, mode_filter, date_from, date_to, course_id_filter, department_filter, status_filter)
+        return _generate_lesson_report(selected_columns, sq, mode_filter, date_from, date_to, course_id_filter)
     elif report_type == 'class':
-        return _generate_class_report(selected_columns, sq, mode_filter, date_from, date_to, class_id_filter, course_id_filter, department_filter, status_filter)
+        return _generate_class_report(selected_columns, sq, mode_filter, date_from, date_to, class_id_filter, course_id_filter)
     elif report_type == 'assessment':
-        return _generate_assessment_report(selected_columns, sq, mode_filter, date_from, date_to, course_id_filter, department_filter, status_filter, assessment_type_filter)
+        return _generate_assessment_report(selected_columns, sq, mode_filter, date_from, date_to, course_id_filter)
     elif report_type == 'compliance':
-        return _generate_compliance_report(selected_columns, sq, department_filter)
+        return _generate_compliance_report(selected_columns, sq)
     else:
-        return _generate_master_report(selected_columns, sq, mode_filter, date_from, date_to, class_id_filter, course_id_filter, department_filter, status_filter)
+        return _generate_master_report(selected_columns, sq, mode_filter, date_from, date_to, class_id_filter, course_id_filter)
 
 
-def _generate_master_report(selected_columns, sq, mode_filter, date_from, date_to, class_id_filter, course_id_filter, department_filter, status_filter):
+def _generate_master_report(selected_columns, sq, mode_filter, date_from, date_to, class_id_filter, course_id_filter):
     enrollments = LearnerEnrollment.query.all()
     rows = []
 
@@ -199,30 +196,25 @@ def _generate_master_report(selected_columns, sq, mode_filter, date_from, date_t
         if sq:
             match = (
                 sq in course.name.lower() or
-                sq in (course.course_id or '').lower() or
                 sq in (learner.global_id or '').lower() or
                 sq in (learner.name or '').lower() or
                 sq in (learner.department or '').lower() or
-                (live_cls and (sq in (live_cls.class_name or '').lower() or sq in (live_cls.class_id or '').lower()))
+                (live_cls and sq in (live_cls.class_name or '').lower())
             )
             if not match:
                 continue
 
-        if mode_filter and mode_filter != 'ALL' and course.mode != mode_filter:
-            continue
+        if mode_filter and mode_filter != 'ALL':
+            if course.mode != mode_filter:
+                continue
 
         if course_id_filter and course_id_filter != 'ALL':
-            c_str = str(course_id_filter).strip().lower()
-            if str(course.id).lower() != c_str and (not course.course_id or course.course_id.lower() != c_str):
+            if str(course.id) != str(course_id_filter):
                 continue
 
         if class_id_filter and class_id_filter != 'ALL':
-            cls_str = str(class_id_filter).strip().lower()
-            if not live_cls or (str(live_cls.id).lower() != cls_str and (not live_cls.class_id or live_cls.class_id.lower() != cls_str)):
+            if not live_cls or str(live_cls.id) != str(class_id_filter):
                 continue
-
-        if department_filter and department_filter != 'ALL' and learner.department != department_filter:
-            continue
 
         if date_from and en.assigned_at and en.assigned_at.date() < date_from:
             continue
@@ -233,11 +225,6 @@ def _generate_master_report(selected_columns, sq, mode_filter, date_from, date_t
         if live_cls:
             att = Attendance.query.filter_by(class_id=live_cls.id, learner_id=learner.id).first()
             att_status = att.status if att else 'Absent'
-
-        if status_filter and status_filter != 'ALL':
-            st = status_filter.strip().lower()
-            if st not in (en.completion_status or '').lower() and st not in att_status.lower():
-                continue
 
         pre_attempt = AssessmentAttempt.query.filter_by(enrollment_id=en.id, assessment_type='PRE').order_by(AssessmentAttempt.id.desc()).first()
         post_attempt = AssessmentAttempt.query.filter_by(enrollment_id=en.id, assessment_type='POST').order_by(AssessmentAttempt.id.desc()).first()
@@ -277,7 +264,7 @@ def _generate_master_report(selected_columns, sq, mode_filter, date_from, date_t
     return _format_dataframe(rows, selected_columns, MASTER_COLUMNS)
 
 
-def _generate_lesson_report(selected_columns, sq, mode_filter, date_from, date_to, course_id_filter, department_filter, status_filter):
+def _generate_lesson_report(selected_columns, sq, mode_filter, date_from, date_to, course_id_filter):
     lessons = CourseLesson.query.all()
     rows = []
 
@@ -289,10 +276,8 @@ def _generate_lesson_report(selected_columns, sq, mode_filter, date_from, date_t
         if mode_filter and mode_filter != 'ALL' and course.mode != mode_filter:
             continue
 
-        if course_id_filter and course_id_filter != 'ALL':
-            c_str = str(course_id_filter).strip().lower()
-            if str(course.id).lower() != c_str and (not course.course_id or course.course_id.lower() != c_str):
-                continue
+        if course_id_filter and course_id_filter != 'ALL' and str(course.id) != str(course_id_filter):
+            continue
 
         courseware_items = lesson.courseware or [None]
         enrollments = LearnerEnrollment.query.filter_by(course_id=course.id).all()
@@ -306,13 +291,9 @@ def _generate_lesson_report(selected_columns, sq, mode_filter, date_from, date_t
                 if not learner:
                     continue
 
-                if department_filter and department_filter != 'ALL' and learner.department != department_filter:
-                    continue
-
                 if sq:
                     match = (
                         sq in course.name.lower() or
-                        sq in (course.course_id or '').lower() or
                         sq in lesson.title.lower() or
                         sq in cw_title.lower() or
                         sq in (learner.name or '').lower() or
@@ -344,10 +325,6 @@ def _generate_lesson_report(selected_columns, sq, mode_filter, date_from, date_t
                         if any(b.is_completed for b in blk_prog):
                             rev_status = 'Completed (SCORM)'
 
-                if status_filter and status_filter != 'ALL':
-                    if status_filter.strip().lower() not in rev_status.lower():
-                        continue
-
                 # Check lesson assessments
                 pre_att = AssessmentAttempt.query.filter_by(enrollment_id=en.id, lesson_id=lesson.id, assessment_type='LESSON_PRE').order_by(AssessmentAttempt.id.desc()).first()
                 post_att = AssessmentAttempt.query.filter_by(enrollment_id=en.id, lesson_id=lesson.id, assessment_type='LESSON_POST').order_by(AssessmentAttempt.id.desc()).first()
@@ -373,7 +350,7 @@ def _generate_lesson_report(selected_columns, sq, mode_filter, date_from, date_t
     return _format_dataframe(rows, selected_columns, LESSON_COLUMNS)
 
 
-def _generate_class_report(selected_columns, sq, mode_filter, date_from, date_to, class_id_filter, course_id_filter, department_filter, status_filter):
+def _generate_class_report(selected_columns, sq, mode_filter, date_from, date_to, class_id_filter, course_id_filter):
     classes = LiveClass.query.all()
     rows = []
 
@@ -385,15 +362,11 @@ def _generate_class_report(selected_columns, sq, mode_filter, date_from, date_to
         if mode_filter and mode_filter != 'ALL' and course.mode != mode_filter:
             continue
 
-        if course_id_filter and course_id_filter != 'ALL':
-            c_str = str(course_id_filter).strip().lower()
-            if str(course.id).lower() != c_str and (not course.course_id or course.course_id.lower() != c_str):
-                continue
+        if course_id_filter and course_id_filter != 'ALL' and str(course.id) != str(course_id_filter):
+            continue
 
-        if class_id_filter and class_id_filter != 'ALL':
-            cls_str = str(class_id_filter).strip().lower()
-            if str(live_cls.id).lower() != cls_str and (not live_cls.class_id or live_cls.class_id.lower() != cls_str):
-                continue
+        if class_id_filter and class_id_filter != 'ALL' and str(live_cls.id) != str(class_id_filter):
+            continue
 
         enrollments = LearnerEnrollment.query.filter_by(class_id=live_cls.id).all()
         for en in enrollments:
@@ -401,15 +374,11 @@ def _generate_class_report(selected_columns, sq, mode_filter, date_from, date_to
             if not learner:
                 continue
 
-            if department_filter and department_filter != 'ALL' and learner.department != department_filter:
-                continue
-
             if sq:
                 match = (
                     sq in live_cls.class_name.lower() or
                     sq in (live_cls.class_id or '').lower() or
                     sq in course.name.lower() or
-                    sq in (course.course_id or '').lower() or
                     sq in (learner.name or '').lower() or
                     sq in (learner.global_id or '').lower() or
                     sq in (learner.department or '').lower()
@@ -424,11 +393,6 @@ def _generate_class_report(selected_columns, sq, mode_filter, date_from, date_to
 
             att = Attendance.query.filter_by(class_id=live_cls.id, learner_id=learner.id).first()
             att_status = att.status if att else 'Absent'
-
-            if status_filter and status_filter != 'ALL':
-                if status_filter.strip().lower() not in att_status.lower():
-                    continue
-
             recorded_via = att.recorded_via if att else 'N/A'
             checkin_time = att.timestamp.strftime('%d-%b-%Y %H:%M') if (att and att.timestamp) else 'N/A'
 
@@ -458,7 +422,7 @@ def _generate_class_report(selected_columns, sq, mode_filter, date_from, date_to
     return _format_dataframe(rows, selected_columns, CLASS_COLUMNS)
 
 
-def _generate_assessment_report(selected_columns, sq, mode_filter, date_from, date_to, course_id_filter, department_filter, status_filter, assessment_type_filter):
+def _generate_assessment_report(selected_columns, sq, mode_filter, date_from, date_to, course_id_filter):
     attempts = AssessmentAttempt.query.order_by(AssessmentAttempt.id.desc()).all()
     rows = []
 
@@ -474,26 +438,12 @@ def _generate_assessment_report(selected_columns, sq, mode_filter, date_from, da
         if mode_filter and mode_filter != 'ALL' and course.mode != mode_filter:
             continue
 
-        if course_id_filter and course_id_filter != 'ALL':
-            c_str = str(course_id_filter).strip().lower()
-            if str(course.id).lower() != c_str and (not course.course_id or course.course_id.lower() != c_str):
-                continue
-
-        if department_filter and department_filter != 'ALL' and learner.department != department_filter:
+        if course_id_filter and course_id_filter != 'ALL' and str(course.id) != str(course_id_filter):
             continue
-
-        if assessment_type_filter and assessment_type_filter != 'ALL' and att.assessment_type != assessment_type_filter:
-            continue
-
-        pass_result = 'PASSED' if att.passed else 'FAILED'
-        if status_filter and status_filter != 'ALL':
-            if status_filter.strip().upper() not in pass_result:
-                continue
 
         if sq:
             match = (
                 sq in course.name.lower() or
-                sq in (course.course_id or '').lower() or
                 sq in att.assessment_type.lower() or
                 sq in (learner.name or '').lower() or
                 sq in (learner.global_id or '').lower() or
@@ -521,7 +471,7 @@ def _generate_assessment_report(selected_columns, sq, mode_filter, date_from, da
             'learner_name': learner.name or 'N/A',
             'department': learner.department or 'N/A',
             'score_pct': f"{att.score_percentage}%",
-            'passed': pass_result,
+            'passed': 'PASSED' if att.passed else 'FAILED',
             'attempt_num': f"Attempt #{att.attempt_number}",
             'submitted_at': att.submitted_at.strftime('%d-%b-%Y %H:%M') if att.submitted_at else 'N/A'
         }
@@ -530,18 +480,14 @@ def _generate_assessment_report(selected_columns, sq, mode_filter, date_from, da
     return _format_dataframe(rows, selected_columns, ASSESSMENT_COLUMNS)
 
 
-def _generate_compliance_report(selected_columns, sq, department_filter):
+def _generate_compliance_report(selected_columns, sq):
     learners = Learner.query.all()
     dept_map = {}
 
     for l in learners:
         d = l.department or 'General L&D'
-        if department_filter and department_filter != 'ALL' and d != department_filter:
-            continue
-
         if sq and sq not in d.lower():
             continue
-
         if d not in dept_map:
             dept_map[d] = {
                 'total_learners': 0,
