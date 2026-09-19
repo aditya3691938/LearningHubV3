@@ -17,11 +17,11 @@
         </div>
         
         <div class="d-flex align-items-center gap-2 flex-wrap w-100 w-md-auto">
-            {% if records %}
-            <a href="{{ url_for('reports.export_csv', type=report_type, search=search_query, mode=mode_filter, cols=selected_cols, date_from=date_from_str, date_to=date_to_str, course_id=course_filter, class_id=class_filter) }}" class="btn btn-success text-white btn-sm fw-bold px-3.5 py-2 rounded-pill shadow-xs flex-grow-1 flex-md-grow-0">
-                <i class="fa-solid fa-file-csv me-1.5"></i> Export CSV
+            {% if total_records > 0 %}
+            <a href="{{ url_for('reports.export_csv', type=report_type, search=search_query, mode=mode_filter, cols=selected_cols, date_from=date_from_str, date_to=date_to_str, course_id=course_filter, class_id=class_filter, department=department_filter, status=status_filter, assessment_type=assessment_type_filter) }}" class="btn btn-success text-white btn-sm fw-bold px-3.5 py-2 rounded-pill shadow-xs flex-grow-1 flex-md-grow-0">
+                <i class="fa-solid fa-file-csv me-1.5"></i> Export CSV ({{ total_records }})
             </a>
-            <a href="{{ url_for('reports.export_pdf', type=report_type, search=search_query, mode=mode_filter, cols=selected_cols, date_from=date_from_str, date_to=date_to_str, course_id=course_filter, class_id=class_filter) }}" class="btn btn-danger text-white btn-sm fw-bold px-3.5 py-2 rounded-pill shadow-xs flex-grow-1 flex-md-grow-0">
+            <a href="{{ url_for('reports.export_pdf', type=report_type, search=search_query, mode=mode_filter, cols=selected_cols, date_from=date_from_str, date_to=date_to_str, course_id=course_filter, class_id=class_filter, department=department_filter, status=status_filter, assessment_type=assessment_type_filter) }}" class="btn btn-danger text-white btn-sm fw-bold px-3.5 py-2 rounded-pill shadow-xs flex-grow-1 flex-md-grow-0">
                 <i class="fa-solid fa-file-pdf me-1.5"></i> Export Summary PDF
             </a>
             {% endif %}
@@ -86,7 +86,7 @@
     <div class="card border-0 shadow-sm mb-4 rounded-4 p-2">
         <div class="d-flex align-items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
             {% for key, name in report_types.items() %}
-            <a href="{{ url_for('reports.index', type=key, search=search_query, mode=mode_filter, date_from=date_from_str, date_to=date_to_str, course_id=course_filter, class_id=class_filter) }}" 
+            <a href="{{ url_for('reports.index', type=key, search=search_query, mode=mode_filter, date_from=date_from_str, date_to=date_to_str, course_id=course_filter, class_id=class_filter, department=department_filter, status=status_filter, assessment_type=assessment_type_filter, per_page=per_page) }}" 
                class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold text-nowrap {% if report_type == key %}btn-teal text-white{% else %}btn-light text-muted border{% endif %}">
                 {% if key == 'master' %}<i class="fa-solid fa-table-list me-1.5"></i>
                 {% elif key == 'lesson' %}<i class="fa-solid fa-book-open-reader me-1.5"></i>
@@ -105,11 +105,145 @@
         <form method="GET" action="{{ url_for('reports.index') }}" id="reportsFilterForm">
             <input type="hidden" name="type" value="{{ report_type }}">
             
-            <!-- Column Selection Area -->
+            <!-- Quick Search Option Bar -->
             <div class="mb-3">
+                <label class="form-label fw-bold text-dark text-xs text-uppercase tracking-wider mb-1">
+                    <i class="fa-solid fa-magnifying-glass text-teal me-1"></i> Quick Search Option (Course Name, Course ID, Class Code, Learner ID, Name):
+                </label>
+                <div class="position-relative">
+                    <div class="ls-search-box w-100">
+                        <i class="fa-solid fa-search ls-search-icon"></i>
+                        <input type="text" name="search" id="reportSearchInput" class="ls-search-input py-2.5" 
+                               placeholder="Type Course ID (e.g. CRS-101), Class Code (e.g. CLS-202), Learner ID (e.g. LRN-100), Course Name, Learner Name..." 
+                               value="{{ search_query }}">
+                        {% if search_query %}
+                        <a href="{{ url_for('reports.index', type=report_type, mode=mode_filter, course_id=course_filter, class_id=class_filter, department=department_filter, status=status_filter, assessment_type=assessment_type_filter, date_from=date_from_str, date_to=date_to_str, cols=selected_cols, per_page=per_page) }}" 
+                           class="ls-search-clear text-muted me-2" title="Clear Search">
+                            <i class="fa-solid fa-xmark fs-6"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flexible Multi-Attribute Filters Grid -->
+            <div class="row g-3 align-items-end mb-3">
+                <!-- Filter by Course (Course Name / Course ID) -->
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Course Filter</label>
+                    <select name="course_id" class="form-select form-select-sm rounded-3">
+                        <option value="ALL" {% if course_filter == 'ALL' %}selected{% endif %}>-- All Courses --</option>
+                        {% for c in courses %}
+                        <option value="{{ c.id }}" {% if course_filter == c.id|string or course_filter == c.course_id %}selected{% endif %}>
+                            {{ c.name }} {% if c.course_id %}({{ c.course_id }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Filter by Class Batch (Class Name / Class Code) -->
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Class / Cohort Batch</label>
+                    <select name="class_id" class="form-select form-select-sm rounded-3">
+                        <option value="ALL" {% if class_filter == 'ALL' %}selected{% endif %}>-- All Class Batches --</option>
+                        {% for cls in classes %}
+                        <option value="{{ cls.id }}" {% if class_filter == cls.id|string or class_filter == cls.class_id %}selected{% endif %}>
+                            {{ cls.class_name }} {% if cls.class_id %}({{ cls.class_id }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Department Filter -->
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Department</label>
+                    <select name="department" class="form-select form-select-sm rounded-3">
+                        <option value="ALL" {% if department_filter == 'ALL' %}selected{% endif %}>-- All Departments --</option>
+                        {% for d in departments %}
+                        <option value="{{ d }}" {% if department_filter == d %}selected{% endif %}>{{ d }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Course Mode Filter -->
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Delivery Mode</label>
+                    <select name="mode" class="form-select form-select-sm rounded-3">
+                        <option value="ALL" {% if mode_filter == 'ALL' %}selected{% endif %}>All Delivery Modes</option>
+                        <option value="Live" {% if mode_filter == 'Live' %}selected{% endif %}>Live Classes Only</option>
+                        <option value="Self Paced" {% if mode_filter == 'Self Paced' %}selected{% endif %}>Self Paced Only</option>
+                    </select>
+                </div>
+
+                <!-- Status / Result Attribute Filter -->
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Status / Result</label>
+                    <select name="status" class="form-select form-select-sm rounded-3">
+                        <option value="ALL" {% if status_filter == 'ALL' %}selected{% endif %}>All Statuses</option>
+                        <option value="Completed" {% if status_filter == 'Completed' %}selected{% endif %}>Completed / Reviewed</option>
+                        <option value="In Progress" {% if status_filter == 'In Progress' %}selected{% endif %}>In Progress / Pending</option>
+                        <option value="Present" {% if status_filter == 'Present' %}selected{% endif %}>Present (Attendance)</option>
+                        <option value="Absent" {% if status_filter == 'Absent' %}selected{% endif %}>Absent (Attendance)</option>
+                        <option value="PASSED" {% if status_filter == 'PASSED' %}selected{% endif %}>PASSED (Exam)</option>
+                        <option value="FAILED" {% if status_filter == 'FAILED' %}selected{% endif %}>FAILED (Exam)</option>
+                    </select>
+                </div>
+
+                <!-- Assessment Type Filter (Conditional / Available) -->
+                {% if report_type in ['master', 'assessment'] %}
+                <div class="col-12 col-sm-6 col-md-3">
+                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Assessment Type</label>
+                    <select name="assessment_type" class="form-select form-select-sm rounded-3">
+                        <option value="ALL" {% if assessment_type_filter == 'ALL' %}selected{% endif %}>All Exam Types</option>
+                        <option value="PRE" {% if assessment_type_filter == 'PRE' %}selected{% endif %}>Pre Assessment</option>
+                        <option value="POST" {% if assessment_type_filter == 'POST' %}selected{% endif %}>Post Assessment</option>
+                        <option value="LESSON_PRE" {% if assessment_type_filter == 'LESSON_PRE' %}selected{% endif %}>Lesson Pre-Quiz</option>
+                        <option value="LESSON_POST" {% if assessment_type_filter == 'LESSON_POST' %}selected{% endif %}>Lesson Post-Quiz</option>
+                        <option value="COURSE_END" {% if assessment_type_filter == 'COURSE_END' %}selected{% endif %}>Course End Final Exam</option>
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Date Range From & To -->
+                <div class="col-6 col-md-3">
+                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Date From</label>
+                    <input type="date" name="date_from" class="form-control form-control-sm rounded-3" value="{{ date_from_str }}">
+                </div>
+
+                <div class="col-6 col-md-3">
+                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Date To</label>
+                    <input type="date" name="date_to" class="form-control form-control-sm rounded-3" value="{{ date_to_str }}">
+                </div>
+
+                <!-- Per Page selector -->
+                <div class="col-6 col-md-3">
+                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Records Per Page</label>
+                    <select name="per_page" class="form-select form-select-sm rounded-3" onchange="this.form.submit()">
+                        <option value="10" {% if per_page == 10 %}selected{% endif %}>10 per page</option>
+                        <option value="25" {% if per_page == 25 %}selected{% endif %}>25 per page</option>
+                        <option value="50" {% if per_page == 50 %}selected{% endif %}>50 per page</option>
+                        <option value="100" {% if per_page == 100 %}selected{% endif %}>100 per page</option>
+                        <option value="250" {% if per_page == 250 %}selected{% endif %}>250 per page</option>
+                        <option value="0" {% if per_page == 0 %}selected{% endif %}>All Records (No Pagination)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-2 border-top">
+                <a href="{{ url_for('reports.index', type=report_type) }}" class="btn btn-sm btn-light text-muted border rounded-pill px-3 fw-bold">
+                    <i class="fa-solid fa-rotate-left me-1"></i> Reset Filters
+                </a>
+                
+                <button type="submit" class="btn btn-teal text-white btn-sm fw-bold px-4 py-2 rounded-pill shadow-xs ms-auto">
+                    <i class="fa-solid fa-filter me-1.5"></i> Apply Filters & Generate Report
+                </button>
+            </div>
+
+            <!-- Column Selection Area -->
+            <div class="mt-4 pt-3 border-top">
                 <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
                     <label class="form-label fw-bold text-dark mb-0 text-xs text-uppercase tracking-wider">
-                        <i class="fa-solid fa-columns text-teal me-1"></i> Visible Report Columns ({{ selected_cols|length }} Selected):
+                        <i class="fa-solid fa-columns text-teal me-1"></i> Visible Attributes / Columns ({{ selected_cols|length }} Selected):
                     </label>
                     <button type="button" class="btn btn-xs btn-outline-teal rounded-pill px-3 fw-bold" id="toggleSelectColsBtn">
                         <i class="fa-solid fa-check-double me-1" id="toggleSelectColsIcon"></i>
@@ -129,83 +263,71 @@
                     {% endfor %}
                 </div>
             </div>
-
-            <hr class="my-3 opacity-25">
-
-            <!-- Filter Inputs Grid -->
-            <div class="row g-3 align-items-end">
-                <div class="col-12 col-md-4">
-                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Search Keyword</label>
-                    <div class="ls-search-box">
-                        <i class="fa-solid fa-magnifying-glass ls-search-icon"></i>
-                        <input type="text" name="search" class="ls-search-input" placeholder="Search learner, course, lesson, or department..." value="{{ search_query }}">
-                    </div>
-                </div>
-                
-                <div class="col-6 col-md-2">
-                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Course Mode</label>
-                    <select name="mode" class="form-select form-select-sm rounded-3">
-                        <option value="ALL" {% if mode_filter == 'ALL' %}selected{% endif %}>All Modes</option>
-                        <option value="Live" {% if mode_filter == 'Live' %}selected{% endif %}>Live Classes Only</option>
-                        <option value="Self Paced" {% if mode_filter == 'Self Paced' %}selected{% endif %}>Self Paced Only</option>
-                    </select>
-                </div>
-
-                <div class="col-6 col-md-3">
-                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Filter by Course</label>
-                    <select name="course_id" class="form-select form-select-sm rounded-3">
-                        <option value="ALL" {% if course_filter == 'ALL' %}selected{% endif %}>All Courses</option>
-                        {% for c in courses %}
-                        <option value="{{ c.id }}" {% if course_filter == c.id|string %}selected{% endif %}>{{ c.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-6 col-md-3">
-                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Filter by Class Batch</label>
-                    <select name="class_id" class="form-select form-select-sm rounded-3">
-                        <option value="ALL" {% if class_filter == 'ALL' %}selected{% endif %}>All Batches</option>
-                        {% for cls in classes %}
-                        <option value="{{ cls.id }}" {% if class_filter == cls.id|string %}selected{% endif %}>{{ cls.class_name }} ({{ cls.class_id }})</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-6 col-md-3">
-                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Date From</label>
-                    <input type="date" name="date_from" class="form-control form-control-sm rounded-3" value="{{ date_from_str }}">
-                </div>
-
-                <div class="col-6 col-md-3">
-                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Date To</label>
-                    <input type="date" name="date_to" class="form-control form-control-sm rounded-3" value="{{ date_to_str }}">
-                </div>
-
-                <div class="col-12 col-md-6">
-                    <button type="submit" class="btn btn-teal text-white btn-sm fw-bold w-100 py-2.5 rounded-pill shadow-xs">
-                        <i class="fa-solid fa-sync me-1.5"></i> Apply Filters & Generate Report
-                    </button>
-                </div>
-            </div>
         </form>
     </div>
 
-    <!-- Results Count Header -->
-    <div class="d-flex align-items-center justify-content-between mb-3 px-1">
+    <!-- Results Bar & Pagination Header -->
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between mb-3 px-1 gap-2">
         <div class="text-muted text-xs fw-bold">
-            <i class="fa-solid fa-list-check text-teal me-1.5"></i> Displaying <strong>{{ records|length }}</strong> report records matching criteria
+            <i class="fa-solid fa-list-check text-teal me-1.5"></i>
+            {% if total_records > 0 %}
+            Showing records <strong>{{ start_record }}</strong> – <strong>{{ end_record }}</strong> of <strong>{{ total_records }}</strong> matching criteria
+            {% else %}
+            No records found
+            {% endif %}
         </div>
-        <span class="badge bg-light text-muted border px-2.5 py-1.5 rounded-pill text-xxs">
-            Report View: {{ report_types.get(report_type, 'Master') }}
-        </span>
+        
+        {% if total_pages > 1 %}
+        <!-- Pagination Controls -->
+        <nav aria-label="Report pagination">
+            <ul class="pagination pagination-sm mb-0 flex-wrap">
+                <!-- First & Prev -->
+                <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                    <a class="page-link rounded-start-pill" href="{{ url_for('reports.index', type=report_type, search=search_query, mode=mode_filter, course_id=course_filter, class_id=class_filter, department=department_filter, status=status_filter, assessment_type=assessment_type_filter, date_from=date_from_str, date_to=date_to_str, cols=selected_cols, per_page=per_page, page=1) }}" aria-label="First">
+                        <i class="fa-solid fa-angles-left"></i>
+                    </a>
+                </li>
+                <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('reports.index', type=report_type, search=search_query, mode=mode_filter, course_id=course_filter, class_id=class_filter, department=department_filter, status=status_filter, assessment_type=assessment_type_filter, date_from=date_from_str, date_to=date_to_str, cols=selected_cols, per_page=per_page, page=page-1) }}" aria-label="Previous">
+                        <i class="fa-solid fa-chevron-left me-1"></i> Prev
+                    </a>
+                </li>
+
+                <!-- Page Number Buttons -->
+                {% set start_p = page - 2 if page - 2 > 0 else 1 %}
+                {% set end_p = page + 2 if page + 2 <= total_pages else total_pages %}
+                {% for p in range(start_p, end_p + 1) %}
+                <li class="page-item {% if p == page %}active{% endif %}">
+                    <a class="page-link {% if p == page %}bg-teal border-teal text-white fw-bold{% endif %}" 
+                       href="{{ url_for('reports.index', type=report_type, search=search_query, mode=mode_filter, course_id=course_filter, class_id=class_filter, department=department_filter, status=status_filter, assessment_type=assessment_type_filter, date_from=date_from_str, date_to=date_to_str, cols=selected_cols, per_page=per_page, page=p) }}">
+                        {{ p }}
+                    </a>
+                </li>
+                {% endfor %}
+
+                <!-- Next & Last -->
+                <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('reports.index', type=report_type, search=search_query, mode=mode_filter, course_id=course_filter, class_id=class_filter, department=department_filter, status=status_filter, assessment_type=assessment_type_filter, date_from=date_from_str, date_to=date_to_str, cols=selected_cols, per_page=per_page, page=page+1) }}" aria-label="Next">
+                        Next <i class="fa-solid fa-chevron-right ms-1"></i>
+                    </a>
+                </li>
+                <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                    <a class="page-link rounded-end-pill" href="{{ url_for('reports.index', type=report_type, search=search_query, mode=mode_filter, course_id=course_filter, class_id=class_filter, department=department_filter, status=status_filter, assessment_type=assessment_type_filter, date_from=date_from_str, date_to=date_to_str, cols=selected_cols, per_page=per_page, page=total_pages) }}" aria-label="Last">
+                        <i class="fa-solid fa-angles-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
     </div>
 
     <!-- Report Results Table Card -->
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0 text-sm">
                 <thead class="bg-light text-teal">
                     <tr>
+                        <th class="py-3 px-3 text-nowrap font-monospace text-xs text-uppercase" style="width: 40px;">#</th>
                         {% for h in headers %}
                         <th class="py-3 px-3 text-nowrap font-monospace text-xs text-uppercase">{{ h }}</th>
                         {% endfor %}
@@ -214,6 +336,7 @@
                 <tbody>
                     {% for row in records %}
                     <tr>
+                        <td class="py-2.5 px-3 text-muted text-xs font-monospace">{{ start_record + loop.index0 }}</td>
                         {% for h in headers %}
                         {% set cell_val = row[h]|string %}
                         <td data-label="{{ h }}" class="py-2.5 px-3">
@@ -237,12 +360,15 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="{{ headers|length if headers else 1 }}" class="text-center py-5">
+                        <td colspan="{{ headers|length + 1 if headers else 1 }}" class="text-center py-5">
                             <div class="avatar-lg bg-teal-subtle text-teal rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;">
                                 <i class="fa-solid fa-file-excel fs-3"></i>
                             </div>
-                            <h6 class="fw-bold text-dark">No records found matching filters</h6>
+                            <h6 class="fw-bold text-dark">No records found matching current filters</h6>
                             <p class="text-muted text-xs">Try modifying keyword search, adjusting date bounds, or selecting another report type tab.</p>
+                            <a href="{{ url_for('reports.index', type=report_type) }}" class="btn btn-sm btn-teal text-white rounded-pill px-3 fw-bold">
+                                <i class="fa-solid fa-rotate-left me-1"></i> Reset All Filters
+                            </a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -250,6 +376,29 @@
             </table>
         </div>
     </div>
+
+    {% if total_pages > 1 %}
+    <!-- Bottom Pagination Footer -->
+    <div class="d-flex flex-column flex-md-row align-items-center justify-content-between gap-2 px-1 mb-4">
+        <div class="text-muted text-xs">
+            Page <strong>{{ page }}</strong> of <strong>{{ total_pages }}</strong> (Total <strong>{{ total_records }}</strong> items)
+        </div>
+        <nav aria-label="Bottom report pagination">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                    <a class="page-link rounded-start-pill" href="{{ url_for('reports.index', type=report_type, search=search_query, mode=mode_filter, course_id=course_filter, class_id=class_filter, department=department_filter, status=status_filter, assessment_type=assessment_type_filter, date_from=date_from_str, date_to=date_to_str, cols=selected_cols, per_page=per_page, page=page-1) }}">
+                        <i class="fa-solid fa-chevron-left me-1"></i> Prev
+                    </a>
+                </li>
+                <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                    <a class="page-link rounded-end-pill" href="{{ url_for('reports.index', type=report_type, search=search_query, mode=mode_filter, course_id=course_filter, class_id=class_filter, department=department_filter, status=status_filter, assessment_type=assessment_type_filter, date_from=date_from_str, date_to=date_to_str, cols=selected_cols, per_page=per_page, page=page+1) }}">
+                        Next <i class="fa-solid fa-chevron-right ms-1"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
 
