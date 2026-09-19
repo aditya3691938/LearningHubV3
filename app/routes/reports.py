@@ -1,6 +1,13 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, send_file
 from datetime import date
-from app.services.report_service import generate_report_dataframe, export_report_csv, ALL_REPORT_COLUMNS
+from app.services.report_service import (
+    generate_report_dataframe, 
+    export_report_csv, 
+    export_report_pdf,
+    get_report_columns, 
+    get_report_summary_stats,
+    REPORT_TYPES
+)
 from app.utils.decorators import admin_required
 
 reports_bp = Blueprint('reports', __name__)
@@ -8,6 +15,9 @@ reports_bp = Blueprint('reports', __name__)
 @reports_bp.route('/')
 @admin_required
 def index():
+    report_type = request.args.get('type', 'master').strip().lower()
+    if report_type not in REPORT_TYPES:
+        report_type = 'master'
 
     search_query = request.args.get('search', '').strip()
     mode_filter = request.args.get('mode', 'ALL').strip()
@@ -27,10 +37,12 @@ def index():
     except ValueError:
         pass
 
+    available_columns = get_report_columns(report_type)
     if not selected_cols:
-        selected_cols = list(ALL_REPORT_COLUMNS.keys())
+        selected_cols = list(available_columns.keys())
 
     df = generate_report_dataframe(
+        report_type=report_type,
         selected_columns=selected_cols, 
         search_query=search_query, 
         mode_filter=mode_filter, 
@@ -43,6 +55,8 @@ def index():
     records = df.to_dict(orient='records')
     headers = list(df.columns)
 
+    summary_stats = get_report_summary_stats()
+
     from app.models.course import Course
     from app.models.live_class import LiveClass
     courses = Course.query.order_by(Course.name).all()
@@ -50,10 +64,13 @@ def index():
 
     return render_template(
         'reports/index.html',
-        all_columns=ALL_REPORT_COLUMNS,
+        report_type=report_type,
+        report_types=REPORT_TYPES,
+        all_columns=available_columns,
         selected_cols=selected_cols,
         headers=headers,
         records=records,
+        summary_stats=summary_stats,
         search_query=search_query,
         mode_filter=mode_filter,
         date_from_str=date_from_str,
@@ -68,6 +85,10 @@ def index():
 @reports_bp.route('/export_csv')
 @admin_required
 def export_csv():
+    report_type = request.args.get('type', 'master').strip().lower()
+    if report_type not in REPORT_TYPES:
+        report_type = 'master'
+
     search_query = request.args.get('search', '').strip()
     mode_filter = request.args.get('mode', 'ALL').strip()
     selected_cols = request.args.getlist('cols')
@@ -86,10 +107,12 @@ def export_csv():
     except ValueError:
         pass
 
+    available_columns = get_report_columns(report_type)
     if not selected_cols:
-        selected_cols = list(ALL_REPORT_COLUMNS.keys())
+        selected_cols = list(available_columns.keys())
 
     df = generate_report_dataframe(
+        report_type=report_type,
         selected_columns=selected_cols, 
         search_query=search_query, 
         mode_filter=mode_filter, 
@@ -100,9 +123,65 @@ def export_csv():
     )
     csv_buffer = export_report_csv(df)
 
+    filename = f"Aditya_LND_{report_type.capitalize()}_Report.csv"
+
     return send_file(
         csv_buffer,
         mimetype='text/csv',
         as_attachment=True,
-        download_name='Aditya_LND_Report.csv'
+        download_name=filename
+    )
+
+
+@reports_bp.route('/export_pdf')
+@admin_required
+def export_pdf():
+    report_type = request.args.get('type', 'master').strip().lower()
+    if report_type not in REPORT_TYPES:
+        report_type = 'master'
+
+    search_query = request.args.get('search', '').strip()
+    mode_filter = request.args.get('mode', 'ALL').strip()
+    selected_cols = request.args.getlist('cols')
+    date_from_str = request.args.get('date_from', '').strip()
+    date_to_str = request.args.get('date_to', '').strip()
+    course_filter = request.args.get('course_id', 'ALL').strip()
+    class_filter = request.args.get('class_id', 'ALL').strip()
+
+    date_from = None
+    date_to = None
+    try:
+        if date_from_str:
+            date_from = date.fromisoformat(date_from_str)
+        if date_to_str:
+            date_to = date.fromisoformat(date_to_str)
+    except ValueError:
+        pass
+
+    available_columns = get_report_columns(report_type)
+    if not selected_cols:
+        selected_cols = list(available_columns.keys())
+
+    df = generate_report_dataframe(
+        report_type=report_type,
+        selected_columns=selected_cols, 
+        search_query=search_query, 
+        mode_filter=mode_filter, 
+        date_from=date_from, 
+        date_to=date_to,
+        course_id_filter=course_filter,
+        class_id_filter=class_filter
+    )
+
+    summary_stats = get_report_summary_stats()
+    report_title = REPORT_TYPES.get(report_type, "Analytics Report")
+    pdf_buffer = export_report_pdf(df, report_title=report_title, report_type=report_type, summary_stats=summary_stats)
+
+    filename = f"Aditya_LND_{report_type.capitalize()}_Report.pdf"
+
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=filename
     )
