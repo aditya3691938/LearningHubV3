@@ -4,104 +4,173 @@
 
 {% block public_content %}
 <div class="container-fluid px-2 px-md-4 py-3">
-    <!-- Catalog Header -->
-    <div class="card card-gradient-teal border-0 shadow-sm p-4 mb-4 rounded-4 position-relative overflow-hidden" style="background: linear-gradient(135deg, #0D9488 0%, #06B6D4 100%);">
+    <!-- Catalog Header Banner -->
+    <div class="card catalog-hero-card p-4 p-md-5 mb-4 position-relative">
         <div class="position-relative z-index-2 text-white">
-            <span class="badge bg-white-50 text-white text-uppercase font-monospace mb-2 px-3 py-1.5 rounded-pill shadow-xs">
-                <i class="fa-solid fa-graduation-cap me-1"></i> Catalog Repository
-            </span>
-            <h2 class="fw-bold mb-1"><i class="fa-solid fa-layer-group me-2"></i> L&D Course Catalog</h2>
-            <p class="mb-0 text-white-50">Browse all available internal training materials, certification programs, and live cohorts.</p>
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                    <span class="badge catalog-hero-badge text-uppercase mb-2 px-3 py-1.5 rounded-pill shadow-xs">
+                        <i class="fa-solid fa-graduation-cap me-1.5"></i> Learning Repository
+                    </span>
+                    <h2 class="catalog-hero-title mb-2 fs-2"><i class="fa-solid fa-layer-group me-2 text-cyan-light"></i> L&D Course Catalog</h2>
+                    <p class="mb-0 text-white-50 fs-6 max-w-xl">Explore our curated collection of skill development modules, live expert cohorts, and self-paced certification courses.</p>
+                </div>
+                
+                {% if stats %}
+                <div class="d-flex align-items-center gap-2.5 flex-wrap">
+                    <div class="catalog-stat-chip text-center">
+                        <div class="catalog-stat-val">{{ stats.total }}</div>
+                        <div class="catalog-stat-lbl">Available</div>
+                    </div>
+                    <div class="catalog-stat-chip text-center">
+                        <div class="catalog-stat-val">{{ stats.self_paced }}</div>
+                        <div class="catalog-stat-lbl">Self-Paced</div>
+                    </div>
+                    <div class="catalog-stat-chip text-center">
+                        <div class="catalog-stat-val">{{ stats.live }}</div>
+                        <div class="catalog-stat-lbl">Live Classes</div>
+                    </div>
+                    <div class="catalog-stat-chip text-center">
+                        <div class="catalog-stat-val">{{ stats.enrolled }}</div>
+                        <div class="catalog-stat-lbl">Enrolled</div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
     <!-- Search & Filters Toolbar -->
-    <div class="card border-0 shadow-sm p-3 mb-4 rounded-4">
-        <form method="GET" action="{{ url_for('learners.catalog') }}">
+    <div class="card catalog-toolbar-card p-3.5 mb-4">
+        <form method="GET" action="{{ url_for('learners.catalog') }}" id="catalogSearchForm">
             <div class="row g-3 align-items-center">
                 <!-- Search bar -->
                 <div class="col-12 col-lg-6">
                     <div class="ls-search-box">
                         <i class="fa-solid fa-magnifying-glass ls-search-icon"></i>
-                        <input type="text" name="search" class="ls-search-input" placeholder="Search by course name or tags..." value="{{ search_query }}">
+                        <input type="text" name="search" class="ls-search-input" placeholder="Search by course title, skills, or tags..." value="{{ search_query }}" id="searchInput">
+                        {% if search_query %}
+                        <a href="{{ url_for('learners.catalog', mode=mode_filter) }}" class="position-absolute end-0 top-50 translate-middle-y me-3 text-muted text-decoration-none hover-teal" title="Clear Search">
+                            <i class="fa-solid fa-circle-xmark fs-6"></i>
+                        </a>
+                        {% endif %}
                     </div>
                 </div>
-                <!-- Mode filter -->
+                
+                <!-- Mode filter pills -->
                 <div class="col-12 col-sm-8 col-lg-4">
-                    <div class="d-flex align-items-center gap-1.5">
-                        <a href="{{ url_for('learners.catalog', search=search_query, mode='ALL') }}" class="btn btn-sm {% if mode_filter == 'ALL' %}btn-teal text-white{% else %}btn-light border{% endif %} rounded-pill px-3 fw-bold">All Modes</a>
-                        <a href="{{ url_for('learners.catalog', search=search_query, mode='Self Paced') }}" class="btn btn-sm {% if mode_filter == 'Self Paced' %}btn-teal text-white{% else %}btn-light border{% endif %} rounded-pill px-3 fw-bold">Self Paced</a>
-                        <a href="{{ url_for('learners.catalog', search=search_query, mode='Live') }}" class="btn btn-sm {% if mode_filter == 'Live' %}btn-teal text-white{% else %}btn-light border{% endif %} rounded-pill px-3 fw-bold">Live Classes</a>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <a href="{{ url_for('learners.catalog', search=search_query, mode='ALL') }}" class="catalog-mode-pill {% if mode_filter == 'ALL' %}active{% endif %}">
+                            <i class="fa-solid fa-border-all me-1"></i> All Modes
+                        </a>
+                        <a href="{{ url_for('learners.catalog', search=search_query, mode='Self Paced') }}" class="catalog-mode-pill {% if mode_filter == 'Self Paced' %}active{% endif %}">
+                            <i class="fa-solid fa-laptop-code me-1"></i> Self Paced
+                        </a>
+                        <a href="{{ url_for('learners.catalog', search=search_query, mode='Live') }}" class="catalog-mode-pill {% if mode_filter == 'Live' %}active{% endif %}">
+                            <i class="fa-solid fa-users me-1"></i> Live Classes
+                        </a>
                     </div>
                 </div>
-                <!-- Submit -->
+                
+                <!-- Action Button -->
                 <div class="col-12 col-sm-4 col-lg-2">
-                    <button type="submit" class="btn btn-navy text-white btn-sm fw-bold w-100 py-2 rounded-3 shadow-xs">
-                        <i class="fa-solid fa-filter me-1"></i> Apply Filter
+                    <button type="submit" class="btn btn-teal text-white btn-sm fw-bold w-100 py-2.5 rounded-pill shadow-xs">
+                        <i class="fa-solid fa-filter me-1.5"></i> Apply Filter
                     </button>
                 </div>
             </div>
         </form>
     </div>
 
+    <!-- Active Filter Summary Bar -->
+    {% if search_query or mode_filter != 'ALL' %}
+    <div class="catalog-active-filter-bar mb-4">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="text-muted fw-semibold me-1"><i class="fa-solid fa-sliders me-1 text-teal"></i> Active Filters:</span>
+            {% if search_query %}
+            <span class="badge bg-teal-subtle text-teal border px-2.5 py-1.5 rounded-pill">
+                Keyword: "{{ search_query }}"
+            </span>
+            {% endif %}
+            {% if mode_filter != 'ALL' %}
+            <span class="badge bg-teal-subtle text-teal border px-2.5 py-1.5 rounded-pill">
+                Mode: {{ mode_filter }}
+            </span>
+            {% endif %}
+        </div>
+        <a href="{{ url_for('learners.catalog') }}" class="text-teal text-decoration-none fw-bold text-xs hover-underline">
+            <i class="fa-solid fa-rotate-left me-1"></i> Reset All Filters
+        </a>
+    </div>
+    {% endif %}
+
     <!-- Catalog Course Grid -->
     <div class="row g-4">
         {% for item in course_cards %}
         {% set c = item.course %}
         <div class="col-12 col-md-6 col-lg-4 col-xl-3">
-            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden course-card position-relative transition-all" style="transition: transform 0.2s ease;">
-                <div class="position-relative">
+            <div class="card h-100 course-card">
+                <!-- Media Container -->
+                <div class="catalog-card-media">
+                    <div class="catalog-card-media-overlay"></div>
                     {% if c.thumbnail_filename %}
-                    <img src="{{ get_b2_url(c.thumbnail_filename, folder='thumbnails') }}" class="card-img-top object-fit-cover" style="height: 150px;" alt="{{ c.name }}">
+                    <img src="{{ get_b2_url(c.thumbnail_filename, folder='thumbnails') }}" class="card-img-top" alt="{{ c.name }}">
                     {% else %}
-                    <div class="bg-teal-subtle text-teal d-flex align-items-center justify-content-center" style="height: 150px; font-size: 3rem;">
-                        <i class="fa-solid {% if c.mode != 'Self Paced' %}fa-users{% else %}fa-laptop-code{% endif %}"></i>
+                    <div class="catalog-fallback-media">
+                        <i class="fa-solid {% if c.mode != 'Self Paced' %}fa-users-rectangle{% else %}fa-laptop-code{% endif %} catalog-fallback-icon"></i>
                     </div>
                     {% endif %}
-                    <div class="position-absolute top-0 end-0 m-2.5 d-flex flex-column align-items-end gap-1">
-                        <span class="badge shadow-xs {% if c.mode != 'Self Paced' %}bg-info text-white{% else %}bg-teal text-white{% endif %}">
-                            {{ c.mode }}
+                    
+                    <!-- Floating Badges -->
+                    <div class="position-absolute top-0 start-0 end-0 p-3 d-flex align-items-center justify-content-between z-index-2 pointer-events-none">
+                        <span class="glass-badge {% if c.mode != 'Self Paced' %}glass-badge-cyan{% else %}glass-badge-teal{% endif %}">
+                            <i class="fa-solid {% if c.mode != 'Self Paced' %}fa-users me-1{% else %}fa-laptop-code me-1{% endif %}"></i> {{ c.mode }}
                         </span>
                         {% if c.access_type == 'Private' %}
-                        <span class="badge bg-warning text-dark border border-warning shadow-xs">
+                        <span class="glass-badge bg-warning text-dark border-warning">
                             <i class="fa-solid fa-lock me-1"></i> Private
                         </span>
                         {% else %}
-                        <span class="badge bg-success text-white shadow-xs">
-                            <i class="fa-solid fa-globe me-1"></i> Public
+                        <span class="glass-badge">
+                            <i class="fa-solid fa-globe me-1 text-teal"></i> Public
                         </span>
                         {% endif %}
                     </div>
                 </div>
                 
-                <div class="card-body p-3.5 d-flex flex-column justify-content-between">
+                <!-- Card Body -->
+                <div class="catalog-card-body">
                     <div>
-                        <h6 class="fw-bold text-dark mb-1 text-truncate-2" style="font-size: 0.95rem; min-height: 44px;">{{ c.name }}</h6>
-                        <p class="text-muted text-xs text-truncate-2 mb-2">{{ c.description or 'No description provided.' }}</p>
+                        <h6 class="catalog-course-title" title="{{ c.name }}">{{ c.name }}</h6>
+                        <p class="catalog-course-desc">{{ c.description or 'No detailed course description provided yet.' }}</p>
                         
-                        <!-- Live Session Details / Placeholders -->
+                        <!-- Session & Duration Info Box -->
                         {% if c.mode != 'Self Paced' %}
-                        <div class="bg-light p-2 rounded-3 mb-3 text-xs border">
-                            <div class="fw-bold text-navy mb-1"><i class="fa-regular fa-calendar-check me-1 text-teal"></i> Upcoming Live Session</div>
-                            <div class="text-muted d-flex align-items-center gap-1 mb-0.5">
-                                <i class="fa-regular fa-clock me-1 text-teal"></i> {{ item.display_date }} | {{ item.display_time }}
+                        <div class="catalog-session-box">
+                            <div class="catalog-session-header">
+                                <i class="fa-regular fa-calendar-check text-teal"></i> Upcoming Cohort
                             </div>
-                            <div class="text-muted d-flex align-items-center gap-1 text-truncate" title="{{ item.display_location }}">
-                                <i class="fa-solid fa-location-dot me-1 text-teal"></i> {{ item.display_location }}
+                            <div class="catalog-session-item">
+                                <i class="fa-regular fa-clock text-teal me-1"></i> {{ item.display_date }} &bull; {{ item.display_time }}
+                            </div>
+                            <div class="catalog-session-item text-truncate" title="{{ item.display_location }}">
+                                <i class="fa-solid fa-location-dot text-teal me-1"></i> {{ item.display_location }}
                             </div>
                         </div>
                         {% else %}
-                        <div class="text-muted text-xs mb-3">
-                            <i class="fa-regular fa-clock me-1 text-teal"></i> Duration: {{ c.duration_hours or 1.0 }} hrs
+                        <div class="catalog-duration-badge">
+                            <i class="fa-regular fa-clock text-teal"></i>
+                            <span>Duration: <strong>{{ c.duration_hours or 1.0 }} hrs</strong></span>
+                            <span class="ms-auto text-muted text-xxs">&bull; Self-Paced</span>
                         </div>
                         {% endif %}
                     </div>
                     
-                    <!-- Dynamic Enrollment / Warning / Completion State Actions -->
-                    <div class="pt-2 border-top mt-auto">
+                    <!-- Action Footer -->
+                    <div class="catalog-card-footer">
                         {% if item.status_state == 'COMPLETED' %}
-                            <div class="alert alert-success py-1.5 px-2 text-center text-xs fw-bold mb-0 rounded-3 shadow-xs">
-                                <i class="fa-solid fa-circle-check me-1"></i> Course completed successfully!
+                            <div class="alert alert-success py-2 px-2.5 text-center text-xs fw-bold mb-0 rounded-3 border-success shadow-xs d-flex align-items-center justify-content-center gap-1.5">
+                                <i class="fa-solid fa-circle-check fs-6 text-success"></i> Course Completed
                             </div>
                         {% elif item.status_state == 'MISSED_REQUIRED_CLASS' %}
                             <div class="alert alert-warning py-1.5 px-2 text-xs mb-2 rounded-3">
@@ -109,49 +178,51 @@
                             </div>
                             <form action="{{ url_for('learners.request_next_session', enrollment_id=item.enrollment.id) }}" method="POST">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-warning text-dark btn-sm fw-bold w-100 py-1.5 rounded-3 shadow-xs">
-                                    <i class="fa-solid fa-paper-plane me-1"></i> Request Next Session
+                                <button type="submit" class="btn btn-warning text-dark btn-sm fw-bold w-100 py-2 rounded-3 shadow-xs">
+                                    <i class="fa-solid fa-paper-plane me-1.5"></i> Request Next Session
                                 </button>
                             </form>
                         {% elif item.status_state == 'REQUEST_PENDING' %}
-                            <div class="alert alert-info py-1.5 px-2 text-center text-xs fw-bold mb-0 rounded-3 border-info">
+                            <div class="alert alert-info py-2 px-2 text-center text-xs fw-bold mb-0 rounded-3 border-info d-flex align-items-center justify-content-center gap-1.5">
                                 <i class="fa-solid fa-hourglass-half me-1"></i> {{ item.status_msg }}
                             </div>
                         {% elif item.status_state == 'REQUEST_APPROVED' %}
-                            <div class="alert alert-success py-1 px-2 text-center text-xxs fw-bold mb-2 rounded-3">
+                            <div class="alert alert-success py-1.5 px-2 text-center text-xxs fw-bold mb-2 rounded-3">
                                 <i class="fa-solid fa-circle-check me-1"></i> Request Approved
                             </div>
-                            <a href="{{ url_for('learners.class_flow', class_id_str=item.enrollment.live_class.class_id if item.enrollment.live_class else '') }}" class="btn btn-teal text-white btn-sm fw-bold w-100 py-1.5 rounded-3">
-                                <i class="fa-solid fa-users me-1"></i> View Assigned Class
+                            <a href="{{ url_for('learners.class_flow', class_id_str=item.enrollment.live_class.class_id if item.enrollment.live_class else '') }}" class="btn btn-teal text-white btn-sm fw-bold w-100 py-2 rounded-3">
+                                <i class="fa-solid fa-users me-1.5"></i> View Assigned Class
                             </a>
                         {% elif item.status_state == 'REQUEST_REJECTED' %}
-                            <div class="alert alert-danger py-1 px-2 text-center text-xxs fw-bold mb-2 rounded-3">
+                            <div class="alert alert-danger py-1.5 px-2 text-center text-xxs fw-bold mb-2 rounded-3">
                                 <i class="fa-solid fa-circle-xmark me-1"></i> Request Rejected
                             </div>
                             <form action="{{ url_for('learners.request_next_session', enrollment_id=item.enrollment.id) }}" method="POST">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-outline-warning text-dark btn-sm fw-bold w-100 py-1.5 rounded-3">
-                                    <i class="fa-solid fa-rotate-right me-1"></i> Re-request Next Session
+                                <button type="submit" class="btn btn-outline-warning text-dark btn-sm fw-bold w-100 py-2 rounded-3">
+                                    <i class="fa-solid fa-rotate-right me-1.5"></i> Re-request Next Session
                                 </button>
                             </form>
                         {% elif item.status_state == 'ENROLLED' %}
                             <div class="d-flex align-items-center justify-content-between gap-2">
-                                <span class="badge bg-teal-subtle text-teal border px-2.5 py-1.5 rounded-pill text-xxs fw-bold">Already Enrolled</span>
+                                <span class="badge bg-teal-subtle text-teal border px-2.5 py-1.5 rounded-pill text-xxs fw-bold">
+                                    <i class="fa-solid fa-circle text-success me-1 scale-75"></i> Enrolled
+                                </span>
                                 {% if c.mode == 'Self Paced' %}
-                                <a href="{{ url_for('learners.self_paced_flow', course_id_str=c.course_id) }}" class="btn btn-sm btn-teal text-white fw-bold px-3 py-1.5 rounded-3 shadow-xs">
-                                    <i class="fa-solid fa-play me-1"></i> Resume
+                                <a href="{{ url_for('learners.self_paced_flow', course_id_str=c.course_id) }}" class="btn btn-sm btn-teal text-white fw-bold px-3 py-1.5 rounded-pill shadow-xs">
+                                    Resume <i class="fa-solid fa-arrow-right ms-1"></i>
                                 </a>
                                 {% else %}
-                                <a href="{{ url_for('learners.class_flow', class_id_str=item.enrollment.live_class.class_id if item.enrollment.live_class else (c.classes[0].class_id if c.classes else '')) }}" class="btn btn-sm btn-teal text-white fw-bold px-3 py-1.5 rounded-3 shadow-xs">
-                                    <i class="fa-solid fa-users me-1"></i> Open Class
+                                <a href="{{ url_for('learners.class_flow', class_id_str=item.enrollment.live_class.class_id if item.enrollment.live_class else (c.classes[0].class_id if c.classes else '')) }}" class="btn btn-sm btn-teal text-white fw-bold px-3 py-1.5 rounded-pill shadow-xs">
+                                    Open Class <i class="fa-solid fa-arrow-right ms-1"></i>
                                 </a>
                                 {% endif %}
                             </div>
                         {% else %}
                             <form action="{{ url_for('learners.enroll_course', course_id=c.id) }}" method="POST">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-teal text-white btn-sm fw-bold w-100 py-2 rounded-3 shadow-xs">
-                                    <i class="fa-solid fa-plus-circle me-1"></i> Enroll in This Course
+                                <button type="submit" class="btn btn-teal btn-enroll-shimmer text-white btn-sm fw-bold w-100 py-2.5 rounded-pill shadow-xs">
+                                    <i class="fa-solid fa-plus-circle me-1.5"></i> Enroll in Course
                                 </button>
                             </form>
                         {% endif %}
@@ -160,12 +231,17 @@
             </div>
         </div>
         {% else %}
-        <div class="col-12 text-center py-5">
-            <div class="avatar-lg bg-teal-subtle text-teal rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 64px; height: 64px;">
-                <i class="fa-solid fa-folder-open fs-3"></i>
+        <div class="col-12">
+            <div class="catalog-empty-state">
+                <div class="catalog-empty-icon-ring">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h5 class="fw-bold text-dark mb-1">No courses match your filter</h5>
+                <p class="text-muted text-sm mb-3">Try adjusting your search keyword or switching between course modes above.</p>
+                <a href="{{ url_for('learners.catalog') }}" class="btn btn-teal-outline btn-sm rounded-pill px-4 fw-bold">
+                    <i class="fa-solid fa-rotate-left me-1.5"></i> Clear Search Filters
+                </a>
             </div>
-            <h6 class="fw-bold text-dark">No courses found matching filters</h6>
-            <p class="text-muted text-xs">Try modifying search keyword or filtering constraints above.</p>
         </div>
         {% endfor %}
     </div>

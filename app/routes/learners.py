@@ -1725,6 +1725,14 @@ def catalog():
                 card_info['status_state'] = 'ENROLLED'
 
         course_cards.append(card_info)
+
+    # Catalog summary metrics
+    stats = {
+        'total': len(course_cards),
+        'self_paced': sum(1 for item in course_cards if item['course'].mode == 'Self Paced'),
+        'live': sum(1 for item in course_cards if item['course'].mode != 'Self Paced'),
+        'enrolled': sum(1 for item in course_cards if item['status_state'] in ['ENROLLED', 'COMPLETED', 'REQUEST_APPROVED', 'REQUEST_PENDING'])
+    }
         
     return render_template(
         'learner_portal/catalog.html',
@@ -1733,7 +1741,8 @@ def catalog():
         course_cards=course_cards,
         enrolled_course_ids=enrolled_course_ids,
         search_query=search_query,
-        mode_filter=mode_filter
+        mode_filter=mode_filter,
+        stats=stats
     )
 
 
