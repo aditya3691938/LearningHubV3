@@ -8,11 +8,15 @@
     <div class="col-12 col-lg-3 col-xl-3 sidebar-col" id="sidebarCol">
         <div class="profile-sidebar card border-0 shadow-sm text-center position-relative h-100 p-3" id="learnerSidebar">
             <!-- Desktop / Mobile Profile Header Card -->
-            <a href="{{ url_for('certificates.my_certificates') }}" class="desktop-profile-header text-center d-block text-decoration-none p-2 rounded-3 hover-elevate transition-all border-bottom border-light cursor-pointer mb-2" title="View My Profile & Certifications">
+            <a href="{{ url_for('learners.view_learner_profile') }}" class="desktop-profile-header text-center d-block text-decoration-none p-2 rounded-3 hover-elevate transition-all border-bottom border-light cursor-pointer mb-2" title="View My Profile">
                 <div class="position-relative d-inline-block mt-2 mb-2 mx-auto">
-                    <div class="avatar-profile bg-teal text-white rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 72px; height: 72px; font-size: 1.8rem; font-weight: bold;">
-                        {{ learner.name[0] | upper if learner.name else 'L' }}
-                    </div>
+                    {% if learner.profile_picture %}
+                        <img src="{{ get_b2_url(learner.profile_picture, folder='profile_pics') }}" alt="{{ learner.name }}" class="avatar-profile rounded-circle mx-auto shadow-sm object-fit-cover border border-2 border-teal d-block" style="width: 72px; height: 72px;">
+                    {% else %}
+                        <div class="avatar-profile bg-teal text-white rounded-circle d-flex align-items-center justify-content-center mx-auto shadow-sm" style="width: 72px; height: 72px; font-size: 1.8rem; font-weight: bold;">
+                            {{ learner.name[0] | upper if learner.name else 'L' }}
+                        </div>
+                    {% endif %}
                     <span class="online-dot"></span>
                 </div>
                 
@@ -503,9 +507,13 @@
                         {% for tl in dept_top_learners %}
                         <div class="d-flex align-items-center mb-2 p-2 rounded-3 {% if tl.id == learner.id %}bg-warning-subtle border border-warning{% else %}bg-light{% endif %}">
                             <div class="fw-bold text-muted me-2 text-nowrap" style="width: 28px;">#{{ loop.index }}</div>
-                            <div class="avatar-profile bg-teal text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm me-2" style="width: 32px; height: 32px; font-size: 0.9rem; font-weight: bold;">
-                                {{ tl.name[0] | upper if tl.name else 'L' }}
-                            </div>
+                            {% if tl.profile_picture %}
+                                <img src="{{ get_b2_url(tl.profile_picture, folder='profile_pics') }}" alt="{{ tl.name }}" class="rounded-circle shadow-sm me-2 object-fit-cover border border-1 border-teal" style="width: 32px; height: 32px;">
+                            {% else %}
+                                <div class="avatar-profile bg-teal text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm me-2" style="width: 32px; height: 32px; font-size: 0.9rem; font-weight: bold;">
+                                    {{ tl.name[0] | upper if tl.name else 'L' }}
+                                </div>
+                            {% endif %}
                             <div class="flex-grow-1 min-w-0">
                                 <div class="fw-bold text-dark text-xs text-truncate">{{ tl.name }}</div>
                                 <div class="text-muted text-xxs">{{ tl.department }}</div>
@@ -528,9 +536,13 @@
                         {% for tl in top_learners %}
                         <div class="d-flex align-items-center mb-2 p-2 rounded-3 {% if tl.id == learner.id %}bg-warning-subtle border border-warning{% else %}bg-light{% endif %}">
                             <div class="fw-bold text-muted me-2 text-nowrap" style="width: 28px;">#{{ loop.index }}</div>
-                            <div class="avatar-profile bg-teal text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm me-2" style="width: 32px; height: 32px; font-size: 0.9rem; font-weight: bold;">
-                                {{ tl.name[0] | upper if tl.name else 'L' }}
-                            </div>
+                            {% if tl.profile_picture %}
+                                <img src="{{ get_b2_url(tl.profile_picture, folder='profile_pics') }}" alt="{{ tl.name }}" class="rounded-circle shadow-sm me-2 object-fit-cover border border-1 border-teal" style="width: 32px; height: 32px;">
+                            {% else %}
+                                <div class="avatar-profile bg-teal text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm me-2" style="width: 32px; height: 32px; font-size: 0.9rem; font-weight: bold;">
+                                    {{ tl.name[0] | upper if tl.name else 'L' }}
+                                </div>
+                            {% endif %}
                             <div class="flex-grow-1 min-w-0">
                                 <div class="fw-bold text-dark text-xs text-truncate">{{ tl.name }}</div>
                                 <div class="text-muted text-xxs">{{ tl.department }}</div>

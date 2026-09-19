@@ -1040,7 +1040,7 @@
             <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body py-3 px-3">
-            <div class="mobile-nav-user-badge p-3 rounded-4 mb-3 border d-flex align-items-center gap-3">
+            <a href="{% if admin_logged_in %}{{ url_for('dashboard.admin_profile') }}{% else %}{{ url_for('learners.view_learner_profile') }}{% endif %}" class="mobile-nav-user-badge p-3 rounded-4 mb-3 border d-flex align-items-center gap-3 text-decoration-none hover-elevate transition-all">
                 <img src="{% if global_profile_picture %}{{ get_b2_url(global_profile_picture, folder='profile_pics') }}{% else %}https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120{% endif %}"
                     alt="Avatar" class="rounded-circle border border-2 border-teal"
                     style="width: 44px; height: 44px; object-fit: cover;">
@@ -1052,7 +1052,7 @@
                         session.get('learner_global_id') %}Learner ID: {{ session.get('learner_global_id') }}{% else
                         %}Learner{% endif %}</span>
                 </div>
-            </div>
+            </a>
 
             <div class="mobile-nav-links d-flex flex-column gap-2">
                 {% if admin_logged_in %}
