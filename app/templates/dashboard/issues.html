@@ -11,26 +11,31 @@
         </div>
         
         <!-- Status Filter Nav Pills -->
-        <div class="d-flex align-items-center gap-1 bg-white bg-opacity-10 p-1 rounded-3 text-xs">
+        <div class="d-flex align-items-center gap-1.5 bg-black bg-opacity-20 p-1.5 rounded-3 text-xs border border-white border-opacity-10">
             <a href="{{ url_for('dashboard.list_issues', status='all') }}" 
-               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all {% if status_filter == 'all' or not status_filter %}bg-teal text-white fw-bold shadow-xs{% else %}text-white-50 text-white-hover{% endif %}">
-                All <span class="badge bg-white bg-opacity-20 text-white ms-1">{{ total_count }}</span>
+               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all d-flex align-items-center gap-1.5 {% if status_filter == 'all' or not status_filter %}bg-white text-dark fw-bold shadow-sm{% else %}text-white bg-white bg-opacity-10 bg-opacity-20-hover{% endif %}">
+                <span>All</span>
+                <span class="badge {% if status_filter == 'all' or not status_filter %}bg-secondary text-white{% else %}bg-white bg-opacity-25 text-white{% endif %} rounded-pill px-1.5 py-0.5">{{ total_count }}</span>
             </a>
             <a href="{{ url_for('dashboard.list_issues', status='open') }}" 
-               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all {% if status_filter == 'open' %}bg-danger text-white fw-bold shadow-xs{% else %}text-white-50 text-white-hover{% endif %}">
-                Open <span class="badge bg-white bg-opacity-20 text-white ms-1">{{ open_count }}</span>
+               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all d-flex align-items-center gap-1.5 {% if status_filter == 'open' %}bg-danger text-white fw-bold shadow-sm{% else %}text-white bg-white bg-opacity-10 bg-opacity-20-hover{% endif %}">
+                <span>Open</span>
+                <span class="badge {% if status_filter == 'open' %}bg-white text-danger{% else %}bg-white bg-opacity-25 text-white{% endif %} rounded-pill px-1.5 py-0.5">{{ open_count }}</span>
             </a>
             <a href="{{ url_for('dashboard.list_issues', status='in_progress') }}" 
-               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all {% if status_filter == 'in_progress' %}bg-primary text-white fw-bold shadow-xs{% else %}text-white-50 text-white-hover{% endif %}">
-                In Progress <span class="badge bg-white bg-opacity-20 text-white ms-1">{{ in_progress_count }}</span>
+               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all d-flex align-items-center gap-1.5 {% if status_filter == 'in_progress' %}bg-primary text-white fw-bold shadow-sm{% else %}text-white bg-white bg-opacity-10 bg-opacity-20-hover{% endif %}">
+                <span>In Progress</span>
+                <span class="badge {% if status_filter == 'in_progress' %}bg-white text-primary{% else %}bg-white bg-opacity-25 text-white{% endif %} rounded-pill px-1.5 py-0.5">{{ in_progress_count }}</span>
             </a>
             <a href="{{ url_for('dashboard.list_issues', status='deny') }}" 
-               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all {% if status_filter == 'deny' %}bg-secondary text-white fw-bold shadow-xs{% else %}text-white-50 text-white-hover{% endif %}">
-                Deny <span class="badge bg-white bg-opacity-20 text-white ms-1">{{ deny_count }}</span>
+               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all d-flex align-items-center gap-1.5 {% if status_filter == 'deny' %}bg-secondary text-white fw-bold shadow-sm{% else %}text-white bg-white bg-opacity-10 bg-opacity-20-hover{% endif %}">
+                <span>Deny</span>
+                <span class="badge {% if status_filter == 'deny' %}bg-white text-dark{% else %}bg-white bg-opacity-25 text-white{% endif %} rounded-pill px-1.5 py-0.5">{{ deny_count }}</span>
             </a>
             <a href="{{ url_for('dashboard.list_issues', status='resolved') }}" 
-               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all {% if status_filter == 'resolved' %}bg-success text-white fw-bold shadow-xs{% else %}text-white-50 text-white-hover{% endif %}">
-                Resolved <span class="badge bg-white bg-opacity-20 text-white ms-1">{{ resolved_count }}</span>
+               class="px-2.5 py-1 rounded-2 text-decoration-none transition-all d-flex align-items-center gap-1.5 {% if status_filter == 'resolved' %}bg-success text-white fw-bold shadow-sm{% else %}text-white bg-white bg-opacity-10 bg-opacity-20-hover{% endif %}">
+                <span>Resolved</span>
+                <span class="badge {% if status_filter == 'resolved' %}bg-white text-success{% else %}bg-white bg-opacity-25 text-white{% endif %} rounded-pill px-1.5 py-0.5">{{ resolved_count }}</span>
             </a>
         </div>
     </div>
