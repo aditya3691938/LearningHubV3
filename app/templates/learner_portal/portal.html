@@ -145,16 +145,10 @@
             </div>
         </div>
 
-        <!-- Enrolled Programs Grid -->
-        <div class="d-flex justify-content-between align-items-center mb-3" id="enrolledPrograms">
-            <h5 class="fw-bold text-dark mb-0"><i class="fa-solid fa-graduation-cap me-2 text-teal"></i> My Enrolled Programs</h5>
-            <span class="text-muted small fw-semibold">{{ enrollments|length }} Enrolled</span>
-        </div>
-
         {% set active_enrollments = enrollments | selectattr('completion_status', 'in', ['Enrolled', 'In Progress']) | list %}
         {% set completed_enrollments = enrollments | selectattr('completion_status', 'in', ['Completed', 'Failed']) | list %}
 
-        <ul class="nav nav-pills gap-2 mb-3 flex-nowrap overflow-x-auto pb-1" role="tablist" style="scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch;">
+        <ul class="nav nav-pills gap-2 mb-3 flex-nowrap overflow-x-auto pb-1" id="enrolledPrograms" role="tablist" style="scrollbar-width: none; -ms-overflow-style: none; -webkit-overflow-scrolling: touch;">
             <li class="nav-item">
                 <button class="nav-link active fw-semibold text-nowrap" data-bs-toggle="pill" data-bs-target="#tab-active-pane" type="button">
                     <i class="fa-solid fa-play me-1"></i> In Progress
