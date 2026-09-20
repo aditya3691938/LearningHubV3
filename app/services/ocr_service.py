@@ -53,6 +53,7 @@ def extract_text_from_pdf(pdf_source):
 def validate_certificate_pdf(pdf_source, course_name, issuing_org, learner_name=None, date_earned=None):
     """
     Validates user-submitted external certificate fields against extracted PDF text.
+    Uses exact word token matching to prevent false positives from partial/substring matches.
     Returns tuple: (is_valid: bool, discrepancy_msg: str, extracted_text: str)
     """
     extracted_text = extract_text_from_pdf(pdf_source)
@@ -61,6 +62,7 @@ def validate_certificate_pdf(pdf_source, course_name, issuing_org, learner_name=
         return False, "Uploaded PDF certificate contains no extractable text layer or is unreadable. Please upload a valid digital certificate PDF.", ""
         
     pdf_text_clean = extracted_text.lower()
+    # Exact word tokens extracted using regex word boundaries
     pdf_text_tokens = set(re.findall(r'\b[a-z0-9]+\b', pdf_text_clean))
 
     discrepancies = []
@@ -68,24 +70,28 @@ def validate_certificate_pdf(pdf_source, course_name, issuing_org, learner_name=
     # 1. Course / Certification Name Validation
     course_tokens = [w.lower() for w in re.findall(r'\b[a-zA-Z0-9]+\b', course_name) if w.lower() not in STOP_WORDS and len(w) > 1]
     if course_tokens:
-        matched_tokens = [w for w in course_tokens if w in pdf_text_tokens or w in pdf_text_clean]
+        # Match exact word tokens in pdf_text_tokens
+        matched_tokens = [w for w in course_tokens if w in pdf_text_tokens]
         match_ratio = len(matched_tokens) / len(course_tokens)
-        if match_ratio < 0.3:
+        if match_ratio < 0.4:
             discrepancies.append(f"Course Name '{course_name}' could not be verified in the PDF text (matched {len(matched_tokens)}/{len(course_tokens)} key words).")
+    else:
+        # Generic input with no valid tokens
+        discrepancies.append(f"Course Name '{course_name}' is too short or invalid for verification.")
 
     # 2. Issuing Organization Validation
     org_tokens = [w.lower() for w in re.findall(r'\b[a-zA-Z0-9]+\b', issuing_org) if w.lower() not in STOP_WORDS and len(w) > 1]
     if org_tokens:
-        matched_org_tokens = [w for w in org_tokens if w in pdf_text_tokens or w in pdf_text_clean]
+        matched_org_tokens = [w for w in org_tokens if w in pdf_text_tokens]
         match_ratio_org = len(matched_org_tokens) / len(org_tokens)
-        if match_ratio_org < 0.3:
+        if match_ratio_org < 0.4:
             discrepancies.append(f"Issuing Organization '{issuing_org}' was not found in the PDF text.")
 
     # 3. Learner Name Sanity Check (if provided)
     if learner_name:
         name_tokens = [w.lower() for w in re.findall(r'\b[a-zA-Z]+\b', learner_name) if len(w) > 2]
         if name_tokens:
-            name_matches = [w for w in name_tokens if w in pdf_text_tokens or w in pdf_text_clean]
+            name_matches = [w for w in name_tokens if w in pdf_text_tokens]
             if not name_matches:
                 discrepancies.append(f"Learner Name '{learner_name}' does not match any name on the certificate PDF.")
 
