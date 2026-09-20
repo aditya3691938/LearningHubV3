@@ -177,3 +177,56 @@ def download_certificate(cert_id_str):
         generate_certificate_pdf(learner.name, course.name, date_str, cert.certificate_id, pdf_path)
 
     return send_file(pdf_path, as_attachment=True, download_name=f"Certificate_{cert.certificate_id}.pdf")
+
+
+@certificates_bp.route('/external/<int:cert_id>')
+def serve_external_certificate(cert_id):
+    """
+    Serves or redirects uploaded external certificates.
+    Supports Backblaze B2 presigned URLs, direct HTTP links, and local filesystem candidates.
+    """
+    from app.models.external_certificate import ExternalCertificate
+    from app.services.b2_service import get_b2_url
+    from flask import send_file, redirect, abort, current_app
+    import os
+
+    cert = ExternalCertificate.query.get_or_404(cert_id)
+    if not cert.pdf_filename:
+        abort(404, description="No certificate file associated with this record.")
+
+    raw_filename = str(cert.pdf_filename).strip()
+
+    # 1. Direct HTTP / HTTPS URL
+    if raw_filename.startswith('http://') or raw_filename.startswith('https://'):
+        return redirect(raw_filename)
+
+    # 2. Backblaze B2 presigned URL
+    b2_url = get_b2_url(raw_filename, folder='external_certs') or get_b2_url(raw_filename)
+    if b2_url and (b2_url.startswith('http://') or b2_url.startswith('https://')):
+        return redirect(b2_url)
+
+    # 3. Local filesystem candidate locations
+    clean_name = os.path.basename(raw_filename)
+    clean_rel = raw_filename.lstrip('/\\')
+
+    candidates = [
+        os.path.join(current_app.root_path, 'static', 'uploads', 'external_certs', clean_name),
+        os.path.join(current_app.root_path, 'static', 'uploads', clean_name),
+        os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'external_certs', clean_name)),
+        os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', clean_name)),
+        os.path.abspath(os.path.join(current_app.root_path, '..', clean_rel)),
+    ]
+
+    for c_path in candidates:
+        norm_path = os.path.normpath(c_path)
+        if os.path.isfile(norm_path):
+            resp = send_file(norm_path, mimetype='application/pdf', as_attachment=False, conditional=True)
+            resp.headers['Accept-Ranges'] = 'bytes'
+            return resp
+
+    # 4. Fallback redirect if B2 returned relative static path
+    if b2_url and b2_url.startswith('/'):
+        return redirect(b2_url)
+
+    abort(404, description="External certificate PDF file could not be located on cloud or local server.")
+

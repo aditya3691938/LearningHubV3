@@ -124,7 +124,7 @@
 
                                 {% if cert.pdf_filename %}
                                 <div class="mt-3 pt-3 border-top">
-                                    <a href="{{ url_for('static', filename='uploads/external_certs/' + cert.pdf_filename) if not cert.pdf_filename.startswith('http') else cert.pdf_filename }}" target="_blank" class="btn btn-outline-teal btn-sm fw-bold w-100">
+                                    <a href="{{ url_for('certificates.serve_external_certificate', cert_id=cert.id) }}" target="_blank" class="btn btn-outline-teal btn-sm fw-bold w-100">
                                         <i class="fa-solid fa-file-pdf me-1"></i> View Verified PDF
                                     </a>
                                 </div>
