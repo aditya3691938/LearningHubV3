@@ -149,6 +149,48 @@ def get_report_summary_stats():
     }
 
 
+def _matches_mode_filter(course, live_cls, mode_filter):
+    if not mode_filter or mode_filter.upper() == 'ALL':
+        return True
+    
+    mf = mode_filter.strip().lower()
+    c_mode = (course.mode or '').strip().lower()
+    cls_mode = (live_cls.class_mode if live_cls else '').strip().lower()
+    c_id = (course.course_id or '').upper()
+
+    if mf == 'self paced':
+        return c_mode == 'self paced' or c_id.startswith('CRS-SP-')
+    
+    if mf in ['live online', 'online']:
+        if cls_mode == 'online':
+            return True
+        return c_mode in ['live online', 'online'] or c_id.startswith('CRS-ON-')
+        
+    if mf in ['live in person', 'live in-person', 'in person', 'in-person']:
+        if cls_mode in ['in person', 'live in person']:
+            return True
+        return c_mode in ['live in person', 'in person', 'live'] or c_id.startswith('CRS-IP-')
+        
+    if mf == 'live':
+        return c_mode != 'self paced' or cls_mode in ['online', 'in person', 'live in person']
+
+    return True
+
+
+def _matches_course_filter(course_id, course_id_filter):
+    if not course_id_filter:
+        return True
+    if isinstance(course_id_filter, (list, tuple, set)):
+        valid_ids = [str(cid).strip() for cid in course_id_filter if str(cid).strip() and str(cid).strip().upper() != 'ALL']
+        if not valid_ids:
+            return True
+        return str(course_id) in valid_ids
+    cid_str = str(course_id_filter).strip()
+    if cid_str.upper() == 'ALL' or not cid_str:
+        return True
+    return str(course_id) == cid_str
+
+
 def generate_report_dataframe(
     report_type='master',
     selected_columns=None, 
@@ -182,170 +224,167 @@ def generate_report_dataframe(
 
 
 def _generate_master_report(selected_columns, sq, mode_filter, date_from, date_to, class_id_filter, course_id_filter):
-    enrollments = LearnerEnrollment.query.all()
+    courses = Course.query.order_by(Course.name).all()
     rows = []
 
-    for en in enrollments:
-        learner = en.learner
-        course = en.course
-        live_cls = en.live_class
-
-        if not learner or not course:
+    for course in courses:
+        if not _matches_course_filter(course.id, course_id_filter):
             continue
 
-        if sq:
-            match = (
-                sq in course.name.lower() or
-                sq in (learner.global_id or '').lower() or
-                sq in (learner.name or '').lower() or
-                sq in (learner.department or '').lower() or
-                (live_cls and sq in (live_cls.class_name or '').lower())
-            )
-            if not match:
+        enrollments = LearnerEnrollment.query.filter_by(course_id=course.id).all()
+        for en in enrollments:
+            learner = en.learner
+            live_cls = en.live_class
+
+            if not learner:
                 continue
 
-        if mode_filter and mode_filter != 'ALL':
-            if course.mode != mode_filter:
+            if not _matches_mode_filter(course, live_cls, mode_filter):
                 continue
 
-        if course_id_filter and course_id_filter != 'ALL':
-            if str(course.id) != str(course_id_filter):
+            if class_id_filter and class_id_filter != 'ALL':
+                if not live_cls or str(live_cls.id) != str(class_id_filter):
+                    continue
+
+            if sq:
+                match = (
+                    sq in course.name.lower() or
+                    sq in (learner.global_id or '').lower() or
+                    sq in (learner.name or '').lower() or
+                    sq in (learner.department or '').lower() or
+                    (live_cls and sq in (live_cls.class_name or '').lower())
+                )
+                if not match:
+                    continue
+
+            if date_from and en.assigned_at and en.assigned_at.date() < date_from:
+                continue
+            if date_to and en.assigned_at and en.assigned_at.date() > date_to:
                 continue
 
-        if class_id_filter and class_id_filter != 'ALL':
-            if not live_cls or str(live_cls.id) != str(class_id_filter):
-                continue
+            att_status = 'N/A'
+            if live_cls:
+                att = Attendance.query.filter_by(class_id=live_cls.id, learner_id=learner.id).first()
+                att_status = att.status if att else 'Absent'
 
-        if date_from and en.assigned_at and en.assigned_at.date() < date_from:
-            continue
-        if date_to and en.assigned_at and en.assigned_at.date() > date_to:
-            continue
+            pre_attempt = AssessmentAttempt.query.filter_by(enrollment_id=en.id, assessment_type='PRE').order_by(AssessmentAttempt.id.desc()).first()
+            post_attempt = AssessmentAttempt.query.filter_by(enrollment_id=en.id, assessment_type='POST').order_by(AssessmentAttempt.id.desc()).first()
 
-        att_status = 'N/A'
-        if live_cls:
-            att = Attendance.query.filter_by(class_id=live_cls.id, learner_id=learner.id).first()
-            att_status = att.status if att else 'Absent'
+            pre_score = f"{pre_attempt.score_percentage}%" if pre_attempt else "N/A"
+            post_score = f"{post_attempt.score_percentage}%" if post_attempt else "N/A"
 
-        pre_attempt = AssessmentAttempt.query.filter_by(enrollment_id=en.id, assessment_type='PRE').order_by(AssessmentAttempt.id.desc()).first()
-        post_attempt = AssessmentAttempt.query.filter_by(enrollment_id=en.id, assessment_type='POST').order_by(AssessmentAttempt.id.desc()).first()
+            cert = Certificate.query.filter_by(learner_id=learner.id, course_id=course.id).first()
+            cert_id = cert.certificate_id if cert else "None"
 
-        pre_score = f"{pre_attempt.score_percentage}%" if pre_attempt else "N/A"
-        post_score = f"{post_attempt.score_percentage}%" if post_attempt else "N/A"
+            fb_resp = None
+            if live_cls and live_cls.feedback_repo_id:
+                fb_resp = FeedbackResponse.query.filter_by(class_id=live_cls.id, learner_id=learner.id).first()
+            fb_status = "Yes" if fb_resp else "No"
 
-        cert = Certificate.query.filter_by(learner_id=learner.id, course_id=course.id).first()
-        cert_id = cert.certificate_id if cert else "None"
-
-        fb_resp = None
-        if live_cls and live_cls.feedback_repo_id:
-            fb_resp = FeedbackResponse.query.filter_by(class_id=live_cls.id, learner_id=learner.id).first()
-        fb_status = "Yes" if fb_resp else "No"
-
-        row = {
-            'course_name': course.name,
-            'class_name': live_cls.class_name if live_cls else 'Self-Paced (N/A)',
-            'global_id': learner.global_id or 'N/A',
-            'learner_name': learner.name or 'N/A',
-            'department': learner.department or 'N/A',
-            'attendance_status': att_status,
-            'pre_assessment': pre_score,
-            'post_assessment': post_score,
-            'final_score': f"{en.final_score}%" if en.final_score is not None else 'N/A',
-            'completion_status': en.completion_status,
-            'enrolled_date': en.assigned_at.strftime('%d-%b-%Y') if en.assigned_at else 'N/A',
-            'completion_date': en.completion_date.strftime('%d-%b-%Y') if en.completion_date else 'N/A',
-            'certificate_id': cert_id,
-            'facilitator': live_cls.facilitator_name if live_cls else 'N/A',
-            'co_facilitator': live_cls.co_facilitator_name if (live_cls and live_cls.co_facilitator_name) else 'N/A',
-            'duration': f"{course.duration_hours} hrs",
-            'feedback_status': fb_status
-        }
-        rows.append(row)
+            row = {
+                'course_name': course.name,
+                'class_name': live_cls.class_name if live_cls else 'Self-Paced (N/A)',
+                'global_id': learner.global_id or 'N/A',
+                'learner_name': learner.name or 'N/A',
+                'department': learner.department or 'N/A',
+                'attendance_status': att_status,
+                'pre_assessment': pre_score,
+                'post_assessment': post_score,
+                'final_score': f"{en.final_score}%" if en.final_score is not None else 'N/A',
+                'completion_status': en.completion_status,
+                'enrolled_date': en.assigned_at.strftime('%d-%b-%Y') if en.assigned_at else 'N/A',
+                'completion_date': en.completion_date.strftime('%d-%b-%Y') if en.completion_date else 'N/A',
+                'certificate_id': cert_id,
+                'facilitator': live_cls.facilitator_name if live_cls else 'N/A',
+                'co_facilitator': live_cls.co_facilitator_name if (live_cls and live_cls.co_facilitator_name) else 'N/A',
+                'duration': f"{course.duration_hours} hrs",
+                'feedback_status': fb_status
+            }
+            rows.append(row)
 
     return _format_dataframe(rows, selected_columns, MASTER_COLUMNS)
 
 
 def _generate_lesson_report(selected_columns, sq, mode_filter, date_from, date_to, course_id_filter):
-    lessons = CourseLesson.query.all()
+    courses = Course.query.order_by(Course.name).all()
     rows = []
 
-    for lesson in lessons:
-        course = lesson.course
-        if not course:
+    for course in courses:
+        if not _matches_course_filter(course.id, course_id_filter):
             continue
 
-        if mode_filter and mode_filter != 'ALL' and course.mode != mode_filter:
-            continue
-
-        if course_id_filter and course_id_filter != 'ALL' and str(course.id) != str(course_id_filter):
-            continue
-
-        courseware_items = lesson.courseware or [None]
         enrollments = LearnerEnrollment.query.filter_by(course_id=course.id).all()
+        lessons = CourseLesson.query.filter_by(course_id=course.id).order_by(CourseLesson.lesson_number).all()
 
-        for cw in courseware_items:
-            cw_title = cw.title if cw else 'N/A'
-            cw_type = cw.courseware_type if cw else 'Text'
+        for en in enrollments:
+            learner = en.learner
+            live_cls = en.live_class
 
-            for en in enrollments:
-                learner = en.learner
-                if not learner:
-                    continue
+            if not learner:
+                continue
 
-                if sq:
-                    match = (
-                        sq in course.name.lower() or
-                        sq in lesson.title.lower() or
-                        sq in cw_title.lower() or
-                        sq in (learner.name or '').lower() or
-                        sq in (learner.global_id or '').lower() or
-                        sq in (learner.department or '').lower()
-                    )
-                    if not match:
-                        continue
+            if not _matches_mode_filter(course, live_cls, mode_filter):
+                continue
 
-                if date_from and en.assigned_at and en.assigned_at.date() < date_from:
-                    continue
-                if date_to and en.assigned_at and en.assigned_at.date() > date_to:
-                    continue
+            if date_from and en.assigned_at and en.assigned_at.date() < date_from:
+                continue
+            if date_to and en.assigned_at and en.assigned_at.date() > date_to:
+                continue
 
-                # Check lesson review
-                rev = LessonReview.query.filter_by(enrollment_id=en.id, lesson_id=lesson.id).first()
-                rev_status = 'Reviewed' if rev else 'Pending'
-                rev_date = rev.reviewed_at.strftime('%d-%b-%Y %H:%M') if rev else 'N/A'
+            for lesson in lessons:
+                courseware_items = lesson.courseware or [None]
 
-                # Check block progress if SCORM/Rise
-                time_mins = 'N/A'
-                attempts = 0
-                if cw:
-                    blk_prog = LearnerBlockProgress.query.filter_by(learner_id=learner.id, courseware_id=cw.id).all()
-                    if blk_prog:
-                        total_sec = sum(b.time_spent_seconds for b in blk_prog)
-                        time_mins = f"{round(total_sec / 60.0, 1)}"
-                        attempts = sum(b.attempts_count for b in blk_prog)
-                        if any(b.is_completed for b in blk_prog):
-                            rev_status = 'Completed (SCORM)'
+                for cw in courseware_items:
+                    cw_title = cw.title if cw else 'N/A'
+                    cw_type = cw.courseware_type if cw else 'Text'
 
-                # Check lesson assessments
-                pre_att = AssessmentAttempt.query.filter_by(enrollment_id=en.id, lesson_id=lesson.id, assessment_type='LESSON_PRE').order_by(AssessmentAttempt.id.desc()).first()
-                post_att = AssessmentAttempt.query.filter_by(enrollment_id=en.id, lesson_id=lesson.id, assessment_type='LESSON_POST').order_by(AssessmentAttempt.id.desc()).first()
+                    if sq:
+                        match = (
+                            sq in course.name.lower() or
+                            sq in lesson.title.lower() or
+                            sq in cw_title.lower() or
+                            sq in (learner.name or '').lower() or
+                            sq in (learner.global_id or '').lower() or
+                            sq in (learner.department or '').lower()
+                        )
+                        if not match:
+                            continue
 
-                row = {
-                    'course_name': course.name,
-                    'lesson_num': f"Lesson {lesson.lesson_number}",
-                    'lesson_title': lesson.title,
-                    'courseware_title': cw_title,
-                    'courseware_type': cw_type,
-                    'global_id': learner.global_id or 'N/A',
-                    'learner_name': learner.name or 'N/A',
-                    'department': learner.department or 'N/A',
-                    'review_status': rev_status,
-                    'time_spent': time_mins,
-                    'attempts_count': attempts,
-                    'review_date': rev_date,
-                    'pre_score': f"{pre_att.score_percentage}%" if pre_att else 'N/A',
-                    'post_score': f"{post_att.score_percentage}%" if post_att else 'N/A'
-                }
-                rows.append(row)
+                    rev = LessonReview.query.filter_by(enrollment_id=en.id, lesson_id=lesson.id).first()
+                    rev_status = 'Reviewed' if rev else 'Pending'
+                    rev_date = rev.reviewed_at.strftime('%d-%b-%Y %H:%M') if rev else 'N/A'
+
+                    time_mins = 'N/A'
+                    attempts = 0
+                    if cw:
+                        blk_prog = LearnerBlockProgress.query.filter_by(learner_id=learner.id, courseware_id=cw.id).all()
+                        if blk_prog:
+                            total_sec = sum(b.time_spent_seconds for b in blk_prog)
+                            time_mins = f"{round(total_sec / 60.0, 1)}"
+                            attempts = sum(b.attempts_count for b in blk_prog)
+                            if any(b.is_completed for b in blk_prog):
+                                rev_status = 'Completed (SCORM)'
+
+                    pre_att = AssessmentAttempt.query.filter_by(enrollment_id=en.id, lesson_id=lesson.id, assessment_type='LESSON_PRE').order_by(AssessmentAttempt.id.desc()).first()
+                    post_att = AssessmentAttempt.query.filter_by(enrollment_id=en.id, lesson_id=lesson.id, assessment_type='LESSON_POST').order_by(AssessmentAttempt.id.desc()).first()
+
+                    row = {
+                        'course_name': course.name,
+                        'lesson_num': f"Lesson {lesson.lesson_number}",
+                        'lesson_title': lesson.title,
+                        'courseware_title': cw_title,
+                        'courseware_type': cw_type,
+                        'global_id': learner.global_id or 'N/A',
+                        'learner_name': learner.name or 'N/A',
+                        'department': learner.department or 'N/A',
+                        'review_status': rev_status,
+                        'time_spent': time_mins,
+                        'attempts_count': attempts,
+                        'review_date': rev_date,
+                        'pre_score': f"{pre_att.score_percentage}%" if pre_att else 'N/A',
+                        'post_score': f"{post_att.score_percentage}%" if post_att else 'N/A'
+                    }
+                    rows.append(row)
 
     return _format_dataframe(rows, selected_columns, LESSON_COLUMNS)
 
@@ -359,10 +398,10 @@ def _generate_class_report(selected_columns, sq, mode_filter, date_from, date_to
         if not course:
             continue
 
-        if mode_filter and mode_filter != 'ALL' and course.mode != mode_filter:
+        if not _matches_course_filter(course.id, course_id_filter):
             continue
 
-        if course_id_filter and course_id_filter != 'ALL' and str(course.id) != str(course_id_filter):
+        if not _matches_mode_filter(course, live_cls, mode_filter):
             continue
 
         if class_id_filter and class_id_filter != 'ALL' and str(live_cls.id) != str(class_id_filter):
@@ -423,59 +462,62 @@ def _generate_class_report(selected_columns, sq, mode_filter, date_from, date_to
 
 
 def _generate_assessment_report(selected_columns, sq, mode_filter, date_from, date_to, course_id_filter):
-    attempts = AssessmentAttempt.query.order_by(AssessmentAttempt.id.desc()).all()
+    courses = Course.query.order_by(Course.name).all()
     rows = []
 
-    for att in attempts:
-        en = att.enrollment
-        if not en:
-            continue
-        learner = en.learner
-        course = en.course
-        if not learner or not course:
+    for course in courses:
+        if not _matches_course_filter(course.id, course_id_filter):
             continue
 
-        if mode_filter and mode_filter != 'ALL' and course.mode != mode_filter:
-            continue
+        enrollments = LearnerEnrollment.query.filter_by(course_id=course.id).all()
+        for en in enrollments:
+            learner = en.learner
+            live_cls = en.live_class
 
-        if course_id_filter and course_id_filter != 'ALL' and str(course.id) != str(course_id_filter):
-            continue
-
-        if sq:
-            match = (
-                sq in course.name.lower() or
-                sq in att.assessment_type.lower() or
-                sq in (learner.name or '').lower() or
-                sq in (learner.global_id or '').lower() or
-                sq in (learner.department or '').lower()
-            )
-            if not match:
+            if not learner:
                 continue
 
-        if date_from and att.submitted_at and att.submitted_at.date() < date_from:
-            continue
-        if date_to and att.submitted_at and att.submitted_at.date() > date_to:
-            continue
+            if not _matches_mode_filter(course, live_cls, mode_filter):
+                continue
 
-        lesson_title = 'Course-Level'
-        if att.lesson_id:
-            l_obj = CourseLesson.query.get(att.lesson_id)
-            if l_obj:
-                lesson_title = f"Lesson {l_obj.lesson_number}: {l_obj.title}"
+            attempts = AssessmentAttempt.query.filter_by(enrollment_id=en.id).order_by(AssessmentAttempt.id.asc()).all()
 
-        row = {
-            'course_name': course.name,
-            'assessment_type': att.assessment_type,
-            'lesson_title': lesson_title,
-            'global_id': learner.global_id or 'N/A',
-            'learner_name': learner.name or 'N/A',
-            'department': learner.department or 'N/A',
-            'score_pct': f"{att.score_percentage}%",
-            'passed': 'PASSED' if att.passed else 'FAILED',
-            'attempt_num': f"Attempt #{att.attempt_number}",
-            'submitted_at': att.submitted_at.strftime('%d-%b-%Y %H:%M') if att.submitted_at else 'N/A'
-        }
-        rows.append(row)
+            for att in attempts:
+                if sq:
+                    match = (
+                        sq in course.name.lower() or
+                        sq in att.assessment_type.lower() or
+                        sq in (learner.name or '').lower() or
+                        sq in (learner.global_id or '').lower() or
+                        sq in (learner.department or '').lower()
+                    )
+                    if not match:
+                        continue
+
+                if date_from and att.submitted_at and att.submitted_at.date() < date_from:
+                    continue
+                if date_to and att.submitted_at and att.submitted_at.date() > date_to:
+                    continue
+
+                lesson_title = 'Course-Level'
+                if att.lesson_id:
+                    l_obj = CourseLesson.query.get(att.lesson_id)
+                    if l_obj:
+                        lesson_title = f"Lesson {l_obj.lesson_number}: {l_obj.title}"
+
+                row = {
+                    'course_name': course.name,
+                    'assessment_type': att.assessment_type,
+                    'lesson_title': lesson_title,
+                    'global_id': learner.global_id or 'N/A',
+                    'learner_name': learner.name or 'N/A',
+                    'department': learner.department or 'N/A',
+                    'score_pct': f"{att.score_percentage}%",
+                    'passed': 'PASSED' if att.passed else 'FAILED',
+                    'attempt_num': f"Attempt #{att.attempt_number}",
+                    'submitted_at': att.submitted_at.strftime('%d-%b-%Y %H:%M') if att.submitted_at else 'N/A'
+                }
+                rows.append(row)
 
     return _format_dataframe(rows, selected_columns, ASSESSMENT_COLUMNS)
 

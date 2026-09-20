@@ -12,6 +12,17 @@ from app.utils.decorators import admin_required
 
 reports_bp = Blueprint('reports', __name__)
 
+def _get_course_id_filters():
+    raw_list = request.args.getlist('course_id')
+    course_filter_ids = []
+    for item in raw_list:
+        for sub in str(item).split(','):
+            sub_s = sub.strip()
+            if sub_s and sub_s.upper() != 'ALL' and sub_s not in course_filter_ids:
+                course_filter_ids.append(sub_s)
+    return course_filter_ids if course_filter_ids else ['ALL']
+
+
 @reports_bp.route('/')
 @admin_required
 def index():
@@ -24,7 +35,7 @@ def index():
     selected_cols = request.args.getlist('cols')
     date_from_str = request.args.get('date_from', '').strip()
     date_to_str = request.args.get('date_to', '').strip()
-    course_filter = request.args.get('course_id', 'ALL').strip()
+    course_filter = _get_course_id_filters()
     class_filter = request.args.get('class_id', 'ALL').strip()
 
     date_from = None
@@ -94,7 +105,7 @@ def export_csv():
     selected_cols = request.args.getlist('cols')
     date_from_str = request.args.get('date_from', '').strip()
     date_to_str = request.args.get('date_to', '').strip()
-    course_filter = request.args.get('course_id', 'ALL').strip()
+    course_filter = _get_course_id_filters()
     class_filter = request.args.get('class_id', 'ALL').strip()
 
     date_from = None
@@ -145,7 +156,7 @@ def export_pdf():
     selected_cols = request.args.getlist('cols')
     date_from_str = request.args.get('date_from', '').strip()
     date_to_str = request.args.get('date_to', '').strip()
-    course_filter = request.args.get('course_id', 'ALL').strip()
+    course_filter = _get_course_id_filters()
     class_filter = request.args.get('class_id', 'ALL').strip()
 
     date_from = None

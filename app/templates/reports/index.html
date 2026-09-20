@@ -3,6 +3,11 @@
 {% block title %}Reports & Deep Analytics - Learning Hub{% endblock %}
 
 {% block content %}
+{% set course_query_str = '' %}
+{% for cid in course_filter %}
+    {% set course_query_str = course_query_str + '&course_id=' + cid|string %}
+{% endfor %}
+
 <div class="container-fluid px-2 px-md-4 py-3">
     <!-- Header Banner -->
     <div
@@ -20,11 +25,11 @@
 
         <div class="d-flex align-items-center gap-2 flex-wrap w-100 w-md-auto">
             {% if records %}
-            <a href="{{ url_for('reports.export_csv', type=report_type, search=search_query, mode=mode_filter, cols=selected_cols, date_from=date_from_str, date_to=date_to_str, course_id=course_filter, class_id=class_filter) }}"
+            <a href="{{ url_for('reports.export_csv', type=report_type, search=search_query, mode=mode_filter, cols=selected_cols, date_from=date_from_str, date_to=date_to_str, class_id=class_filter) }}{{ course_query_str }}"
                 class="btn btn-success text-white btn-sm fw-bold px-3.5 py-2 rounded-pill shadow-xs flex-grow-1 flex-md-grow-0">
                 <i class="fa-solid fa-file-csv me-1.5"></i> Export CSV
             </a>
-            <a href="{{ url_for('reports.export_pdf', type=report_type, search=search_query, mode=mode_filter, cols=selected_cols, date_from=date_from_str, date_to=date_to_str, course_id=course_filter, class_id=class_filter) }}"
+            <a href="{{ url_for('reports.export_pdf', type=report_type, search=search_query, mode=mode_filter, cols=selected_cols, date_from=date_from_str, date_to=date_to_str, class_id=class_filter) }}{{ course_query_str }}"
                 class="btn btn-danger text-white btn-sm fw-bold px-3.5 py-2 rounded-pill shadow-xs flex-grow-1 flex-md-grow-0">
                 <i class="fa-solid fa-file-pdf me-1.5"></i> Export Summary PDF
             </a>
@@ -97,7 +102,7 @@
     <div class="card border-0 shadow-sm mb-4 rounded-4 p-2">
         <div class="d-flex align-items-center gap-2 overflow-x-auto pb-1 hide-scrollbar">
             {% for key, name in report_types.items() %}
-            <a href="{{ url_for('reports.index', type=key, search=search_query, mode=mode_filter, date_from=date_from_str, date_to=date_to_str, course_id=course_filter, class_id=class_filter) }}"
+            <a href="{{ url_for('reports.index', type=key, search=search_query, mode=mode_filter, date_from=date_from_str, date_to=date_to_str, class_id=class_filter) }}{{ course_query_str }}"
                 class="btn btn-sm rounded-pill px-3.5 py-2 fw-bold text-nowrap {% if report_type == key %}btn-teal text-white{% else %}btn-light text-muted border{% endif %}">
                 {% if key == 'master' %}<i class="fa-solid fa-table-list me-1.5"></i>
                 {% elif key == 'lesson' %}<i class="fa-solid fa-book-open-reader me-1.5"></i>
@@ -161,22 +166,58 @@
                 <div class="col-6 col-md-2">
                     <label class="form-label fw-bold text-xs text-muted text-uppercase">Course Mode</label>
                     <select name="mode" class="form-select form-select-sm rounded-3">
-                        <option value="ALL" {% if mode_filter=='ALL' %}selected{% endif %}>All Modes</option>
-                        <option value="Live" {% if mode_filter=='Live' %}selected{% endif %}>Live Classes Only</option>
-                        <option value="Self Paced" {% if mode_filter=='Self Paced' %}selected{% endif %}>Self Paced Only
-                        </option>
+                        <option value="ALL" {% if mode_filter=='ALL' or not mode_filter %}selected{% endif %}>All Modes</option>
+                        <option value="Self Paced" {% if mode_filter=='Self Paced' %}selected{% endif %}>Self Paced Only</option>
+                        <option value="Live Online" {% if mode_filter=='Live Online' %}selected{% endif %}>Live Online Only</option>
+                        <option value="Live In Person" {% if mode_filter=='Live In Person' %}selected{% endif %}>Live In-Person Only</option>
                     </select>
                 </div>
 
+                <!-- Searchable Sticky Multi-Select Course Picker -->
                 <div class="col-6 col-md-3">
-                    <label class="form-label fw-bold text-xs text-muted text-uppercase">Filter by Course</label>
-                    <select name="course_id" class="form-select form-select-sm rounded-3">
-                        <option value="ALL" {% if course_filter=='ALL' %}selected{% endif %}>All Courses</option>
-                        {% for c in courses %}
-                        <option value="{{ c.id }}" {% if course_filter==c.id|string %}selected{% endif %}>{{ c.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
+                    <label class="form-label fw-bold text-xs text-muted text-uppercase d-flex justify-content-between">
+                        <span>Filter by Course(s)</span>
+                        <span class="text-teal font-monospace text-xxs" id="courseSelectedSummary"></span>
+                    </label>
+                    <div class="dropdown" id="courseMultiSelectDropdown">
+                        <button class="form-select form-select-sm rounded-3 text-start d-flex align-items-center justify-content-between overflow-hidden" 
+                                type="button" id="courseDropdownBtn" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            <span id="courseDropdownText" class="text-truncate me-2">All Courses</span>
+                            <span class="badge bg-teal text-white rounded-pill text-xxs" id="courseCountBadge" style="display: none;">0</span>
+                        </button>
+                        <div class="dropdown-menu p-3 shadow-lg border-0 rounded-4 w-100" style="min-width: 300px; max-width: 400px;" aria-labelledby="courseDropdownBtn">
+                            <!-- Live Search Input -->
+                            <div class="input-group input-group-sm mb-2">
+                                <span class="input-group-text bg-light border-end-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                                <input type="text" class="form-control bg-light border-start-0 text-xs" id="courseSearchInput" placeholder="Type course code or title...">
+                            </div>
+                            <!-- Quick Action Buttons -->
+                            <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom text-xxs">
+                                <button type="button" class="btn btn-link btn-sm p-0 text-teal text-decoration-none fw-bold" id="selectAllCoursesBtn">Select All</button>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-muted text-decoration-none" id="clearCoursesBtn">Reset to All</button>
+                            </div>
+                            <!-- Scrollable Checkbox List -->
+                            <div class="overflow-y-auto hide-scrollbar" style="max-height: 220px;" id="courseOptionsList">
+                                <div class="form-check py-1 course-item-row" data-search="all courses">
+                                    <input class="form-check-input course-cb accent-teal" type="checkbox" name="course_id" value="ALL" id="course_all" {% if 'ALL' in course_filter or not course_filter %}checked{% endif %}>
+                                    <label class="form-check-label text-xs fw-bold cursor-pointer text-dark" for="course_all">
+                                        <i class="fa-solid fa-globe text-teal me-1"></i> All Courses
+                                    </label>
+                                </div>
+                                {% for c in courses %}
+                                {% set c_id_str = c.id|string %}
+                                {% set is_selected = c_id_str in course_filter and 'ALL' not in course_filter %}
+                                <div class="form-check py-1 course-item-row" data-search="{{ (c.course_id ~ ' ' ~ c.name)|lower }}">
+                                    <input class="form-check-input course-cb accent-teal" type="checkbox" name="course_id" value="{{ c.id }}" id="course_{{ c.id }}" {% if is_selected %}checked{% endif %}>
+                                    <label class="form-check-label text-xs cursor-pointer text-dark d-flex align-items-center gap-1.5" for="course_{{ c.id }}">
+                                        <span class="badge bg-teal-subtle text-teal border border-teal-subtle text-xxs font-monospace px-1.5 py-0.5">{{ c.course_id }}</span>
+                                        <span class="text-truncate" title="{{ c.name }}">{{ c.name }}</span>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="col-6 col-md-3">
@@ -284,6 +325,7 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // --- Column Chooser Select All ---
         const toggleBtn = document.getElementById('toggleSelectColsBtn');
         const toggleIcon = document.getElementById('toggleSelectColsIcon');
         const toggleText = document.getElementById('toggleSelectColsText');
@@ -315,6 +357,99 @@
 
         colCheckboxes.forEach(cb => cb.addEventListener('change', updateButtonState));
         updateButtonState();
+
+        // --- Searchable Sticky Multi-Select Course Picker ---
+        const courseSearchInput = document.getElementById('courseSearchInput');
+        const courseItemRows = document.querySelectorAll('.course-item-row');
+        const courseAllCb = document.getElementById('course_all');
+        const courseCbs = document.querySelectorAll('.course-cb');
+        const courseDropdownText = document.getElementById('courseDropdownText');
+        const courseCountBadge = document.getElementById('courseCountBadge');
+        const courseSelectedSummary = document.getElementById('courseSelectedSummary');
+        const selectAllCoursesBtn = document.getElementById('selectAllCoursesBtn');
+        const clearCoursesBtn = document.getElementById('clearCoursesBtn');
+
+        function updateCourseDropdownUI() {
+            const checkedIndividual = Array.from(courseCbs).filter(cb => cb.value !== 'ALL' && cb.checked);
+            
+            if (courseAllCb.checked || checkedIndividual.length === 0) {
+                courseDropdownText.textContent = 'All Courses';
+                courseCountBadge.style.display = 'none';
+                if (courseSelectedSummary) courseSelectedSummary.textContent = '';
+            } else {
+                if (checkedIndividual.length === 1) {
+                    const label = checkedIndividual[0].closest('.form-check').querySelector('.text-truncate').textContent;
+                    courseDropdownText.textContent = label;
+                } else {
+                    courseDropdownText.textContent = `${checkedIndividual.length} Courses Selected`;
+                }
+                courseCountBadge.textContent = checkedIndividual.length;
+                courseCountBadge.style.display = 'inline-block';
+                if (courseSelectedSummary) courseSelectedSummary.textContent = `(${checkedIndividual.length} Selected)`;
+            }
+        }
+
+        // Search Filter in Course Picker
+        if (courseSearchInput) {
+            courseSearchInput.addEventListener('input', function () {
+                const q = this.value.trim().toLowerCase();
+                courseItemRows.forEach(row => {
+                    const searchData = row.getAttribute('data-search') || '';
+                    if (!q || searchData.includes(q)) {
+                        row.style.display = 'block';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // Checkbox interaction: "ALL" vs individual
+        courseCbs.forEach(cb => {
+            cb.addEventListener('change', function () {
+                if (this.value === 'ALL' && this.checked) {
+                    courseCbs.forEach(c => {
+                        if (c.value !== 'ALL') c.checked = false;
+                    });
+                } else if (this.value !== 'ALL' && this.checked) {
+                    courseAllCb.checked = false;
+                }
+
+                // If no individual checked, re-check ALL
+                const anyChecked = Array.from(courseCbs).some(c => c.checked);
+                if (!anyChecked) {
+                    courseAllCb.checked = true;
+                }
+
+                updateCourseDropdownUI();
+            });
+        });
+
+        if (selectAllCoursesBtn) {
+            selectAllCoursesBtn.addEventListener('click', function () {
+                courseAllCb.checked = false;
+                courseCbs.forEach(c => {
+                    if (c.value !== 'ALL') {
+                        // Check visible rows
+                        const row = c.closest('.course-item-row');
+                        if (row && row.style.display !== 'none') {
+                            c.checked = true;
+                        }
+                    }
+                });
+                updateCourseDropdownUI();
+            });
+        }
+
+        if (clearCoursesBtn) {
+            clearCoursesBtn.addEventListener('click', function () {
+                courseCbs.forEach(c => c.checked = false);
+                courseAllCb.checked = true;
+                updateCourseDropdownUI();
+            });
+        }
+
+        updateCourseDropdownUI();
     });
 </script>
 {% endblock %}
