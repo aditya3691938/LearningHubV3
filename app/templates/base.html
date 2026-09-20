@@ -652,7 +652,7 @@
                     </button>
                     {% endif %}
 
-                    <a href="{{ url_for('dashboard.index') if admin_logged_in else url_for('learners.my_portal') }}"
+                    <a href="{% if active_view_role == 'admin' %}{{ url_for('dashboard.index') }}{% else %}{{ url_for('learners.my_portal') }}{% endif %}"
                         class="d-flex align-items-center text-decoration-none min-w-0 me-1">
                         <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Learning Hub Logo"
                             class="me-1 me-md-2 flex-shrink-0 brand-icon" style="height: 40px; width: auto;">
@@ -663,7 +663,7 @@
                     <!-- Desktop Capsule Nav Tabs -->
                     {% if is_user_logged_in and not is_auth_page %}
                     <div class="d-none d-xl-flex align-items-center gap-1">
-                        {% if admin_logged_in %}
+                        {% if active_view_role == 'admin' %}
                         <a href="{{ url_for('dashboard.index') }}"
                             class="ls-nav-tab {% if safe_endpoint == 'dashboard.index' %}active{% endif %}">
                             Home
@@ -757,7 +757,19 @@
 
                     {% if is_user_logged_in and not is_auth_page %}
 
-                    {% if learner_id and not admin_logged_in %}
+                    {% if has_both_sessions %}
+                        {% if active_view_role == 'admin' %}
+                        <a href="{{ url_for('learners.my_portal') }}" class="btn btn-sm btn-outline-teal rounded-pill fw-bold text-xs d-inline-flex align-items-center gap-1.5 shadow-xs me-1" title="Switch view to Learner Portal">
+                            <i class="fa-solid fa-graduation-cap text-warning"></i> Switch to Learner View
+                        </a>
+                        {% else %}
+                        <a href="{{ url_for('dashboard.index') }}" class="btn btn-sm btn-outline-warning rounded-pill fw-bold text-xs d-inline-flex align-items-center gap-1.5 shadow-xs me-1" title="Switch view to Admin Dashboard">
+                            <i class="fa-solid fa-user-shield text-info"></i> Switch to Admin Dashboard
+                        </a>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if learner_id and active_view_role == 'learner' %}
                     <!-- Gamification Points Badge -->
                     <div class="d-none d-md-flex align-items-center bg-warning-subtle text-warning-emphasis px-3 py-1 rounded-pill fw-bold border border-warning shadow-sm"
                         title="Your Learning Points">
@@ -766,7 +778,7 @@
                     </div>
                     {% endif %}
 
-                    {% if learner_id and not admin_logged_in %}
+                    {% if learner_id and active_view_role == 'learner' %}
                     <!-- Notifications Bell Dropdown -->
                     <div class="dropdown position-relative d-inline-flex align-items-center">
                         <button type="button"
@@ -986,7 +998,7 @@
                         <button
                             class="btn border d-flex align-items-center justify-content-center rounded-circle bg-white shadow-xs p-0 flex-shrink-0 admin-profile-btn"
                             type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                            title="{% if admin_logged_in %}Account: {{ admin_username }}{% else %}Account: {{ session.get('learner_name', 'Learner') }}{% endif %}"
+                            title="{% if active_view_role == 'admin' %}Account: {{ admin_username }}{% else %}Account: {{ session.get('learner_name', 'Learner') }}{% endif %}"
                             style="height: 36px; width: 36px;">
                             <img src="{% if global_profile_picture %}{{ get_b2_url(global_profile_picture, folder='profile_pics') }}{% else %}https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120{% endif %}"
                                 alt="Profile Avatar"
@@ -994,17 +1006,17 @@
                                 style="width: 28px; height: 28px; object-fit: cover;">
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 p-2"
-                            style="min-width: 220px;">
+                            style="min-width: 230px;">
                             <li class="px-3 py-2.5 border-bottom mb-1 bg-light rounded-3">
-                                <span class="d-block fw-bold text-dark fs-6">{% if admin_logged_in %}{{ admin_username
+                                <span class="d-block fw-bold text-dark fs-6">{% if active_view_role == 'admin' %}{{ admin_username
                                     }}{% elif session.get('learner_name') %}{{ session.get('learner_name') }}{% else
                                     %}Learner Portal{% endif %}</span>
                                 <span class="badge bg-teal-light text-teal border border-teal-subtle mt-1">{% if
-                                    admin_logged_in %}L&D Administrator{% elif session.get('learner_global_id')
+                                    active_view_role == 'admin' %}L&D Administrator{% elif session.get('learner_global_id')
                                     %}Learner ID: {{ session.get('learner_global_id') }}{% else %}Learner Portal{% endif
                                     %}</span>
                             </li>
-                            {% if not admin_logged_in %}
+                            {% if active_view_role == 'learner' %}
                             <li><a class="dropdown-item fw-semibold py-2"
                                     href="{{ url_for('learners.view_learner_profile') }}"><i
                                         class="fa-solid fa-id-badge me-2 text-teal fs-6"></i> My Profile & Portal</a>
@@ -1017,10 +1029,26 @@
                             <li>
                                 <hr class="dropdown-divider my-1">
                             </li>
+                            {% if has_both_sessions %}
+                            <li><a class="dropdown-item text-danger fw-semibold py-2 text-xs"
+                                    href="{{ url_for('auth.learner_logout') }}"><i
+                                        class="fa-solid fa-right-from-bracket me-2 text-danger"></i> Logout Learner Portal</a>
+                            </li>
+                            <li><a class="dropdown-item text-danger fw-semibold py-2 text-xs"
+                                    href="{{ url_for('auth.logout') }}"><i
+                                        class="fa-solid fa-user-shield me-2 text-danger"></i> Logout Admin Session</a>
+                            </li>
+                            {% elif active_view_role == 'admin' %}
                             <li><a class="dropdown-item text-danger fw-semibold py-2"
                                     href="{{ url_for('auth.logout') }}"><i
-                                        class="fa-solid fa-right-from-bracket me-2 text-danger fs-6"></i> Logout</a>
+                                        class="fa-solid fa-right-from-bracket me-2 text-danger fs-6"></i> Logout Admin</a>
                             </li>
+                            {% else %}
+                            <li><a class="dropdown-item text-danger fw-semibold py-2"
+                                    href="{{ url_for('auth.learner_logout') }}"><i
+                                        class="fa-solid fa-right-from-bracket me-2 text-danger fs-6"></i> Logout Learner</a>
+                            </li>
+                            {% endif %}
                         </ul>
                     </div>
                     {% endif %}
@@ -1042,22 +1070,22 @@
             <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
         <div class="offcanvas-body py-3 px-3">
-            <a href="{% if admin_logged_in %}{{ url_for('dashboard.admin_profile') }}{% else %}{{ url_for('learners.view_learner_profile') }}{% endif %}" class="mobile-nav-user-badge p-3 rounded-4 mb-3 border d-flex align-items-center gap-3 text-decoration-none hover-elevate transition-all">
+            <a href="{% if active_view_role == 'admin' %}{{ url_for('dashboard.admin_profile') }}{% else %}{{ url_for('learners.view_learner_profile') }}{% endif %}" class="mobile-nav-user-badge p-3 rounded-4 mb-3 border d-flex align-items-center gap-3 text-decoration-none hover-elevate transition-all">
                 <img src="{% if global_profile_picture %}{{ get_b2_url(global_profile_picture, folder='profile_pics') }}{% else %}https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120{% endif %}"
                     alt="Avatar" class="rounded-circle border border-2 border-teal"
                     style="width: 44px; height: 44px; object-fit: cover;">
                 <div>
-                    <div class="fw-bold text-dark">{% if admin_logged_in %}{{ admin_username }}{% elif
+                    <div class="fw-bold text-dark">{% if active_view_role == 'admin' %}{{ admin_username }}{% elif
                         session.get('learner_name') %}{{ session.get('learner_name') }}{% else %}Learner Portal{% endif
                         %}</div>
-                    <span class="badge bg-teal-light text-teal">{% if admin_logged_in %}L&D Admin{% elif
+                    <span class="badge bg-teal-light text-teal">{% if active_view_role == 'admin' %}L&D Admin{% elif
                         session.get('learner_global_id') %}Learner ID: {{ session.get('learner_global_id') }}{% else
                         %}Learner{% endif %}</span>
                 </div>
             </a>
 
             <div class="mobile-nav-links d-flex flex-column gap-2">
-                {% if admin_logged_in %}
+                {% if active_view_role == 'admin' %}
                 <a href="{{ url_for('dashboard.index') }}"
                     class="mobile-nav-item {% if safe_endpoint == 'dashboard.index' %}active{% endif %}">
                     <i class="fa-solid fa-house me-3 text-teal"></i> Home Dashboard
@@ -1121,9 +1149,15 @@
                 {% endif %}
 
                 <hr class="my-2 text-muted">
+                {% if active_view_role == 'admin' %}
                 <a href="{{ url_for('auth.logout') }}" class="mobile-nav-item text-danger">
-                    <i class="fa-solid fa-right-from-bracket me-3 text-danger"></i> Logout
+                    <i class="fa-solid fa-right-from-bracket me-3 text-danger"></i> Logout Admin
                 </a>
+                {% else %}
+                <a href="{{ url_for('auth.learner_logout') }}" class="mobile-nav-item text-danger">
+                    <i class="fa-solid fa-right-from-bracket me-3 text-danger"></i> Logout Learner
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -1151,11 +1185,8 @@
             {% endwith %}
         </div>
 
-        {% if admin_logged_in %}
         {% block content %}{% endblock %}
-        {% else %}
         {% block public_content %}{% endblock %}
-        {% endif %}
     </main>
 
     <!-- Global Portal Search Modal -->

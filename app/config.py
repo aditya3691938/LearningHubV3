@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from dotenv import load_dotenv
 
 BASE_DIR = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
@@ -7,6 +8,7 @@ load_dotenv(os.path.join(BASE_DIR, '.env'))
 class Config:
     BASE_DIR = BASE_DIR
     SECRET_KEY = os.environ.get('SECRET_KEY', 'narayana-lnd-lms-super-secret-key-2026')
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
     _db_url = os.environ.get('DATABASE_URL')
     if _db_url and _db_url.startswith("postgres://"):
         _db_url = _db_url.replace("postgres://", "postgresql://", 1)

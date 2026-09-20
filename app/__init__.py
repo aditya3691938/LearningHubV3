@@ -114,11 +114,48 @@ def create_app(config_class=Config):
     from app.utils.tagging import format_tags_filter
     app.template_filter('format_tags')(format_tags_filter)
 
+    # 30-Minute Inactivity Session Timeout Middleware
+    @app.before_request
+    def check_session_timeout():
+        if request.endpoint and request.endpoint.startswith('static'):
+            return
+
+        from datetime import datetime
+        last_activity = session.get('last_activity')
+        now_ts = datetime.utcnow().timestamp()
+
+        # 30 minutes = 1800 seconds threshold
+        if last_activity:
+            try:
+                inactive_seconds = now_ts - float(last_activity)
+                if inactive_seconds > 1800:
+                    session.clear()
+                    from flask import flash, redirect, url_for
+                    flash("Your session has timed out due to 30 minutes of inactivity. Please log in again.", "warning")
+                    return redirect(url_for('auth.admin_login'))
+            except (ValueError, TypeError):
+                pass
+
+        if session.get('admin_logged_in') or session.get('learner_id'):
+            session['last_activity'] = now_ts
+
     # Global context processors for templates
     @app.context_processor
     def inject_global_vars():
         from app.services.gdrive_service import parse_gdrive_url
         learner_id = session.get('learner_id')
+        admin_logged_in = session.get('admin_logged_in', False)
+        has_both_sessions = bool(admin_logged_in and learner_id)
+        path = request.path or ''
+
+        # Determine active view role contextually based on requested route URL
+        if learner_id and (path.startswith('/learners') or path.startswith('/courses') or path.startswith('/certificates') or path.startswith('/learning_wall') or path.startswith('/quizzes')):
+            active_view_role = 'learner'
+        elif admin_logged_in and (path.startswith('/dashboard') or path.startswith('/reports') or path.startswith('/attendance') or path.startswith('/feedback') or path.startswith('/classes') or path in ['/', '/login']):
+            active_view_role = 'admin'
+        else:
+            active_view_role = 'learner' if (learner_id and not admin_logged_in) else ('admin' if admin_logged_in else 'learner')
+
         user_notifications = []
         unread_notif_count = 0
         learner_points = 0
@@ -139,14 +176,14 @@ def create_app(config_class=Config):
                 pass
 
         open_tickets_count = 0
-        if session.get('admin_logged_in', False):
+        if admin_logged_in:
             try:
                 from app.models.issue import LmsIssue
                 open_tickets_count = LmsIssue.query.filter_by(status='Open').count()
                 
                 from app.models.user import AdminUser
                 admin = AdminUser.query.filter_by(username=session.get('admin_username')).first()
-                if admin and admin.profile_picture:
+                if admin and admin.profile_picture and not global_profile_picture:
                     global_profile_picture = admin.profile_picture
             except Exception:
                 pass
@@ -163,7 +200,7 @@ def create_app(config_class=Config):
                 session['learner_theme'] = learner_theme
 
         return {
-            'admin_logged_in': session.get('admin_logged_in', False),
+            'admin_logged_in': admin_logged_in,
             'admin_username': session.get('admin_username', 'admin'),
             'learner_id': learner_id,
             'learner_global_id': session.get('learner_global_id', None),
@@ -176,6 +213,8 @@ def create_app(config_class=Config):
             'learner_theme': learner_theme,
             'open_tickets_count': open_tickets_count,
             'global_profile_picture': global_profile_picture,
+            'active_view_role': active_view_role,
+            'has_both_sessions': has_both_sessions,
             'get_b2_url': __import__('app.services.b2_service', fromlist=['get_b2_url']).get_b2_url
         }
 

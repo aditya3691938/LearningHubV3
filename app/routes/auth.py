@@ -23,8 +23,10 @@ def admin_login():
 
         admin = AdminUser.query.filter_by(username=username).first()
         if admin and admin.check_password(password):
+            session.permanent = True
             session['admin_logged_in'] = True
             session['admin_username'] = admin.username
+            session['last_activity'] = datetime.utcnow().timestamp()
             flash('Successfully logged in as L&D Administrator.', 'success')
             return redirect(url_for('dashboard.index'))
         else:
@@ -35,9 +37,24 @@ def admin_login():
 
 @auth_bp.route('/logout')
 def logout():
-    session.clear()
-    flash('You have been logged out.', 'info')
+    session.pop('admin_logged_in', None)
+    session.pop('admin_username', None)
+    if not session.get('learner_id'):
+        session.clear()
+    flash('You have been logged out of Admin Management.', 'info')
     return redirect(url_for('auth.admin_login'))
+
+
+@auth_bp.route('/learner/logout')
+def learner_logout():
+    session.pop('learner_id', None)
+    session.pop('learner_global_id', None)
+    session.pop('learner_name', None)
+    session.pop('learner_theme', None)
+    if not session.get('admin_logged_in'):
+        session.clear()
+    flash('You have been logged out of the Learner Portal.', 'info')
+    return redirect(url_for('auth.learner_login'))
 
 
 @auth_bp.route('/learner/login', methods=['GET', 'POST'])
@@ -106,10 +123,12 @@ def learner_login():
                 error = f"Learner with Global ID '{global_id}' not found. Please use a valid learner login (e.g., 10001)."
 
             else:
+                session.permanent = True
                 session['learner_id'] = learner.id
                 session['learner_global_id'] = learner.global_id
                 session['learner_name'] = learner.name
                 session['learner_theme'] = learner.theme or 'navy'
+                session['last_activity'] = datetime.utcnow().timestamp()
 
                 # Daily Streak Logic
                 from datetime import date, timedelta
