@@ -426,13 +426,17 @@
             color: var(--text-primary, #FAFAF9) !important;
         }
 
-        /* Cards, Lists, Modals, Offcanvas */
+        /* Cards, Lists, Modals, Offcanvas, & Login Cards in Dark Themes */
         .theme-dark .card, .theme-cyberpunk .card, .theme-synthwave .card, .theme-matrix .card, .theme-dracula .card, [data-theme="dark"] .card,
+        .theme-dark .card-login, .theme-cyberpunk .card-login, .theme-synthwave .card-login, .theme-matrix .card-login, .theme-dracula .card-login, [data-theme="dark"] .card-login,
+        .theme-dark .card-gradient-blue, .theme-cyberpunk .card-gradient-blue, .theme-synthwave .card-gradient-blue, .theme-matrix .card-gradient-blue, .theme-dracula .card-gradient-blue, [data-theme="dark"] .card-gradient-blue,
+        .theme-dark .card-gradient-purple, .theme-cyberpunk .card-gradient-purple, .theme-synthwave .card-gradient-purple, .theme-matrix .card-gradient-purple, .theme-dracula .card-gradient-purple, [data-theme="dark"] .card-gradient-purple,
+        .theme-dark .card-gradient-teal, .theme-cyberpunk .card-gradient-teal, .theme-synthwave .card-gradient-teal, .theme-matrix .card-gradient-teal, .theme-dracula .card-gradient-teal, [data-theme="dark"] .card-gradient-teal,
         .theme-dark .dropdown-menu, .theme-cyberpunk .dropdown-menu, .theme-synthwave .dropdown-menu, .theme-matrix .dropdown-menu, .theme-dracula .dropdown-menu, [data-theme="dark"] .dropdown-menu,
         .theme-dark .offcanvas, .theme-cyberpunk .offcanvas, .theme-synthwave .offcanvas, .theme-matrix .offcanvas, .theme-dracula .offcanvas, [data-theme="dark"] .offcanvas,
         .theme-dark .modal-content, .theme-cyberpunk .modal-content, .theme-synthwave .modal-content, .theme-matrix .modal-content, .theme-dracula .modal-content, [data-theme="dark"] .modal-content,
         .theme-dark .list-group-item, .theme-cyberpunk .list-group-item, .theme-synthwave .list-group-item, .theme-matrix .list-group-item, .theme-dracula .list-group-item, [data-theme="dark"] .list-group-item {
-            background-color: var(--bg-surface-elevated, #162030) !important;
+            background: linear-gradient(145deg, var(--bg-surface-elevated, #162030) 0%, var(--bg-surface, #101622) 100%) !important;
             color: var(--text-primary, #FAFAF9) !important;
             border-color: var(--border-color, #1F293D) !important;
         }
@@ -446,8 +450,9 @@
             border-color: var(--border-color, #1F293D) !important;
         }
 
-        /* Form Inputs & Selects in Dark Themes */
+        /* Form Inputs, Selects, and Login Controls in Dark Themes */
         .theme-dark .form-control, .theme-cyberpunk .form-control, .theme-synthwave .form-control, .theme-matrix .form-control, .theme-dracula .form-control, [data-theme="dark"] .form-control,
+        .theme-dark .form-control-login, .theme-cyberpunk .form-control-login, .theme-synthwave .form-control-login, .theme-matrix .form-control-login, .theme-dracula .form-control-login, [data-theme="dark"] .form-control-login,
         .theme-dark .form-select, .theme-cyberpunk .form-select, .theme-synthwave .form-select, .theme-matrix .form-select, .theme-dracula .form-select, [data-theme="dark"] .form-select,
         .theme-dark textarea, .theme-cyberpunk textarea, .theme-synthwave textarea, .theme-matrix textarea, .theme-dracula textarea, [data-theme="dark"] textarea {
             color: var(--text-primary, #FAFAF9) !important;
@@ -456,6 +461,7 @@
         }
 
         .theme-dark .form-control::placeholder, .theme-cyberpunk .form-control::placeholder, .theme-synthwave .form-control::placeholder, .theme-matrix .form-control::placeholder, .theme-dracula .form-control::placeholder, [data-theme="dark"] .form-control::placeholder,
+        .theme-dark .form-control-login::placeholder, .theme-cyberpunk .form-control-login::placeholder, .theme-synthwave .form-control-login::placeholder, .theme-matrix .form-control-login::placeholder, .theme-dracula .form-control-login::placeholder, [data-theme="dark"] .form-control-login::placeholder,
         .theme-dark .form-select::placeholder, .theme-cyberpunk .form-select::placeholder, .theme-synthwave .form-select::placeholder, .theme-matrix .form-select::placeholder, .theme-dracula .form-select::placeholder, [data-theme="dark"] .form-select::placeholder {
             color: var(--text-muted, #94A3B8) !important;
             opacity: 0.8 !important;
