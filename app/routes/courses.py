@@ -758,11 +758,18 @@ def add_audio_track(courseware_id):
         filename = f"audio_{cw.id}_{short_id}{ext}"
         from app.services.b2_service import upload_file_to_b2
         uploaded_name = upload_file_to_b2(audio_file, filename, folder='audio', content_type=audio_file.content_type)
-        if uploaded_name:
-            filename = uploaded_name
-        else:
-            flash("Failed to upload audio to cloud.", "danger")
-            return redirect(url_for('courses.view_course', course_id=cw.lesson.course_id))
+        if not uploaded_name:
+            # Local disk storage fallback
+            audio_dir = os.path.join(current_app.config['MATERIALS_FOLDER'], 'audio')
+            os.makedirs(audio_dir, exist_ok=True)
+            local_path = os.path.join(audio_dir, filename)
+            try:
+                audio_file.seek(0)
+                audio_file.save(local_path)
+                filename = f"audio/{filename}"
+            except Exception as e:
+                flash(f"Failed to save audio file: {e}", "danger")
+                return redirect(url_for('courses.view_course', course_id=cw.lesson.course_id))
     else:
         flash("Please select an audio file (.mp3, .m4a, .aac, .wav).", "danger")
         return redirect(url_for('courses.view_course', course_id=cw.lesson.course_id))
@@ -833,21 +840,27 @@ def stream_audio_track(track_id):
 
     # 3. Local filesystem candidate locations
     clean_name = os.path.basename(raw_filename)
+    clean_rel = raw_filename.lstrip('/\\')
     materials_folder = current_app.config['MATERIALS_FOLDER']
 
+    abs_mat = os.path.abspath(materials_folder)
     candidates = [
-        os.path.join(materials_folder, clean_name),
-        os.path.join(materials_folder, 'audio', clean_name),
+        os.path.join(abs_mat, clean_name),
+        os.path.join(abs_mat, clean_rel),
+        os.path.join(abs_mat, 'audio', clean_name),
         os.path.join(current_app.root_path, 'static', 'uploads', 'audio', clean_name),
         os.path.join(current_app.root_path, 'static', 'uploads', 'materials', clean_name),
         os.path.join(current_app.root_path, 'static', 'uploads', clean_name),
+        os.path.join(current_app.root_path, 'static', clean_rel),
         os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'audio', clean_name)),
         os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'materials', clean_name)),
         os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', clean_name)),
+        os.path.abspath(os.path.join(current_app.root_path, '..', clean_rel)),
     ]
 
     for c_path in candidates:
-        if os.path.isfile(c_path):
+        norm_path = os.path.normpath(c_path)
+        if os.path.isfile(norm_path):
             ext = os.path.splitext(clean_name)[1].lower()
             mimetypes = {
                 '.mp3': 'audio/mpeg',
@@ -858,7 +871,9 @@ def stream_audio_track(track_id):
                 '.flac': 'audio/flac',
                 '.opus': 'audio/opus'
             }
-            return send_file(c_path, mimetype=mimetypes.get(ext, 'audio/mpeg'))
+            resp = send_file(norm_path, mimetype=mimetypes.get(ext, 'audio/mpeg'), conditional=True)
+            resp.headers['Accept-Ranges'] = 'bytes'
+            return resp
 
     # 4. Fallback redirect if B2 returned relative path
     if b2_url and b2_url.startswith('/'):
@@ -1844,17 +1859,19 @@ def stream_courseware(courseware_id):
             elif ext in ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv']:
                 mimetype = f'video/{ext[1:]}'
 
-            return send_file(
+            resp = send_file(
                 file_path,
                 mimetype=mimetype,
-                as_attachment=False
+                as_attachment=False,
+                conditional=True
             )
+            resp.headers['Accept-Ranges'] = 'bytes'
+            return resp
         else:
             from app.services.b2_service import get_b2_url
             b2_url = get_b2_url(cw.filename, folder='materials')
             if b2_url:
                 return redirect(b2_url)
-
 
     return f"""
     <!DOCTYPE html>
@@ -1868,42 +1885,6 @@ def stream_courseware(courseware_id):
     </body>
     </html>
     """, 200, {'Content-Type': 'text/html'}
-
-    # 2. Handle PDF, Video, or other uploads
-    if cw.filename:
-        file_path = os.path.join(current_app.config['MATERIALS_FOLDER'], cw.filename)
-        if os.path.exists(file_path):
-            mimetype = None
-            if ext == '.pdf':
-                mimetype = 'application/pdf'
-            elif ext in ['.mp4', '.webm', '.ogg', '.mov']:
-                mimetype = f'video/{ext[1:]}'
-
-            return send_file(
-                file_path,
-                mimetype=mimetype,
-                as_attachment=False
-            )
-
-    return redirect(url_for('courses.view_course', course_id=cw.lesson.course_id))
-
-    # 2. Handle PDF, Video, or other uploads
-    if cw.filename:
-        file_path = os.path.join(current_app.config['MATERIALS_FOLDER'], cw.filename)
-        if os.path.exists(file_path):
-            mimetype = None
-            if ext == '.pdf':
-                mimetype = 'application/pdf'
-            elif ext in ['.mp4', '.webm', '.ogg', '.mov']:
-                mimetype = f'video/{ext[1:]}'
-
-            return send_file(
-                file_path,
-                mimetype=mimetype,
-                as_attachment=False
-            )
-
-    return redirect(url_for('courses.view_course', course_id=cw.lesson.course_id))
 
 
 @courses_bp.route('/material/<int:material_id>/delete', methods=['POST'])

@@ -326,7 +326,7 @@
 
                                 {% if cw.audio_tracks %}
                                     {% for trk in cw.audio_tracks %}
-                                    <audio id="auxAudio{{ cw.id }}_{{ trk.id }}" src="{{ url_for('courses.stream_audio_track', track_id=trk.id) }}" preload="metadata"></audio>
+                                    <audio id="auxAudio{{ cw.id }}_{{ trk.id }}" src="{{ url_for('courses.stream_audio_track', track_id=trk.id) }}" preload="auto"></audio>
                                     {% endfor %}
                                 {% endif %}
                             </div>
@@ -1224,6 +1224,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         function syncAudioToVideo() {
             if (activeAuxAudio && videoEl) {
+                if (!videoEl.paused && activeAuxAudio.paused) {
+                    activeAuxAudio.play().catch(function(e) { console.log('Aux audio sync play error:', e); });
+                }
                 if (Math.abs(activeAuxAudio.currentTime - videoEl.currentTime) > 0.15) {
                     activeAuxAudio.currentTime = videoEl.currentTime;
                 }
@@ -1242,7 +1245,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (activeAuxAudio) {
                 activeAuxAudio.volume = videoEl.volume;
-                activeAuxAudio.muted = videoEl.muted;
+                activeAuxAudio.muted = (videoEl.volume === 0);
+                videoEl.muted = true;
             }
         });
 
