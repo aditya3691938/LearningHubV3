@@ -5,34 +5,48 @@ STOP_WORDS = {
     'the', 'of', 'and', 'in', 'a', 'an', 'for', 'with', 'on', 'to', 'at', 'by',
     'from', 'as', 'is', 'it', 'or', 'be', 'are', 'this', 'that', 'your', 'my',
     'certificate', 'certification', 'completion', 'achievement', 'completed',
-    'has', 'successfully', 'awarded', 'course', 'program', 'specialization'
+    'has', 'successfully', 'awarded', 'course', 'program', 'specialization',
+    'license', 'credential', 'verify', 'verified'
 }
 
 def extract_text_from_pdf(pdf_source):
     """
-    Extracts all plain text from an uploaded PDF file stream or file path using pdfplumber.
-    Returns cleaned text string.
+    Extracts all plain text from an uploaded PDF file stream or file path.
+    Tries pdfplumber first, then falls back to pypdfium2 for high-reliability text extraction.
     """
     extracted_text = ""
+    
+    # 1. Try pdfplumber
     try:
-        if hasattr(pdf_source, 'read'):
+        if hasattr(pdf_source, 'seek'):
             pdf_source.seek(0)
-            with pdfplumber.open(pdf_source) as pdf:
-                for page in pdf.pages:
-                    text = page.extract_text()
-                    if text:
-                        extracted_text += text + "\n"
+        with pdfplumber.open(pdf_source) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text()
+                if text:
+                    extracted_text += text + "\n"
+        if hasattr(pdf_source, 'seek'):
             pdf_source.seek(0)
-        else:
-            with pdfplumber.open(pdf_source) as pdf:
-                for page in pdf.pages:
-                    text = page.extract_text()
-                    if text:
-                        extracted_text += text + "\n"
     except Exception as e:
-        print(f"OCR PDF extraction error: {e}")
-        return ""
-        
+        print(f"pdfplumber extraction notice: {e}")
+
+    # 2. Fallback to pypdfium2 if text is still empty
+    if not extracted_text.strip():
+        try:
+            import pypdfium2
+            if hasattr(pdf_source, 'seek'):
+                pdf_source.seek(0)
+            pdf = pypdfium2.PdfDocument(pdf_source)
+            for page in pdf:
+                textpage = page.get_textpage()
+                text = textpage.get_text_range()
+                if text:
+                    extracted_text += text + "\n"
+            if hasattr(pdf_source, 'seek'):
+                pdf_source.seek(0)
+        except Exception as e2:
+            print(f"pypdfium2 extraction notice: {e2}")
+
     return extracted_text.strip()
 
 
@@ -44,7 +58,6 @@ def validate_certificate_pdf(pdf_source, course_name, issuing_org, learner_name=
     extracted_text = extract_text_from_pdf(pdf_source)
     
     if not extracted_text:
-        # If PDF has no extractable text layer (e.g. image-only PDF), return informative message
         return False, "Uploaded PDF certificate contains no extractable text layer or is unreadable. Please upload a valid digital certificate PDF.", ""
         
     pdf_text_clean = extracted_text.lower()
@@ -57,7 +70,7 @@ def validate_certificate_pdf(pdf_source, course_name, issuing_org, learner_name=
     if course_tokens:
         matched_tokens = [w for w in course_tokens if w in pdf_text_tokens or w in pdf_text_clean]
         match_ratio = len(matched_tokens) / len(course_tokens)
-        if match_ratio < 0.4:
+        if match_ratio < 0.3:
             discrepancies.append(f"Course Name '{course_name}' could not be verified in the PDF text (matched {len(matched_tokens)}/{len(course_tokens)} key words).")
 
     # 2. Issuing Organization Validation
@@ -65,7 +78,7 @@ def validate_certificate_pdf(pdf_source, course_name, issuing_org, learner_name=
     if org_tokens:
         matched_org_tokens = [w for w in org_tokens if w in pdf_text_tokens or w in pdf_text_clean]
         match_ratio_org = len(matched_org_tokens) / len(org_tokens)
-        if match_ratio_org < 0.4:
+        if match_ratio_org < 0.3:
             discrepancies.append(f"Issuing Organization '{issuing_org}' was not found in the PDF text.")
 
     # 3. Learner Name Sanity Check (if provided)
@@ -76,15 +89,8 @@ def validate_certificate_pdf(pdf_source, course_name, issuing_org, learner_name=
             if not name_matches:
                 discrepancies.append(f"Learner Name '{learner_name}' does not match any name on the certificate PDF.")
 
-    # 4. Date Earned Check (Year verification if provided)
-    if date_earned:
-        year_str = str(date_earned.year) if hasattr(date_earned, 'year') else str(date_earned)[:4]
-        if year_str not in pdf_text_clean:
-            # Note: Soft check on date year
-            pass
-
     if discrepancies:
-        combined_msg = "Discrepancy detected between submitted details and certificate PDF: " + " ".join(discrepancies) + " Please provide valid credentials matching your uploaded certificate."
+        combined_msg = "Discrepancy detected between submitted details and certificate PDF: " + " ".join(discrepancies) + " Please check your entries or upload a matching certificate."
         return False, combined_msg, extracted_text
 
     return True, "Certificate validated successfully.", extracted_text

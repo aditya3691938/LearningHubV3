@@ -106,6 +106,9 @@ def upload_external():
         except ValueError:
             pass
 
+    # Reset stream pointer
+    file.seek(0)
+
     # Run Backend OCR Text Validation
     from app.services.ocr_service import validate_certificate_pdf
     is_valid_ocr, discrepancy_msg, extracted_text = validate_certificate_pdf(
@@ -120,7 +123,7 @@ def upload_external():
         flash(f"{discrepancy_msg}", "danger")
         return redirect(url_for('certificates.my_certificates'))
 
-    # Upload PDF file to B2 / Local storage
+    # Upload PDF file to Local storage AND B2
     pdf_filename = None
     b2_cert_file = request.form.get('b2_uploaded_filename')
     if b2_cert_file:
@@ -129,16 +132,23 @@ def upload_external():
         from werkzeug.utils import secure_filename
         import uuid
         pdf_filename = f"ext_cert_{uuid.uuid4().hex}{ext}"
-        from app.services.b2_service import upload_file_to_b2
-        uploaded_name = upload_file_to_b2(file, pdf_filename, folder='external_certs', content_type=file.content_type)
-        if uploaded_name:
-            pdf_filename = uploaded_name
-        else:
-            upload_dir = os.path.join(certificates_bp.root_path, '..', '..', 'uploads', 'external_certs')
-            os.makedirs(upload_dir, exist_ok=True)
-            local_path = os.path.join(upload_dir, pdf_filename)
-            file.seek(0)
-            file.save(local_path)
+
+        # 1. Guaranteed Local Save
+        file.seek(0)
+        upload_dir = os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'external_certs'))
+        os.makedirs(upload_dir, exist_ok=True)
+        local_path = os.path.join(upload_dir, pdf_filename)
+        file.save(local_path)
+        file.seek(0)
+
+        # 2. Cloud B2 Upload Attempt
+        try:
+            from app.services.b2_service import upload_file_to_b2
+            uploaded_name = upload_file_to_b2(file, pdf_filename, folder='external_certs', content_type=file.content_type)
+            if uploaded_name:
+                pdf_filename = uploaded_name
+        except Exception as b2_err:
+            print(f"B2 upload notice: {b2_err}")
         
     from app.models.external_certificate import ExternalCertificate
     ext_cert = ExternalCertificate(
@@ -183,7 +193,7 @@ def download_certificate(cert_id_str):
 def serve_external_certificate(cert_id):
     """
     Serves or redirects uploaded external certificates.
-    Supports Backblaze B2 presigned URLs, direct HTTP links, and local filesystem candidates.
+    Checks local server disk first, then falls back to B2 presigned URLs.
     """
     from app.models.external_certificate import ExternalCertificate
     from app.services.b2_service import get_b2_url
@@ -200,33 +210,35 @@ def serve_external_certificate(cert_id):
     if raw_filename.startswith('http://') or raw_filename.startswith('https://'):
         return redirect(raw_filename)
 
-    # 2. Backblaze B2 presigned URL
-    b2_url = get_b2_url(raw_filename, folder='external_certs') or get_b2_url(raw_filename)
-    if b2_url and (b2_url.startswith('http://') or b2_url.startswith('https://')):
-        return redirect(b2_url)
-
-    # 3. Local filesystem candidate locations
     clean_name = os.path.basename(raw_filename)
     clean_rel = raw_filename.lstrip('/\\')
 
+    # 2. Local filesystem candidates (CHECK LOCAL SERVER FIRST!)
     candidates = [
+        os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'external_certs', clean_name)),
         os.path.join(current_app.root_path, 'static', 'uploads', 'external_certs', clean_name),
         os.path.join(current_app.root_path, 'static', 'uploads', clean_name),
-        os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'external_certs', clean_name)),
         os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', clean_name)),
         os.path.abspath(os.path.join(current_app.root_path, '..', clean_rel)),
     ]
 
     for c_path in candidates:
         norm_path = os.path.normpath(c_path)
-        if os.path.isfile(norm_path):
+        if os.path.isfile(norm_path) and os.path.getsize(norm_path) > 0:
             resp = send_file(norm_path, mimetype='application/pdf', as_attachment=False, conditional=True)
             resp.headers['Accept-Ranges'] = 'bytes'
             return resp
 
+    # 3. Backblaze B2 presigned URL fallback if not on local disk
+    b2_url = get_b2_url(raw_filename, folder='external_certs') or get_b2_url(raw_filename)
+    if b2_url and (b2_url.startswith('http://') or b2_url.startswith('https://')):
+        return redirect(b2_url)
+
     # 4. Fallback redirect if B2 returned relative static path
     if b2_url and b2_url.startswith('/'):
         return redirect(b2_url)
+
+    abort(404, description="External certificate PDF file could not be located on local server or cloud.")
 
     abort(404, description="External certificate PDF file could not be located on cloud or local server.")
 
