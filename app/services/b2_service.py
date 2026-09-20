@@ -11,6 +11,9 @@ except ImportError:
     Config = None
 
 def get_b2_client():
+    if not boto3:
+        return None
+
     endpoint = os.environ.get('B2_ENDPOINT_URL') or os.environ.get('S3_ENDPOINT_URL')
     key_id = os.environ.get('B2_KEY_ID') or os.environ.get('S3_ACCESS_KEY')
     application_key = os.environ.get('B2_APPLICATION_KEY') or os.environ.get('S3_SECRET_KEY')
@@ -18,13 +21,17 @@ def get_b2_client():
     if not endpoint or not key_id or not application_key:
         return None
 
-    return boto3.client(
-        service_name='s3',
-        endpoint_url=endpoint,
-        aws_access_key_id=key_id,
-        aws_secret_access_key=application_key,
-        config=Config(signature_version='s3v4')
-    )
+    try:
+        return boto3.client(
+            service_name='s3',
+            endpoint_url=endpoint,
+            aws_access_key_id=key_id,
+            aws_secret_access_key=application_key,
+            config=Config(signature_version='s3v4') if Config else None
+        )
+    except Exception as e:
+        print(f"Notice: B2 Client Initialization failed: {e}")
+        return None
 
 def upload_file_to_b2(file_obj, filename, folder='', content_type=None):
     """
@@ -166,6 +173,7 @@ def download_file_from_b2(filename, folder='', local_path=None):
     except Exception as e:
         print(f"B2 Download Error for '{key}': {e}")
         return False
+
 def get_b2_url(filename, folder='', expires_in=86400):
     """
     Generates the Cloud URL for a file in the B2 bucket.
@@ -194,29 +202,28 @@ def get_b2_url(filename, folder='', expires_in=86400):
     endpoint = os.environ.get('B2_ENDPOINT_URL') or os.environ.get('S3_ENDPOINT_URL')
     bucket = os.environ.get('B2_BUCKET_NAME') or os.environ.get('S3_BUCKET')
 
-    b2 = get_b2_client()
-
-    if b2 and bucket:
-        try:
-            return b2.generate_presigned_url(
-                'get_object',
-                Params={'Bucket': bucket, 'Key': key},
-                ExpiresIn=expires_in
-            )
-        except Exception as e:
-            print(f"Presigned URL generation notice for '{key}': {e}")
+    if boto3:
+        b2 = get_b2_client()
+        if b2 and bucket:
+            try:
+                return b2.generate_presigned_url(
+                    'get_object',
+                    Params={'Bucket': bucket, 'Key': key},
+                    ExpiresIn=expires_in
+                )
+            except Exception as e:
+                print(f"Presigned URL generation notice for '{key}': {e}")
 
     if endpoint and bucket:
         endpoint = endpoint.rstrip('/')
         return f"{endpoint}/{bucket}/{key}"
 
-    # Fallback to local upload directory route if B2 environment is not set up
+    # Fallback to local upload directory route if B2 environment or boto3 is not set up
     if '/' in clean_filename:
+        if clean_filename.startswith('uploads/'):
+            return f"/static/{clean_filename}"
         return f"/static/uploads/{clean_filename}"
     if folder:
         return f"/static/uploads/{folder}/{clean_filename}"
-    return f"/static/uploads/{clean_filename}"
-
-
 
 

@@ -60,10 +60,11 @@
             <table class="table table-hover align-middle border-0">
                 <thead class="table-light text-uppercase text-xs fw-semibold text-muted">
                     <tr>
-                        <th class="border-0 px-3 py-3" style="width: 80px;">ID</th>
+                        <th class="border-0 px-3 py-3" style="width: 70px;">ID</th>
                         <th class="border-0 px-3 py-3">Learner</th>
                         <th class="border-0 px-3 py-3">Category</th>
                         <th class="border-0 px-3 py-3">Description</th>
+                        <th class="border-0 px-3 py-3" style="width: 140px;">Attachment</th>
                         <th class="border-0 px-3 py-3" style="width: 130px;">Status</th>
                         <th class="border-0 px-3 py-3">Logged Date</th>
                         <th class="border-0 px-3 py-3 text-end" style="width: 170px;">Action</th>
@@ -95,19 +96,25 @@
                         </td>
                         <td class="px-3 py-3 text-wrap" style="max-width: 280px;">
                             <div class="text-dark">{{ issue.description }}</div>
-                            {% if issue.image_path %}
-                            <div class="mt-2">
-                                <small class="text-muted text-xxs fw-bold text-uppercase d-block mb-1"><i class="fa-solid fa-paperclip me-1 text-teal"></i> Attached Media:</small>
-                                <a href="{{ url_for('static', filename=issue.image_path) if not issue.image_path.startswith('http') else issue.image_path }}" target="_blank" class="d-inline-block position-relative rounded-3 overflow-hidden border shadow-xs" title="Click to view full media attachment">
-                                    <img src="{{ url_for('static', filename=issue.image_path) if not issue.image_path.startswith('http') else issue.image_path }}" alt="Attachment" style="max-height: 75px; max-width: 150px; object-fit: cover;" class="rounded-3 hover-zoom">
-                                </a>
-                            </div>
-                            {% endif %}
                             {% if issue.admin_comment %}
                             <div class="mt-1.5 text-xxs text-primary bg-primary-subtle p-2 rounded-3 border border-primary-subtle d-flex align-items-start gap-1">
                                 <i class="fa-solid fa-comment-dots mt-0.5"></i>
                                 <div><strong>Admin Comment:</strong> {{ issue.admin_comment }}</div>
                             </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-3">
+                            {% if issue.image_path %}
+                            <div class="d-flex align-items-center gap-2">
+                                <a href="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" target="_blank" class="d-inline-block position-relative rounded-3 overflow-hidden border shadow-xs text-decoration-none" title="Click to view full attachment">
+                                    <img src="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" alt="Attachment" style="max-height: 50px; max-width: 90px; object-fit: cover;" class="rounded-3 hover-zoom">
+                                </a>
+                                <a href="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" target="_blank" class="btn btn-xs btn-outline-teal rounded-circle p-1.5 shadow-xs" title="Open Attachment in new window">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                                </a>
+                            </div>
+                            {% else %}
+                            <span class="text-muted text-xxs font-monospace opacity-75">No Attachment</span>
                             {% endif %}
                         </td>
                         <td class="px-3 py-3">
@@ -171,8 +178,8 @@
                                                     {% if issue.image_path %}
                                                     <div class="mt-2.5 pt-2 border-top">
                                                         <small class="text-muted text-xxs fw-bold text-uppercase d-block mb-1"><i class="fa-solid fa-image me-1 text-teal"></i> Attached Media Screenshot:</small>
-                                                        <a href="{{ url_for('static', filename=issue.image_path) if not issue.image_path.startswith('http') else issue.image_path }}" target="_blank">
-                                                            <img src="{{ url_for('static', filename=issue.image_path) if not issue.image_path.startswith('http') else issue.image_path }}" alt="Attachment" class="img-fluid rounded-3 border shadow-xs" style="max-height: 140px; object-fit: contain;">
+                                                        <a href="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" target="_blank">
+                                                            <img src="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" alt="Attachment" class="img-fluid rounded-3 border shadow-xs" style="max-height: 140px; object-fit: contain;">
                                                         </a>
                                                     </div>
                                                     {% endif %}

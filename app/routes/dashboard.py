@@ -181,6 +181,62 @@ def list_issues():
     )
 
 
+@dashboard_bp.route('/issues/attachment/<int:issue_id>')
+@admin_required
+def view_issue_attachment(issue_id):
+    """
+    Serves or redirects support ticket attachments smoothly.
+    Supports Backblaze B2 presigned URLs, local uploads, and static directory fallbacks.
+    Prevents 500 Internal Server Error crashes when accessing issue files.
+    """
+    from app.models.issue import LmsIssue
+    from app.services.b2_service import get_b2_url
+    from flask import send_file, redirect, abort, current_app
+    import os
+
+    issue = LmsIssue.query.get_or_404(issue_id)
+    if not issue.image_path:
+        abort(404, description="No attachment uploaded for this support ticket.")
+
+    raw_path = str(issue.image_path).strip()
+
+    # 1. Direct HTTP / HTTPS link
+    if raw_path.startswith('http://') or raw_path.startswith('https://'):
+        return redirect(raw_path)
+
+    # 2. Backblaze B2 Cloud presigned URL (if B2 is configured)
+    b2_url = get_b2_url(raw_path)
+    if b2_url and (b2_url.startswith('http://') or b2_url.startswith('https://')):
+        return redirect(b2_url)
+
+    # 3. Local filesystem resolution
+    clean_name = raw_path.lstrip('/')
+    if clean_name.startswith('static/'):
+        clean_name = clean_name[7:]
+    if clean_name.startswith('uploads/'):
+        clean_name = clean_name[8:]
+
+    candidates = [
+        # app/static/uploads/issues/...
+        os.path.join(current_app.root_path, 'static', 'uploads', clean_name),
+        os.path.join(current_app.root_path, 'static', clean_name),
+        # uploads/issues/... (root level uploads)
+        os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', clean_name)),
+        os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'issues', os.path.basename(clean_name))),
+        os.path.abspath(os.path.join(current_app.root_path, '..', clean_name)),
+    ]
+
+    for c_path in candidates:
+        if os.path.isfile(c_path):
+            return send_file(c_path)
+
+    # 4. Fallback redirect if get_b2_url returned a local static path string
+    if b2_url and b2_url.startswith('/'):
+        return redirect(b2_url)
+
+    abort(404, description="Attachment file could not be located on cloud or local server.")
+
+
 @dashboard_bp.route('/broadcast_notification', methods=['POST'])
 @admin_required
 def broadcast_notification():
