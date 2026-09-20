@@ -460,6 +460,7 @@ def my_portal():
 
     # Build lesson progress map: {enrollment_id: {done: int, total: int, pct: float, ...}}
     progress_map = {}
+    total_hours_spent = 0.0
     from app.models.course import CourseAssessment
     from app.models.enrollment import AssessmentAttempt, LessonReview
     
@@ -495,6 +496,13 @@ def my_portal():
                 if les.id in reviewed_lesson_ids:
                     done_count += 1
         lessons_status = f"{done_count:02d}/{total_lessons:02d}"
+        
+        # Accumulate hours spent
+        course_dur = getattr(en.course, 'duration_hours', 1.0) or 1.0
+        if en.completion_status == 'Completed':
+            total_hours_spent += course_dur
+        elif total_lessons > 0:
+            total_hours_spent += (done_count / total_lessons) * course_dur
         
         # 3. Post Assessment Status
         has_course_end_questions = CourseAssessment.query.filter_by(course_id=en.course.id, assessment_type='COURSE_END').count() > 0
@@ -619,6 +627,8 @@ def my_portal():
             'course_url': course_url
         }
 
+    formatted_total_hours = int(total_hours_spent) if total_hours_spent.is_integer() else round(total_hours_spent, 1)
+
     # Check if this learner has subordinates (is a manager)
     subordinates = Learner.query.filter_by(manager_id=learner.id).all()
     is_manager = len(subordinates) > 0
@@ -703,7 +713,8 @@ def my_portal():
         is_manager=is_manager,
         subordinate_data=subordinate_data,
         top_learners=top_learners,
-        dept_top_learners=dept_top_learners
+        dept_top_learners=dept_top_learners,
+        total_hours_spent=formatted_total_hours
     )
 
 
