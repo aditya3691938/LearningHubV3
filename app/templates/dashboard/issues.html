@@ -72,7 +72,7 @@
                 </thead>
                 <tbody class="text-xs">
                     {% for issue in issues %}
-                    <tr class="border-bottom">
+                    <tr class="border-bottom cursor-pointer transition-all hover-bg-light" data-bs-toggle="modal" data-bs-target="#updateTicketModal{{ issue.id }}" title="Click to view ticket details & resolve">
                         <td class="px-3 py-3 fw-bold text-muted">#{{ issue.id }}</td>
                         <td class="px-3 py-3">
                             <div class="d-flex align-items-center gap-2">
@@ -94,24 +94,20 @@
                                 {{ issue.category }}
                             </span>
                         </td>
-                        <td class="px-3 py-3 text-wrap" style="max-width: 280px;">
-                            <div class="text-dark">{{ issue.description }}</div>
+                        <td class="px-3 py-3 text-wrap" style="max-width: 260px;">
+                            <div class="text-dark fw-semibold">{{ issue.description | truncate(45, True, '...') }}</div>
                             {% if issue.admin_comment %}
-                            <div class="mt-1.5 text-xxs text-primary bg-primary-subtle p-2 rounded-3 border border-primary-subtle d-flex align-items-start gap-1">
-                                <i class="fa-solid fa-comment-dots mt-0.5"></i>
-                                <div><strong>Admin Comment:</strong> {{ issue.admin_comment }}</div>
+                            <div class="mt-1 text-xxs text-primary bg-primary-subtle px-2 py-1 rounded-2 border border-primary-subtle d-flex align-items-center gap-1 text-truncate" style="max-width: 250px;">
+                                <i class="fa-solid fa-comment-dots"></i>
+                                <span class="text-truncate"><strong>Note:</strong> {{ issue.admin_comment }}</span>
                             </div>
                             {% endif %}
                         </td>
                         <td class="px-3 py-3">
                             {% if issue.image_path %}
-                            <div class="d-flex align-items-center gap-2">
-                                <a href="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" target="_blank" class="d-inline-block position-relative rounded-3 overflow-hidden border shadow-xs text-decoration-none" title="Click to view full attachment">
-                                    <img src="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" alt="Attachment" style="max-height: 50px; max-width: 90px; object-fit: cover;" class="rounded-3 hover-zoom">
-                                </a>
-                                <a href="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" target="_blank" class="btn btn-xs btn-outline-teal rounded-circle p-1.5 shadow-xs" title="Open Attachment in new window">
-                                    <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                                </a>
+                            <div class="d-flex align-items-center gap-1.5">
+                                <img src="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" alt="Attachment" style="max-height: 42px; max-width: 75px; object-fit: cover;" class="rounded-3 border shadow-xs">
+                                <span class="badge bg-teal-subtle text-teal border border-teal-subtle text-xxs px-1.5 py-0.5"><i class="fa-solid fa-paperclip"></i></span>
                             </div>
                             {% else %}
                             <span class="text-muted text-xxs font-monospace opacity-75">No Attachment</span>
@@ -143,25 +139,25 @@
                         <td class="px-3 py-3 text-muted">
                             {{ issue.created_at.strftime('%d-%b-%Y %I:%M %p') }}
                         </td>
-                        <td class="px-3 py-3 text-end">
+                        <td class="px-3 py-3 text-end" onclick="event.stopPropagation();">
                             <!-- Action Button to trigger Status & Comment Modal Popup -->
                             {% if issue.status in ['Resolved', 'Close', 'Closed'] %}
-                            <button type="button" class="btn btn-xs btn-outline-success fw-bold py-1 px-2.5 rounded-3 shadow-xs d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#updateTicketModal{{ issue.id }}">
-                                <i class="fa-solid fa-circle-check"></i> Ticket Resolved
+                            <button type="button" class="btn btn-xs btn-outline-success fw-bold py-1.5 px-3 rounded-3 shadow-xs d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#updateTicketModal{{ issue.id }}">
+                                <i class="fa-solid fa-circle-check text-success"></i> Ticket Resolved
                             </button>
                             {% else %}
-                            <button type="button" class="btn btn-xs btn-success fw-bold py-1 px-2.5 rounded-3 shadow-xs d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#updateTicketModal{{ issue.id }}">
-                                <i class="fa-solid fa-pen-to-square"></i> Ticket Resolved
+                            <button type="button" class="btn btn-xs btn-success text-white fw-bold py-1.5 px-3 rounded-3 shadow-xs d-inline-flex align-items-center gap-1">
+                                <i class="fa-solid fa-pen-to-square"></i> Resolve Ticket
                             </button>
                             {% endif %}
 
                             <!-- Status & Comment Modal Popup -->
                             <div class="modal fade text-start" id="updateTicketModal{{ issue.id }}" tabindex="-1" aria-labelledby="updateTicketModalLabel{{ issue.id }}" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-dialog modal-dialog-centered modal-lg">
                                     <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
                                         <div class="modal-header bg-navy text-white px-4 py-3">
                                             <h6 class="modal-title fw-bold d-flex align-items-center gap-2" id="updateTicketModalLabel{{ issue.id }}">
-                                                <i class="fa-solid fa-headset text-teal"></i> Ticket #{{ issue.id }} - Update Status & Comment
+                                                <i class="fa-solid fa-headset text-teal"></i> Ticket #{{ issue.id }} Details & Resolution
                                             </h6>
                                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
@@ -169,45 +165,66 @@
                                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                             <div class="modal-body p-4">
                                                 <!-- Learner & Issue Brief -->
-                                                <div class="bg-light p-3 rounded-3 mb-3 border text-xs">
-                                                    <div class="d-flex justify-content-between mb-1">
-                                                        <span class="fw-bold text-dark">{{ issue.learner.name }} (ID: {{ issue.learner.global_id }})</span>
-                                                        <span class="badge bg-secondary-subtle text-secondary border px-2 py-0.5 rounded-pill">{{ issue.category }}</span>
+                                                <div class="bg-surface p-3.5 rounded-4 mb-3 border text-xs shadow-xs">
+                                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <div class="avatar-xs bg-teal-subtle text-teal rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 32px; height: 32px;">
+                                                                {{ issue.learner.name[0] | upper }}
+                                                            </div>
+                                                            <div>
+                                                                <h6 class="fw-bold text-dark mb-0">{{ issue.learner.name }}</h6>
+                                                                <span class="text-muted text-xxs">Global ID: {{ issue.learner.global_id }} | Dept: {{ issue.learner.department or 'General' }}</span>
+                                                            </div>
+                                                        </div>
+                                                        <span class="badge {% if issue.category == 'Technical' %}bg-danger-subtle text-danger border-danger-subtle{% elif issue.category == 'Content' %}bg-warning-subtle text-warning border-warning-subtle{% elif issue.category == 'Certificate' %}bg-success-subtle text-success border-success-subtle{% else %}bg-primary-subtle text-primary border-primary-subtle{% endif %} border px-3 py-1 rounded-pill fw-bold">
+                                                            {{ issue.category }}
+                                                        </span>
                                                     </div>
-                                                    <p class="text-muted mb-0 small text-wrap">{{ issue.description }}</p>
+
+                                                    <hr class="my-2.5 opacity-25">
+
+                                                    <!-- Full Complaint Description -->
+                                                    <div class="mb-3">
+                                                        <small class="text-muted text-xxs fw-bold text-uppercase d-block mb-1"><i class="fa-solid fa-align-left text-teal me-1"></i> Full Complaint Description:</small>
+                                                        <div class="p-3 bg-white rounded-3 border text-sm text-dark text-wrap shadow-xs" style="white-space: pre-line;">{{ issue.description }}</div>
+                                                    </div>
+
+                                                    <!-- Full Media Screenshot View inside Modal -->
                                                     {% if issue.image_path %}
-                                                    <div class="mt-2.5 pt-2 border-top">
-                                                        <small class="text-muted text-xxs fw-bold text-uppercase d-block mb-1"><i class="fa-solid fa-image me-1 text-teal"></i> Attached Media Screenshot:</small>
-                                                        <a href="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" target="_blank">
-                                                            <img src="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" alt="Attachment" class="img-fluid rounded-3 border shadow-xs" style="max-height: 140px; object-fit: contain;">
-                                                        </a>
+                                                    <div class="mt-3">
+                                                        <small class="text-muted text-xxs fw-bold text-uppercase d-block mb-1"><i class="fa-solid fa-paperclip text-teal me-1"></i> Attached Media Screenshot:</small>
+                                                        <div class="p-2 bg-white rounded-3 border text-center shadow-xs">
+                                                            <a href="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" target="_blank" title="Click to open attachment full screen">
+                                                                <img src="{{ url_for('dashboard.view_issue_attachment', issue_id=issue.id) }}" alt="Attachment" class="img-fluid rounded-3 border shadow-xs" style="max-height: 260px; object-fit: contain;">
+                                                            </a>
+                                                        </div>
                                                     </div>
                                                     {% endif %}
                                                 </div>
 
                                                 <!-- Status Selection Radios -->
                                                 <div class="mb-3">
-                                                    <label class="form-label text-xs fw-bold text-uppercase text-muted">Select Status</label>
+                                                    <label class="form-label text-xs fw-bold text-uppercase text-muted">Update Status</label>
                                                     <div class="row g-2">
-                                                        <div class="col-6">
+                                                        <div class="col-6 col-sm-3">
                                                             <input type="radio" class="btn-check" name="status" id="status_open_{{ issue.id }}" value="Open" {% if issue.status == 'Open' %}checked{% endif %}>
                                                             <label class="btn btn-outline-danger btn-sm w-100 py-2 d-flex align-items-center justify-content-center gap-1.5 rounded-3 text-xs fw-bold" for="status_open_{{ issue.id }}">
                                                                 <i class="fa-regular fa-folder-open"></i> Open
                                                             </label>
                                                         </div>
-                                                        <div class="col-6">
+                                                        <div class="col-6 col-sm-3">
                                                             <input type="radio" class="btn-check" name="status" id="status_inprogress_{{ issue.id }}" value="In Progress" {% if issue.status == 'In Progress' %}checked{% endif %}>
                                                             <label class="btn btn-outline-primary btn-sm w-100 py-2 d-flex align-items-center justify-content-center gap-1.5 rounded-3 text-xs fw-bold" for="status_inprogress_{{ issue.id }}">
                                                                 <i class="fa-solid fa-spinner"></i> In Progress
                                                             </label>
                                                         </div>
-                                                        <div class="col-6">
+                                                        <div class="col-6 col-sm-3">
                                                             <input type="radio" class="btn-check" name="status" id="status_deny_{{ issue.id }}" value="Deny" {% if issue.status in ['Deny', 'Reject', 'Rejected'] %}checked{% endif %}>
                                                             <label class="btn btn-outline-secondary btn-sm w-100 py-2 d-flex align-items-center justify-content-center gap-1.5 rounded-3 text-xs fw-bold" for="status_deny_{{ issue.id }}">
                                                                 <i class="fa-solid fa-ban"></i> Deny
                                                             </label>
                                                         </div>
-                                                        <div class="col-6">
+                                                        <div class="col-6 col-sm-3">
                                                             <input type="radio" class="btn-check" name="status" id="status_resolved_{{ issue.id }}" value="Resolved" {% if issue.status in ['Resolved', 'Close', 'Closed'] %}checked{% endif %}>
                                                             <label class="btn btn-outline-success btn-sm w-100 py-2 d-flex align-items-center justify-content-center gap-1.5 rounded-3 text-xs fw-bold" for="status_resolved_{{ issue.id }}">
                                                                 <i class="fa-solid fa-circle-check"></i> Resolved
