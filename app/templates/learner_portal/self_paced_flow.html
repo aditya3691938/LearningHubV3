@@ -1171,36 +1171,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         var activeAuxAudio = null;
+        var lastVideoVolume = 1.0;
 
-        // Auto-initialize default audio track selection on page load
-        if (selectEl.value.startsWith('aux_')) {
-            var initTrackId = selectEl.value.split('_')[1];
-            var initAuxAudio = document.getElementById('auxAudio' + cwId + '_' + initTrackId);
-            if (initAuxAudio) {
-                videoEl.muted = true;
-                activeAuxAudio = initAuxAudio;
-            }
-        }
-
-        function syncAudioToVideo() {
-            if (activeAuxAudio && videoEl) {
-                if (Math.abs(activeAuxAudio.currentTime - videoEl.currentTime) > 0.15) {
-                    activeAuxAudio.currentTime = videoEl.currentTime;
-                }
-                activeAuxAudio.playbackRate = videoEl.playbackRate;
-            }
-        }
-
-        selectEl.addEventListener('change', function() {
-            var val = this.value;
-
+        function applyAudioTrackSelection(val) {
             if (activeAuxAudio) {
                 activeAuxAudio.pause();
+                activeAuxAudio.currentTime = 0;
                 activeAuxAudio = null;
             }
 
             if (val === 'default') {
                 videoEl.muted = false;
+                if (videoEl.volume === 0 && lastVideoVolume > 0) {
+                    videoEl.volume = lastVideoVolume;
+                }
                 if (videoEl.audioTracks) {
                     for (var k = 0; k < videoEl.audioTracks.length; k++) {
                         videoEl.audioTracks[k].enabled = (k === 0);
@@ -1220,20 +1204,58 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (auxAudio) {
                     videoEl.muted = true;
                     activeAuxAudio = auxAudio;
+                    activeAuxAudio.muted = false;
+                    activeAuxAudio.volume = (videoEl.volume !== undefined) ? videoEl.volume : 1.0;
                     activeAuxAudio.currentTime = videoEl.currentTime;
                     activeAuxAudio.playbackRate = videoEl.playbackRate;
                     if (!videoEl.paused) {
-                        activeAuxAudio.play().catch(function(e){ console.log(e); });
+                        activeAuxAudio.play().catch(function(e) { console.log('Aux audio play error:', e); });
                     }
                 }
+            }
+        }
+
+        // Auto-initialize default audio track selection on page load
+        if (selectEl.value && selectEl.value !== 'default') {
+            applyAudioTrackSelection(selectEl.value);
+        } else {
+            videoEl.muted = false;
+        }
+
+        function syncAudioToVideo() {
+            if (activeAuxAudio && videoEl) {
+                if (Math.abs(activeAuxAudio.currentTime - videoEl.currentTime) > 0.15) {
+                    activeAuxAudio.currentTime = videoEl.currentTime;
+                }
+                activeAuxAudio.playbackRate = videoEl.playbackRate;
+                activeAuxAudio.volume = videoEl.volume;
+            }
+        }
+
+        selectEl.addEventListener('change', function() {
+            applyAudioTrackSelection(this.value);
+        });
+
+        videoEl.addEventListener('volumechange', function() {
+            if (videoEl.volume > 0) {
+                lastVideoVolume = videoEl.volume;
+            }
+            if (activeAuxAudio) {
+                activeAuxAudio.volume = videoEl.volume;
+                activeAuxAudio.muted = videoEl.muted;
             }
         });
 
         videoEl.addEventListener('play', function() {
             if (activeAuxAudio) {
+                videoEl.muted = true;
+                activeAuxAudio.muted = false;
+                activeAuxAudio.volume = (videoEl.volume !== undefined) ? videoEl.volume : 1.0;
                 activeAuxAudio.currentTime = videoEl.currentTime;
                 activeAuxAudio.playbackRate = videoEl.playbackRate;
-                activeAuxAudio.play().catch(function(e){ console.log(e); });
+                activeAuxAudio.play().catch(function(e) { console.log('Aux audio play on video play error:', e); });
+            } else {
+                videoEl.muted = false;
             }
         });
 

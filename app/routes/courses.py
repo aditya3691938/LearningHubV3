@@ -807,14 +807,64 @@ def set_default_audio_track(track_id):
 
 @courses_bp.route('/courseware/audio/<int:track_id>')
 def stream_audio_track(track_id):
+    """
+    Serves or redirects auxiliary audio tracks for videos.
+    Supports Backblaze B2 presigned URLs, direct HTTP links, and local candidate paths.
+    """
+    from app.models.course import CoursewareAudioTrack
+    from app.services.b2_service import get_b2_url
+    from flask import send_file, redirect, jsonify, current_app
+    import os
+
     track = CoursewareAudioTrack.query.get_or_404(track_id)
+    if not track.audio_filename:
+        return jsonify({'error': 'Audio filename not specified'}), 404
+
+    raw_filename = str(track.audio_filename).strip()
+
+    # 1. Direct HTTP / HTTPS link
+    if raw_filename.startswith('http://') or raw_filename.startswith('https://'):
+        return redirect(raw_filename)
+
+    # 2. Backblaze B2 Cloud presigned URL
+    b2_url = get_b2_url(raw_filename, folder='audio') or get_b2_url(raw_filename, folder='materials') or get_b2_url(raw_filename)
+    if b2_url and (b2_url.startswith('http://') or b2_url.startswith('https://')):
+        return redirect(b2_url)
+
+    # 3. Local filesystem candidate locations
+    clean_name = os.path.basename(raw_filename)
     materials_folder = current_app.config['MATERIALS_FOLDER']
-    file_path = os.path.join(materials_folder, track.audio_filename)
-    if os.path.exists(file_path):
-        ext = os.path.splitext(track.audio_filename)[1].lower()
-        mimetypes = {'.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.wav': 'audio/wav', '.ogg': 'audio/ogg'}
-        return send_file(file_path, mimetype=mimetypes.get(ext, 'audio/mpeg'))
-    return jsonify({'error': 'Audio track file not found'}), 404
+
+    candidates = [
+        os.path.join(materials_folder, clean_name),
+        os.path.join(materials_folder, 'audio', clean_name),
+        os.path.join(current_app.root_path, 'static', 'uploads', 'audio', clean_name),
+        os.path.join(current_app.root_path, 'static', 'uploads', 'materials', clean_name),
+        os.path.join(current_app.root_path, 'static', 'uploads', clean_name),
+        os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'audio', clean_name)),
+        os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', 'materials', clean_name)),
+        os.path.abspath(os.path.join(current_app.root_path, '..', 'uploads', clean_name)),
+    ]
+
+    for c_path in candidates:
+        if os.path.isfile(c_path):
+            ext = os.path.splitext(clean_name)[1].lower()
+            mimetypes = {
+                '.mp3': 'audio/mpeg',
+                '.m4a': 'audio/mp4',
+                '.aac': 'audio/aac',
+                '.wav': 'audio/wav',
+                '.ogg': 'audio/ogg',
+                '.flac': 'audio/flac',
+                '.opus': 'audio/opus'
+            }
+            return send_file(c_path, mimetype=mimetypes.get(ext, 'audio/mpeg'))
+
+    # 4. Fallback redirect if B2 returned relative path
+    if b2_url and b2_url.startswith('/'):
+        return redirect(b2_url)
+
+    return jsonify({'error': 'Audio track file could not be located'}), 404
 
 
 @courses_bp.route('/courseware/audio/<int:track_id>/delete', methods=['POST'])
