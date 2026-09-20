@@ -141,12 +141,12 @@
                         </td>
                         <td class="px-3 py-3 text-end" onclick="event.stopPropagation();">
                             <!-- Action Button to trigger Status & Comment Modal Popup -->
-                            {% if issue.status in ['Resolved', 'Close', 'Closed'] %}
+                            {% if issue.status in ['Resolved', 'Close', 'Closed', 'Deny', 'Reject', 'Rejected'] %}
                             <button type="button" class="btn btn-xs btn-outline-success fw-bold py-1.5 px-3 rounded-3 shadow-xs d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#updateTicketModal{{ issue.id }}">
                                 <i class="fa-solid fa-circle-check text-success"></i> Ticket Resolved
                             </button>
                             {% else %}
-                            <button type="button" class="btn btn-xs btn-success text-white fw-bold py-1.5 px-3 rounded-3 shadow-xs d-inline-flex align-items-center gap-1">
+                            <button type="button" class="btn btn-xs btn-success text-white fw-bold py-1.5 px-3 rounded-3 shadow-xs d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#updateTicketModal{{ issue.id }}">
                                 <i class="fa-solid fa-pen-to-square"></i> Resolve Ticket
                             </button>
                             {% endif %}
