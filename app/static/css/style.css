@@ -368,7 +368,7 @@ body * {
 }
 
 /* Strict High-Contrast Text Rules Overriding Bootstrap Utility Conflicts */
-.text-dark,
+/* Strict High-Contrast Text Rules Overriding Bootstrap Utility Conflicts */
 [data-theme="light"] .text-dark,
 [data-theme="light"] body .text-dark {
     color: #0F172A !important;
@@ -380,11 +380,20 @@ body * {
 [data-theme="dark"] table .text-dark,
 [data-theme="dark"] small.text-dark,
 [data-theme="dark"] span.text-dark,
-[data-theme="dark"] strong.text-dark {
+[data-theme="dark"] strong.text-dark,
+body[class*="theme-dark"] .text-dark,
+body[class*="theme-cyberpunk"] .text-dark,
+body[class*="theme-synthwave"] .text-dark,
+body[class*="theme-matrix"] .text-dark,
+body[class*="theme-dracula"] .text-dark,
+body[class*="theme-dark"] h1, body[class*="theme-dark"] h2, body[class*="theme-dark"] h3, body[class*="theme-dark"] h4, body[class*="theme-dark"] h5, body[class*="theme-dark"] h6,
+body[class*="theme-cyberpunk"] h1, body[class*="theme-cyberpunk"] h2, body[class*="theme-cyberpunk"] h3, body[class*="theme-cyberpunk"] h4, body[class*="theme-cyberpunk"] h5, body[class*="theme-cyberpunk"] h6,
+body[class*="theme-synthwave"] h1, body[class*="theme-synthwave"] h2, body[class*="theme-synthwave"] h3, body[class*="theme-synthwave"] h4, body[class*="theme-synthwave"] h5, body[class*="theme-synthwave"] h6,
+body[class*="theme-matrix"] h1, body[class*="theme-matrix"] h2, body[class*="theme-matrix"] h3, body[class*="theme-matrix"] h4, body[class*="theme-matrix"] h5, body[class*="theme-matrix"] h6,
+body[class*="theme-dracula"] h1, body[class*="theme-dracula"] h2, body[class*="theme-dracula"] h3, body[class*="theme-dracula"] h4, body[class*="theme-dracula"] h5, body[class*="theme-dracula"] h6 {
     color: #F8FAFC !important;
 }
 
-.text-muted,
 [data-theme="light"] .text-muted,
 [data-theme="light"] body .text-muted {
     color: #64748B !important;
@@ -395,11 +404,15 @@ body * {
 [data-theme="dark"] .card .text-muted,
 [data-theme="dark"] table .text-muted,
 [data-theme="dark"] small.text-muted,
-[data-theme="dark"] span.text-muted {
+[data-theme="dark"] span.text-muted,
+body[class*="theme-dark"] .text-muted,
+body[class*="theme-cyberpunk"] .text-muted,
+body[class*="theme-synthwave"] .text-muted,
+body[class*="theme-matrix"] .text-muted,
+body[class*="theme-dracula"] .text-muted {
     color: #94A3B8 !important;
 }
 
-.text-secondary,
 [data-theme="light"] .text-secondary,
 [data-theme="light"] body .text-secondary {
     color: #334155 !important;
@@ -409,7 +422,12 @@ body * {
 [data-theme="dark"] body .text-secondary,
 [data-theme="dark"] .card .text-secondary,
 [data-theme="dark"] table .text-secondary,
-[data-theme="dark"] span.text-secondary {
+[data-theme="dark"] span.text-secondary,
+body[class*="theme-dark"] .text-secondary,
+body[class*="theme-cyberpunk"] .text-secondary,
+body[class*="theme-synthwave"] .text-secondary,
+body[class*="theme-matrix"] .text-secondary,
+body[class*="theme-dracula"] .text-secondary {
     color: #CBD5E1 !important;
 }
 
